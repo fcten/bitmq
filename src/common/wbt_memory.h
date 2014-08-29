@@ -12,14 +12,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../webit.h"
+
 typedef struct {
     size_t  len;
     void   *ptr;
 } wbt_mem_t;
 
-inline wbt_mem_t wbt_malloc(size_t len);
-inline void wbt_free(wbt_mem_t p);
-inline void wbt_memset(wbt_mem_t p, int ch);
+inline wbt_status wbt_malloc(wbt_mem_t * p, size_t len);
+inline void wbt_free(wbt_mem_t * p);
+inline void wbt_memset(wbt_mem_t * p, int ch);
 
 
 #endif	/* __WBT_MEMORY_H__ */

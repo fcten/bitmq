@@ -21,7 +21,7 @@ typedef struct {
 
 #define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
 
-wbt_str_t wbt_sprintf(wbt_mem_t buf, const char *fmt, ...);
+wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
 
 
 #endif /* __WBT_STRING_H__ */

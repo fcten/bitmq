@@ -9,9 +9,7 @@
 #define	__WEBIT_H__
 
 
-/*
- * #define WBT_DEBUG
- */
+#define WBT_DEBUG
 
 typedef enum {
     WBT_OK,

@@ -21,11 +21,11 @@ int main(int argc, char** argv) {
     
     wbt_mem_t p;
     wbt_str_t s;
-    p = wbt_malloc(20);
-    wbt_memset(p, 0);
-    s = wbt_sprintf(p, "Webit startup %d.", getpid());
-
+    wbt_malloc(&p, 20);
+    wbt_memset(&p, 0);
+    s = wbt_sprintf(&p, "Webit startup %d.", getpid());
     wbt_log_write(s, stderr);
+    wbt_free(&p);
     
     wbt_log_debug("123");
 

@@ -7,19 +7,25 @@
 
 #include "wbt_memory.h"
 
-inline wbt_mem_t wbt_malloc(size_t len) {
-    wbt_mem_t p;
-    
-    p.ptr = malloc(len);
-    p.len = len;
-    
-    return p;
+inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
+    p->ptr = malloc(len);
+    if(p->ptr != NULL) {
+        p->len = len;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
 }
 
-inline void wbt_free(wbt_mem_t p) {
-    free(p.ptr);
+inline void wbt_free(wbt_mem_t * p) {
+    if( p->len > 0 && p->ptr != NULL ) {
+        free(p->ptr);
+        p->ptr = NULL;
+        p->len = 0;
+    }
 }
 
-inline void wbt_memset(wbt_mem_t p, int ch) {
-    memset(p.ptr, ch, p.len);
+inline void wbt_memset(wbt_mem_t * p, int ch) {
+    memset(p->ptr, ch, p->len);
 }

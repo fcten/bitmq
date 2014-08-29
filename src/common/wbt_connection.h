@@ -11,6 +11,7 @@
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <sys/time.h>
 #include <netinet/in.h> 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -21,8 +22,10 @@
 #include "../webit.h"
 
 #define WBT_MAX_EVENTS      256
+#define WBT_EVENT_LIST_SIZE 1024
 #define WBT_CONN_PORT       1039
 #define WBT_CONN_BACKLOG    511
+#define WBT_CONN_TIMEOUT    5   /* 单位秒 */
 
 wbt_status wbt_conn_init();
 
