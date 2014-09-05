@@ -29,7 +29,15 @@ int main(int argc, char** argv) {
     
     wbt_log_debug("123");
 
-    wbt_conn_init();    
+    if( wbt_event_init() != WBT_OK ) {
+        return 1;
+    }
+
+    if( wbt_conn_init() != WBT_OK ) {
+        return 1;
+    }
+    
+    wbt_event_dispatch();
     
     return 0;
 }

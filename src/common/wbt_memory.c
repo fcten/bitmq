@@ -11,6 +11,7 @@ inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
     p->ptr = malloc(len);
     if(p->ptr != NULL) {
         p->len = len;
+        p->next = NULL;
         
         return WBT_OK;
     } else {
@@ -18,7 +19,19 @@ inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
     }
 }
 
-inline void wbt_free(wbt_mem_t * p) {
+inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {
+    void *tmp = realloc(p->ptr, len);
+    if(tmp != NULL) {
+        p->ptr = tmp;
+        p->len = len;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
+}
+
+inline void wbt_free(wbt_mem_t *p) {
     if( p->len > 0 && p->ptr != NULL ) {
         free(p->ptr);
         p->ptr = NULL;
@@ -26,6 +39,6 @@ inline void wbt_free(wbt_mem_t * p) {
     }
 }
 
-inline void wbt_memset(wbt_mem_t * p, int ch) {
+inline void wbt_memset(wbt_mem_t *p, int ch) {
     memset(p->ptr, ch, p->len);
 }

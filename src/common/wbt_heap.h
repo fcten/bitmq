@@ -8,17 +8,21 @@
 #ifndef __WBT_HEAP_H__
 #define	__WBT_HEAP_H__
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include <time.h>
 
 #include "../webit.h"
 #include "wbt_memory.h"
+#include "wbt_event.h"
 
 typedef struct {
-    time_t time_out;
-    int fd;
-    wbt_status (*callback)();
+    time_t time_out;        /* 超时时间，距离1970年的毫秒数 */
+    wbt_event_t *ev;        /* 指向事件的指针，事件存储于事件队列中 */
+    unsigned int modified;  /* 添加或修改事件时事件的版本号快照 */
 } wbt_heap_node_t;
 
 typedef struct {
@@ -38,6 +42,9 @@ wbt_status wbt_heap_delete(wbt_heap_t * p);
 /* 删除堆 */
 wbt_status wbt_heap_destroy(wbt_heap_t * p);
 
+#ifdef	__cplusplus
+}
+#endif
 
 #endif	/* __WBT_HEAP_H__ */
 

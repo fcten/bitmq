@@ -25,25 +25,33 @@ wbt_status wbt_heap_new(wbt_heap_t * p, size_t max_size) {
 
 /* 向堆中插入一个新元素 */
 wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {
-    if(p->size == p->max) {
-        /* 堆已经满了 */
-        wbt_str_t p = wbt_string("heap overflow.");
-        wbt_log_write(p, stderr);
+    if(p->size + 1 == p->max) {
+        /* 堆已经满了，尝试扩充大小 */
+        if( wbt_realloc(&p->heap, p->max * 2 * sizeof(wbt_heap_node_t))
+            == WBT_OK )
+        {
+            p->max *= 2;
+            
+            wbt_log_debug("heap resize to %d", p->max);
+        } else {
+            wbt_str_t p = wbt_string("heap overflow.");
+            wbt_log_write(p, stderr);
 
-        return WBT_ERROR;
+            return WBT_ERROR;
+        }
     }
     
     int i;
     wbt_heap_node_t * p_node = (wbt_heap_node_t *)p->heap.ptr;
     for( i = ++ p->size; p_node[i/2].time_out > node->time_out; i /= 2 ) {
-        p_node[i].callback = p_node[i/2].callback;
         p_node[i].time_out = p_node[i/2].time_out;
-        p_node[i].fd = p_node[i/2].fd;
+        p_node[i].ev = p_node[i/2].ev;
+        p_node[i].modified = p_node[i/2].modified;
     }
-        
-    p_node[i].callback = node->callback;
+
     p_node[i].time_out = node->time_out;
-    p_node[i].fd = node->fd;
+    p_node[i].ev = node->ev;
+    p_node[i].modified = node->modified;
     
     wbt_log_debug("heap insert at %d, %d nodes.", (p_node + i), p->size);
     
@@ -88,17 +96,17 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
  
         /* Percolate one level. */
         if( last_node.time_out > p_node[child].time_out ) {
-            p_node[i].callback = p_node[child].callback;
             p_node[i].time_out = p_node[child].time_out;
-            p_node[i].fd = p_node[child].fd;
+            p_node[i].ev = p_node[child].ev;
+            p_node[i].modified = p_node[child].modified;
         } else {
             break;
         }
     }
 
-    p_node[i].callback = last_node.callback;
     p_node[i].time_out = last_node.time_out;
-    p_node[i].fd = last_node.fd;
+    p_node[i].ev = last_node.ev;
+    p_node[i].modified = last_node.modified;
     
     wbt_log_debug("heap delete, %d nodes.", p->size);
     

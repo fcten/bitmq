@@ -8,6 +8,9 @@
 #ifndef __WBT_STRING_H__
 #define __WBT_STRING_H__
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -23,5 +26,8 @@ typedef struct {
 
 wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
 
+#ifdef	__cplusplus
+}
+#endif
 
 #endif /* __WBT_STRING_H__ */

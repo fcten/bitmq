@@ -8,9 +8,13 @@
 #ifndef __WBT_LOG_H__
 #define	__WBT_LOG_H__
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #include "wbt_string.h"
 
@@ -32,6 +36,9 @@ int wbt_log_write(wbt_str_t p, FILE *fp);
 #define wbt_log_debug(fmt, arg...) ((void)0);
 #endif
 
+#ifdef	__cplusplus
+}
+#endif
 
 #endif	/* __WBT_LOG_H__ */
 

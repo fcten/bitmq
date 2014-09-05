@@ -8,6 +8,9 @@
 #ifndef __WBT_CONNECTION_H__
 #define	__WBT_CONNECTION_H__
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -20,15 +23,19 @@
 #include <errno.h>
 
 #include "../webit.h"
-
-#define WBT_MAX_EVENTS      256
-#define WBT_EVENT_LIST_SIZE 1024
-#define WBT_CONN_PORT       1039
-#define WBT_CONN_BACKLOG    511
-#define WBT_CONN_TIMEOUT    5   /* 单位秒 */
+#include "wbt_event.h"
 
 wbt_status wbt_conn_init();
+wbt_status wbt_conn_close(wbt_event_t *ev);
 
+wbt_status wbt_on_connect(wbt_event_t *ev);
+wbt_status wbt_on_recv(wbt_event_t *ev, wbt_mem_t *buf);
+wbt_status wbt_on_send(wbt_event_t *ev);
+wbt_status wbt_on_close(wbt_event_t *ev);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif	/* __WBT_CONNECTION_H__ */
 
