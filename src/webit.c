@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/resource.h>
 
 #include "webit.h"
 #include "common/wbt_string.h"
@@ -36,6 +37,12 @@ int main(int argc, char** argv) {
     if( wbt_conn_init() != WBT_OK ) {
         return 1;
     }
+    
+    /* 设置程序允许打开的最大文件句柄数 */
+    struct rlimit rlim;
+    rlim.rlim_cur = 65535;
+    rlim.rlim_max = 65535;
+    setrlimit(RLIMIT_NOFILE, &rlim);
     
     wbt_event_dispatch();
     

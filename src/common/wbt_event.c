@@ -219,7 +219,12 @@ wbt_status wbt_event_dispatch() {
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
     
+#ifdef WBT_DEBUG
+    int for_max;
+    for (for_max = 0 ; for_max < 300000 ; for_max ++) {
+#else
     for (;;) {
+#endif
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
             wbt_str_t p = wbt_string("epoll_wait failed.");

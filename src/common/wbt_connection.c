@@ -80,7 +80,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
     return WBT_OK;
 }
 wbt_status wbt_on_recv(wbt_event_t *ev, wbt_mem_t *buf) {
-    ev->events = EPOLLOUT | EPOLLET;
+    ev->events = EPOLLOUT | EPOLLET | EPOLLONESHOT;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
     if(wbt_event_mod(ev) != WBT_OK) {
