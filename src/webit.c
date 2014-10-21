@@ -18,6 +18,42 @@
 #include "common/wbt_log.h"
 
 void wbt_null() {}
+
+extern char **environ;
+char *last;
+
+void initProcTitle(int argc, char **argv)
+{
+    size_t size = 0;
+    int i;
+    for (i = 0; environ[i]; ++i) {
+        size += strlen(environ[i])+1; 
+    }   
+ 
+    char *raw = malloc(size*sizeof(char));
+    for (i = 0; environ[i]; ++i) {
+        memcpy(raw, environ[i], strlen(environ[i]) + 1); 
+        environ[i] = raw;
+        raw += strlen(environ[i]) + 1;
+    }   
+ 
+    last = argv[0];
+    for (i = 0; i < argc; ++i) {
+        last += strlen(argv[i]) + 1;   
+    }   
+    for (i = 0; environ[i]; ++i) {
+        last += strlen(environ[i]) + 1;
+    }   
+}
+ 
+void setProcTitle(int argc, char **argv, const char *title)
+{
+    argv[1] = 0;
+    char *p = argv[0];
+    memset(p, 0x00, last - p); 
+    strncpy(p, title, last - p); 
+}
+ 
 /*
  * 
  */
@@ -30,6 +66,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    initProcTitle(argc, argv);
+    
     while(1) {
         childpid = fork();
 
@@ -38,11 +76,11 @@ int main(int argc, char** argv) {
             exit( EXIT_FAILURE );
         } else if ( 0 == childpid ) {
             /* In child process */
-            //setproctitle("Webit: worker process");
+            setProcTitle(argc, argv, "Webit: worker process");
             break;
         } else {
             /* In parent */
-            //setproctitle("Webit: master process");
+            setProcTitle(argc, argv, "Webit: master process");
             waitpid( childpid, &status, 0 );
         }
     }
@@ -55,8 +93,6 @@ int main(int argc, char** argv) {
     s = wbt_sprintf(&p, "Webit startup %d.", getpid());
     wbt_log_write(s, stderr);
     wbt_free(&p);
-    
-    wbt_log_debug("123");
 
     if( wbt_event_init() != WBT_OK ) {
         return 1;
