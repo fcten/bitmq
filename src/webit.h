@@ -21,7 +21,7 @@ extern "C" {
 #define WBT_EVENT_LIST_SIZE 1024
 #define WBT_CONN_PORT       1039
 #define WBT_CONN_BACKLOG    511
-#define WBT_CONN_TIMEOUT    5000    /* 单位毫秒 */
+#define WBT_CONN_TIMEOUT    15000    /* 单位毫秒 */
 
 typedef enum {
     WBT_OK,

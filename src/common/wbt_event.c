@@ -161,6 +161,9 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     /* 使超时队列中的事件过期 */
     ev->modified ++;
     
+    /* 释放缓存 */
+    wbt_free(&ev->buff);
+
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev->fd, NULL) == -1) { 
@@ -211,23 +214,16 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
 wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
-wbt_status wbt_event_dispatch() {
-
-    char buf[512];
+wbt_status wbt_event_dispatch() {;
     int timeout = -1;
     struct timeval cur_utime;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
-    
-#ifdef WBT_DEBUG
-    int for_max;
-    for (for_max = 0 ; for_max < 300000 ; for_max ++) {
-#else
-    for (;;) {
-#endif
+
+    while (1) {
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
-            wbt_str_t p = wbt_string("epoll_wait failed.");
+            wbt_str_t p = wbt_string("epoll_wait failed");
             wbt_log_write(p, stderr);
 
             return WBT_ERROR;
@@ -241,10 +237,11 @@ wbt_status wbt_event_dispatch() {
         for (i = 0; i < nfds; ++i) {
             ev = (wbt_event_t *)events[i].data.ptr;
             if (ev->fd == listen_fd) {
+                /* 有新的客户端请求建立连接 */
                 int conn_sock, addrlen;
                 struct sockaddr_in remote;
                 while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, 
-                    (size_t *)&addrlen)) >= 0)
+                    (int *)&addrlen)) >= 0)
                 {
                     wbt_log_debug("new connection %d.", conn_sock);
                     wbt_setnonblocking(conn_sock); 
@@ -272,16 +269,26 @@ wbt_status wbt_event_dispatch() {
                     }
                 }
             } else if (events[i].events & EPOLLIN) {
-                int n = 0;
+                /* 有新的数据到达 */
+                wbt_event_t *ev = (wbt_event_t *)events[i].data.ptr;
+                int fd = ev->fd;
+                wbt_mem_t *buff = &ev->buff;
+                wbt_log_debug("recv data of connection %d.", fd);
+
                 int nread;
                 int bReadOk = 0;
 
-                wbt_event_t *ev = (wbt_event_t *)events[i].data.ptr;
-                int fd = ev->fd;
-                wbt_log_debug("recv data of connection %d.", fd);
-
                 while(1) {
-                    nread = recv(fd, buf + n, 255, 0);
+                    /* 限制数据包长度 */
+                    if( buff->len >= 20480 ) {
+                        /* 如果接收到的数据大于 20K */
+                        return WBT_ERROR;
+                    }
+                    if( wbt_realloc(buff, buff->len + 4096) != WBT_OK ) {
+                        /* 内存不足 */
+                        return WBT_ERROR;
+                    }
+                    nread = recv(fd, buff->ptr + buff->len - 4096, 4096, 0);
                     if(nread < 0) {
                         if(errno == EAGAIN) {
                             // 当前缓冲区已无数据可读
@@ -303,8 +310,7 @@ wbt_status wbt_event_dispatch() {
                     }
 
                     // recvNum > 0
-                   n += nread;
-                   if ( nread == 255) {
+                   if ( nread == 4096) {
                        continue;   // 需要再次读取
                    } else {
                        // 安全读完
@@ -313,31 +319,21 @@ wbt_status wbt_event_dispatch() {
                    }
                 }
 
+                /* 去除多余的缓存 */
+                wbt_realloc(buff, buff->len - 4096 + nread);
+
                 if( bReadOk ) {
                     //printf("----\n%s\n----\n",buf);
-                    wbt_on_recv(ev, &buf);
+                    wbt_on_recv(ev);
                 } else {
                     /* 读取出错，或者客户端主动断开了连接 */
                     wbt_conn_close(ev);
                 }
             } else if (events[i].events & EPOLLOUT) {
                 wbt_event_t *ev = (wbt_event_t *)events[i].data.ptr;
-                int fd = ev->fd;
-                wbt_log_debug("send data to connection %d.", fd);
-
-                sprintf(buf, "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World"); 
-                int nwrite, data_size = strlen(buf); 
-                int n = data_size; 
-                while (n > 0) { 
-                    nwrite = write(fd, buf + data_size - n, n); 
-                    if (nwrite < n) { 
-                        if (nwrite == -1 && errno != EAGAIN) { 
-                            perror("write error"); 
-                        } 
-                        break; 
-                    } 
-                    n -= nwrite; 
-                }
+                wbt_log_debug("send data to connection %d.", ev->fd);
+                
+                wbt_on_send(ev);
             }
         }
         
