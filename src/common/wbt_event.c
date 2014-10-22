@@ -45,7 +45,7 @@ wbt_status wbt_event_init() {
     epoll_fd = epoll_create(WBT_MAX_EVENTS);
     if(epoll_fd <= 0) {
         wbt_str_t p = wbt_string("create epoll failed.");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
 
         return WBT_ERROR;
     }
@@ -53,7 +53,7 @@ wbt_status wbt_event_init() {
     /* 初始化事件超时队列 */
     if(wbt_heap_new(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
         wbt_str_t p = wbt_string("create heap failed.");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
 
         return WBT_ERROR;
     }
@@ -94,7 +94,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         
         if(op_status == 0) {
             wbt_str_t p = wbt_string("event pool overflow");
-            wbt_log_write(p, stderr);
+            wbt_log_write(p);
 
             return NULL;
         } else {
@@ -122,7 +122,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         epoll_ev.data.ptr = t;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, t->fd, &epoll_ev) == -1) { 
             wbt_str_t p = wbt_string("epoll_ctl:add failed.");
-            wbt_log_write(p, stderr);
+            wbt_log_write(p);
 
             return NULL;
         }
@@ -168,7 +168,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     if(ev->fd >= 0) {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev->fd, NULL) == -1) { 
             wbt_str_t p = wbt_string("epoll_ctl:del failed.");
-            wbt_log_write(p, stderr);
+            wbt_log_write(p);
 
             return WBT_ERROR;
         }
@@ -188,7 +188,7 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
         epoll_ev.data.ptr = ev;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, ev->fd, &epoll_ev) == -1) { 
             wbt_str_t p = wbt_string("epoll_ctl:mod failed.");
-            wbt_log_write(p, stderr);
+            wbt_log_write(p);
 
             return WBT_ERROR;
         }
@@ -224,7 +224,7 @@ wbt_status wbt_event_dispatch() {;
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
             wbt_str_t p = wbt_string("epoll_wait failed");
-            wbt_log_write(p, stderr);
+            wbt_log_write(p);
 
             return WBT_ERROR;
         }
@@ -263,7 +263,7 @@ wbt_status wbt_event_dispatch() {;
                         && errno != EPROTO && errno != EINTR)
                     {
                         wbt_str_t p = wbt_string("accept failed");
-                        wbt_log_write(p, stderr);
+                        wbt_log_write(p);
 
                         return WBT_ERROR;
                     }

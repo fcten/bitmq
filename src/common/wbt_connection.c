@@ -19,14 +19,14 @@ wbt_status wbt_conn_init() {
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(listen_fd <= 0) {
         wbt_str_t p = wbt_string("create socket failed.");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
 
         return WBT_ERROR;
     }
     /* 把监听socket设置为非阻塞方式 */
     if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
         wbt_str_t p = wbt_string("set nonblocking failed");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
 
         return WBT_ERROR;
     }
@@ -40,14 +40,14 @@ wbt_status wbt_conn_init() {
 
     if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
         wbt_str_t p = wbt_string("bind failed");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
         
         return WBT_ERROR;
     }
 
     if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
         wbt_str_t p = wbt_string("listen failed");
-        wbt_log_write(p, stderr);
+        wbt_log_write(p);
         
         return WBT_ERROR;
     }
@@ -101,7 +101,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
     wbt_malloc(&buf, 512);
 
-    sprintf(buf.ptr, "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nkeep-alive: timeout=15,max=50\r\nContent-Length: 209\r\n\r\n<html><head><title>Hello World</title></head><body style=\"background-color:#f1f2f3;\"><div style=\"line-height:30px;font-size:14px;font-family: Microsoft YaHei;color:gray;\"><p>Hello World</p></div></body></html>"); 
+    sprintf(buf.ptr, "HTTP/1.1 200 OK\r\nServer: Webit/0.1\r\nConnection: keep-alive\r\nkeep-alive: timeout=15,max=50\r\nContent-Length: 209\r\n\r\n<html><head><title>Hello World</title></head><body style=\"background-color:#f1f2f3;\"><div style=\"line-height:30px;font-size:14px;font-family: Microsoft YaHei;color:gray;\"><p>Hello World</p></div></body></html>"); 
     int nwrite, data_size = strlen(buf.ptr); 
     int n = data_size; 
     while (n > 0) { 

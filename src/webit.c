@@ -63,6 +63,10 @@ int main(int argc, char** argv) {
     wbt_mem_t p;
     wbt_str_t s;
 
+    if( wbt_log_init() != WBT_OK ) {
+        return 1;
+    }
+
     if( wbt_event_init() != WBT_OK ) {
         return 1;
     }
@@ -87,7 +91,7 @@ int main(int argc, char** argv) {
     wbt_malloc(&p, 50);
     wbt_memset(&p, 0);
     s = wbt_sprintf(&p, "Webit startup (pid: %d)", getpid());
-    wbt_log_write(s, stderr);
+    wbt_log_write(s);
     wbt_free(&p);
 
     /* 转入后台运行 */
@@ -149,7 +153,7 @@ int main(int argc, char** argv) {
     wbt_malloc(&p, 20);
     wbt_memset(&p, 0);
     s = wbt_sprintf(&p, "Webit exit");
-    wbt_log_write(s, stderr);
+    wbt_log_write(s);
     wbt_free(&p);
 
     return 0;

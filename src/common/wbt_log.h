@@ -16,6 +16,7 @@ extern "C" {
 #include <time.h>
 #include <errno.h>
 
+#include "../webit.h"
 #include "wbt_string.h"
 
 typedef enum {
@@ -25,7 +26,8 @@ typedef enum {
     WBT_LOG_DEBUG
 } wbt_log_level_t;
 
-int wbt_log_write(wbt_str_t p, FILE *fp);
+wbt_status wbt_log_init();
+wbt_status wbt_log_write(wbt_str_t p);
 
 #ifdef WBT_DEBUG
 #define wbt_log_debug(fmt, arg...) \
