@@ -25,7 +25,7 @@ wbt_status wbt_conn_init() {
     }
     /* 把监听socket设置为非阻塞方式 */
     if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
-        wbt_str_t p = wbt_string("set nonblocking failed.");
+        wbt_str_t p = wbt_string("set nonblocking failed");
         wbt_log_write(p, stderr);
 
         return WBT_ERROR;
@@ -39,14 +39,14 @@ wbt_status wbt_conn_init() {
     sin.sin_port = htons(WBT_CONN_PORT);
 
     if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
-        wbt_str_t p = wbt_string("bind failed.");
+        wbt_str_t p = wbt_string("bind failed");
         wbt_log_write(p, stderr);
         
         return WBT_ERROR;
     }
 
     if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
-        wbt_str_t p = wbt_string("listen failed.");
+        wbt_str_t p = wbt_string("listen failed");
         wbt_log_write(p, stderr);
         
         return WBT_ERROR;

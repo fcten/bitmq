@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>  
+#include <grp.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
 
@@ -58,6 +59,38 @@ void setProcTitle(int argc, char **argv, const char *title)
  * 
  */
 int main(int argc, char** argv) {
+    /* 尝试获取运行资源 */
+    wbt_mem_t p;
+    wbt_str_t s;
+
+    if( wbt_event_init() != WBT_OK ) {
+        return 1;
+    }
+
+    if( wbt_conn_init() != WBT_OK ) {
+        return 1;
+    }
+    
+    /* 设置程序允许打开的最大文件句柄数 */
+    struct rlimit rlim;
+    rlim.rlim_cur = 65535;
+    rlim.rlim_max = 65535;
+    setrlimit(RLIMIT_NOFILE, &rlim);
+    
+    /* 设置需要监听的信号 */
+    /*sigaction(SIGCHLD, NULL, NULL);
+    sigaction(SIGALRM, NULL, NULL);
+    sigaction(SIGIO, NULL, NULL);
+    sigaction(SIGINT, NULL, NULL);*/
+    signal(SIGINT, wbt_null);
+
+    wbt_malloc(&p, 50);
+    wbt_memset(&p, 0);
+    s = wbt_sprintf(&p, "Webit startup (pid: %d)", getpid());
+    wbt_log_write(s, stderr);
+    wbt_free(&p);
+
+    /* 转入后台运行 */
     pid_t childpid;
     int status;
 
@@ -80,41 +113,35 @@ int main(int argc, char** argv) {
             break;
         } else {
             /* In parent */
-            setProcTitle(argc, argv, "Webit: master process");
+            setProcTitle(argc, argv, "Webit: master process (default)");
             waitpid( childpid, &status, 0 );
         }
     }
 
-    wbt_mem_t p;
-    wbt_str_t s;
-
-    wbt_malloc(&p, 20);
-    wbt_memset(&p, 0);
-    s = wbt_sprintf(&p, "Webit startup %d.", getpid());
-    wbt_log_write(s, stderr);
-    wbt_free(&p);
-
-    if( wbt_event_init() != WBT_OK ) {
+    /* 限制可以访问的目录 */
+    if(chroot("/home/wwwroot/")) {
+        perror("chroot");
         return 1;
     }
 
-    if( wbt_conn_init() != WBT_OK ) {
-        return 1;
+    /* 降低 worker 进程的权限 */
+    if (geteuid() == 0) {
+        if (setgid(33) == -1) {
+            wbt_log_debug("setgid(%d) failed", 33)
+            return 1;
+        }
+
+        if (initgroups("www-data", 33) == -1) {
+            wbt_log_debug("initgroups(www-data, %d) failed", 33);
+            return 1;
+        }
+
+        if (setuid(33) == -1) {
+            wbt_log_debug("setuid(%d) failed", 33);
+            return 1;
+        }
     }
-    
-    /* 设置程序允许打开的最大文件句柄数 */
-    struct rlimit rlim;
-    rlim.rlim_cur = 65535;
-    rlim.rlim_max = 65535;
-    setrlimit(RLIMIT_NOFILE, &rlim);
-    
-    /* 设置需要监听的信号 */
-    /*sigaction(SIGCHLD, NULL, NULL);
-    sigaction(SIGALRM, NULL, NULL);
-    sigaction(SIGIO, NULL, NULL);
-    sigaction(SIGINT, NULL, NULL);*/
-    signal(SIGINT, wbt_null);
-    
+
     wbt_event_dispatch();
 
     wbt_conn_cleanup();

@@ -20,7 +20,7 @@ int wbt_log_write(wbt_str_t p, FILE *fp) {
     fputs(tmpbuf, fp);
     fputs("\033[0m] ", fp);
     fputs(p.str, fp);
-    if(fp == stderr) {
+    if(errno != 0 && fp == stderr) {
         fputs(": ", fp);
         fputs(strerror(errno), fp);
     }
