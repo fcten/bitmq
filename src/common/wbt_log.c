@@ -6,6 +6,12 @@
  */
 
 #include "wbt_log.h"
+#include "wbt_module.h"
+
+wbt_module_t wbt_module_log = {
+    wbt_string("log"),
+    wbt_log_init
+};
 
 int wbt_log_file_fd;
 char * wbt_log_file = "/home/wwwroot/webit.log";
@@ -14,7 +20,7 @@ wbt_mem_t wbt_log_buf;
 wbt_status wbt_log_init() {
     wbt_log_file_fd = open(wbt_log_file, O_WRONLY | O_APPEND | O_CREAT);
 
-    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {
+    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        
         return WBT_ERROR;
     }
     

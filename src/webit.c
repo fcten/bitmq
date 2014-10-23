@@ -17,6 +17,9 @@
 #include "common/wbt_string.h"
 #include "common/wbt_memory.h"
 #include "common/wbt_log.h"
+#include "common/wbt_module.h"
+
+extern wbt_module_t * wbt_modules[];
 
 void wbt_null() {}
 
@@ -58,20 +61,9 @@ void setProcTitle(int argc, char **argv, const char *title)
 /*
  * 
  */
-int main(int argc, char** argv) {
-    /* 尝试获取运行资源 */
-    if( wbt_log_init() != WBT_OK ) {
-        return 1;
-    }
+int main(int argc, char** argv) {    
+    wbt_log_debug("Webit startup (pid: %d)", getpid());
 
-    if( wbt_event_init() != WBT_OK ) {
-        return 1;
-    }
-
-    if( wbt_conn_init() != WBT_OK ) {
-        return 1;
-    }
-    
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
     rlim.rlim_cur = 65535;
@@ -85,19 +77,32 @@ int main(int argc, char** argv) {
     sigaction(SIGINT, NULL, NULL);*/
     signal(SIGINT, wbt_null);
 
-    wbt_log_add("Webit startup (pid: %d)\n", getpid());
-
+#ifndef WBT_DEBUG 
     /* 转入后台运行 */
-    pid_t childpid;
-    int status;
-
     if( daemon(1,0) < 0 ) {
         perror("error daemon");  
         return 1;
     }
-    
+#endif
+
     initProcTitle(argc, argv);
     
+    /* 初始化模块 */
+    int i;
+    for( i = 0 ; wbt_modules[i] ; i++ ) {
+        if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
+            /* fatal */
+            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            return 1;
+        } else {
+            wbt_log_debug( "module %.*s loaded", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        }
+    }
+
+#ifndef WBT_DEBUG 
+    /* 创建运行实例 */
+    pid_t childpid;
+    int status;
     while(1) {
         childpid = fork();
 
@@ -111,9 +116,13 @@ int main(int argc, char** argv) {
         } else {
             /* In parent */
             setProcTitle(argc, argv, "Webit: master process (default)");
+            wbt_log_add("Webit startup (pid: %d)\n", getpid());
             waitpid( childpid, &status, 0 );
         }
     }
+#else
+    wbt_log_add("Webit startup (pid: %d)\n", getpid());
+#endif
 
     /* 限制可以访问的目录 */
     if(chroot("/home/wwwroot/")) {

@@ -9,6 +9,12 @@
 #include "wbt_string.h"
 #include "wbt_log.h"
 #include "wbt_heap.h"
+#include "wbt_module.h"
+
+wbt_module_t wbt_module_conn = {
+    wbt_string("connection"),
+    wbt_conn_init
+};
 
 int listen_fd;
 
@@ -18,15 +24,13 @@ wbt_status wbt_conn_init() {
     /* 初始化用于监听消息的 Socket 句柄 */
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(listen_fd <= 0) {
-        wbt_str_t p = wbt_string("create socket failed.");
-        wbt_log_write(p);
+        wbt_log_add("create socket failed\n");
 
         return WBT_ERROR;
     }
     /* 把监听socket设置为非阻塞方式 */
     if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
-        wbt_str_t p = wbt_string("set nonblocking failed");
-        wbt_log_write(p);
+        wbt_log_add("set nonblocking failed\n");
 
         return WBT_ERROR;
     }
@@ -39,15 +43,13 @@ wbt_status wbt_conn_init() {
     sin.sin_port = htons(WBT_CONN_PORT);
 
     if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
-        wbt_str_t p = wbt_string("bind failed");
-        wbt_log_write(p);
+        wbt_log_add("bind failed\n");
         
         return WBT_ERROR;
     }
 
     if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
-        wbt_str_t p = wbt_string("listen failed");
-        wbt_log_write(p);
+        wbt_log_add("listen failed\n");
         
         return WBT_ERROR;
     }

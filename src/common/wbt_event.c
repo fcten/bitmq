@@ -10,6 +10,12 @@
 #include "wbt_heap.h"
 #include "wbt_log.h"
 #include "wbt_connection.h"
+#include "wbt_module.h"
+
+wbt_module_t wbt_module_event = {
+    wbt_string("event"),
+    wbt_event_init
+};
 
 int epoll_fd;
 extern int listen_fd;
@@ -44,16 +50,14 @@ wbt_status wbt_event_init() {
     /* 初始化 EPOLL */
     epoll_fd = epoll_create(WBT_MAX_EVENTS);
     if(epoll_fd <= 0) {
-        wbt_str_t p = wbt_string("create epoll failed.");
-        wbt_log_write(p);
+        wbt_log_add("create epoll failed\n");
 
         return WBT_ERROR;
     }
 
     /* 初始化事件超时队列 */
     if(wbt_heap_new(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
-        wbt_str_t p = wbt_string("create heap failed.");
-        wbt_log_write(p);
+        wbt_log_add("create heap failed\n");
 
         return WBT_ERROR;
     }
