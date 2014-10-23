@@ -60,9 +60,6 @@ void setProcTitle(int argc, char **argv, const char *title)
  */
 int main(int argc, char** argv) {
     /* 尝试获取运行资源 */
-    wbt_mem_t p;
-    wbt_str_t s;
-
     if( wbt_log_init() != WBT_OK ) {
         return 1;
     }
@@ -88,11 +85,7 @@ int main(int argc, char** argv) {
     sigaction(SIGINT, NULL, NULL);*/
     signal(SIGINT, wbt_null);
 
-    wbt_malloc(&p, 50);
-    wbt_memset(&p, 0);
-    s = wbt_sprintf(&p, "Webit startup (pid: %d)", getpid());
-    wbt_log_write(s);
-    wbt_free(&p);
+    wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 转入后台运行 */
     pid_t childpid;
@@ -150,11 +143,7 @@ int main(int argc, char** argv) {
 
     wbt_conn_cleanup();
 
-    wbt_malloc(&p, 20);
-    wbt_memset(&p, 0);
-    s = wbt_sprintf(&p, "Webit exit");
-    wbt_log_write(s);
-    wbt_free(&p);
+    wbt_log_add("Webit exit (pid: %d)\n", getpid());
 
     return 0;
 }

@@ -15,6 +15,8 @@ extern "C" {
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "../webit.h"
 #include "wbt_string.h"
@@ -28,6 +30,7 @@ typedef enum {
 
 wbt_status wbt_log_init();
 wbt_status wbt_log_write(wbt_str_t p);
+wbt_status wbt_log_add(const char *fmt, ...);
 
 #ifdef WBT_DEBUG
 #define wbt_log_debug(fmt, arg...) \

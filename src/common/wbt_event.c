@@ -243,7 +243,9 @@ wbt_status wbt_event_dispatch() {;
                 while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, 
                     (int *)&addrlen)) >= 0)
                 {
-                    wbt_log_debug("new connection %d.", conn_sock);
+                    /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
+                    wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
+
                     wbt_setnonblocking(conn_sock); 
 
                     wbt_event_t *p_ev, tmp_ev;

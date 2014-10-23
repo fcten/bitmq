@@ -5,15 +5,18 @@
  * Created on 2014年8月25日, 下午4:05
  */
 
-#include <fcntl.h>
-
 #include "wbt_log.h"
 
 int wbt_log_file_fd;
 char * wbt_log_file = "/home/wwwroot/webit.log";
+wbt_mem_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
     wbt_log_file_fd = open(wbt_log_file, O_WRONLY | O_APPEND | O_CREAT);
+
+    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     
     return WBT_OK;
 }
@@ -50,6 +53,41 @@ wbt_status wbt_log_write(wbt_str_t p) {
     }
     fputs("\n", stderr);
 #endif
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_log_time() {
+    time_t     now;
+    struct tm *timenow;
+    char tmpbuf[32];
+    
+    int fp = wbt_log_file_fd;
+
+    time(&now);
+    timenow = localtime(&now);
+    
+    write(fp, "[", 1);
+    strftime(tmpbuf, 32, "%F %T", timenow);
+    write(fp, tmpbuf, strlen(tmpbuf));
+    write(fp, "] ", 2);
+
+    return WBT_OK;
+}
+
+wbt_status wbt_log_add(const char *fmt, ...) {
+    wbt_str_t s;
+    va_list   args;
+
+    s.str = wbt_log_buf.ptr;
+
+    va_start(args, fmt);
+    s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
+    va_end(args);
+
+    /* TODO 先写入缓存，定时写入磁盘 */
+    wbt_log_time();
+    write(wbt_log_file_fd, s.str, s.len);
     
     return WBT_OK;
 }
