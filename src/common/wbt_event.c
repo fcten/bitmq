@@ -166,7 +166,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->modified ++;
     
     /* 释放缓存 */
-    wbt_free(&ev->buff);
+    wbt_http_destroy(&ev->data);
 
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
@@ -243,22 +243,23 @@ wbt_status wbt_event_dispatch() {;
 
             if (ev->fd == listen_fd) {
                 /* 有新的客户端请求建立连接 */
-                wbt_on_connect(ev);
+                if( wbt_on_connect(ev) != WBT_OK ) {
+                    return WBT_ERROR;
+                }
             } else if (events[i].events & EPOLLIN) {
                 /* 有新的数据到达 */
                 int fd = ev->fd;
-                wbt_mem_t *buff = &ev->buff;
                 wbt_log_debug("recv data of connection %d.", fd);
 
                 int nread;
                 int bReadOk = 0;
 
-                while( buff->len <= 40960 ) { /* 限制数据包长度 */
-                    if( wbt_realloc(buff, buff->len + 4096) != WBT_OK ) {
+                while( ev->data.buff.len <= 40960 ) { /* 限制数据包长度 */
+                    if( wbt_realloc(&ev->data.buff, ev->data.buff.len + 4096) != WBT_OK ) {
                         /* 内存不足 */
                         return WBT_ERROR;
                     }
-                    nread = recv(fd, buff->ptr + buff->len - 4096, 4096, 0);
+                    nread = recv(fd, ev->data.buff.ptr + ev->data.buff.len - 4096, 4096, 0);
                     if(nread < 0) {
                         if(errno == EAGAIN) {
                             // 当前缓冲区已无数据可读
@@ -289,15 +290,13 @@ wbt_status wbt_event_dispatch() {;
                    }
                 }
 
-                if( buff->len > 40960 ) {
+                if( ev->data.buff.len > 40960 ) {
                     /* TODO 返回4xx 错误 */
                      wbt_conn_close(ev);
                 } else {
-                    /* 去除多余的缓存 */
-                    wbt_realloc(buff, buff->len - 4096 + nread);
-
                     if( bReadOk ) {
-                        //printf("----\n%s\n----\n",buf);
+                        /* 去除多余的缓存 */
+                        wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
                         wbt_on_recv(ev);
                     } else {
                         /* 读取出错，或者客户端主动断开了连接 */

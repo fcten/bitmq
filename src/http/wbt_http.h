@@ -139,15 +139,14 @@ typedef enum {
 typedef struct wbt_http_header_s {
     wbt_http_line_t key;
     wbt_str_t value;
-    struct wbt_http_header_s * next;
 } wbt_http_header_t;
     
 typedef struct wbt_http_s {
-    wbt_mem_t req_buf;
+    wbt_mem_t buff;
     wbt_str_t method;
     wbt_str_t uri;
     wbt_str_t version;
-    wbt_http_header_t * headers;
+    wbt_mem_t * headers;
     wbt_str_t body;
 } wbt_http_t;
 

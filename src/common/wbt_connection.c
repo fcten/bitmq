@@ -102,15 +102,10 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;
         }
-
-        wbt_on_connect(p_ev);
     }
     if (conn_sock == -1) { 
-        if (errno != EAGAIN && errno != ECONNABORTED 
-            && errno != EPROTO && errno != EINTR)
-        {
-            wbt_str_t p = wbt_string("accept failed");
-            wbt_log_write(p);
+        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR) {
+            wbt_log_add("accept failed");
 
             return WBT_ERROR;
         }
@@ -119,8 +114,9 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
     return WBT_OK;
 }
 wbt_status wbt_on_recv(wbt_event_t *ev) {
-    printf("------\n%.*s\n------\n", ev->buff.len, ev->buff.ptr);
+    printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
 
+    /* 接收并完毕，准备向客户端输出响应数据 */
     ev->events = EPOLLOUT | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 

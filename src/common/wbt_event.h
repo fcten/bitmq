@@ -23,6 +23,7 @@ extern "C" {
 #include <errno.h>
     
 #include "../webit.h"
+#include "../http/wbt_http.h"
 #include "wbt_memory.h"
 
 typedef struct wbt_event_s {
@@ -31,7 +32,7 @@ typedef struct wbt_event_s {
     time_t time_out;                                /* 事件超时时间 */
     unsigned int events;                            /* 事件类型 */
     unsigned int modified;                          /* 事件版本 */
-    wbt_mem_t buff;                                 /* 事件数据缓存 */
+    wbt_http_t data;                                /* 事件数据缓存 */
 } wbt_event_t;
 
 typedef struct wbt_event_pool_s {
