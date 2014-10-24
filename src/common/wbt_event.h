@@ -53,8 +53,6 @@ wbt_status wbt_event_cleanup();
 /* 事件循环 */
 wbt_status wbt_event_dispatch();
 
-wbt_status wbt_setnonblocking(int sock);
-
 #ifdef	__cplusplus
 }
 #endif

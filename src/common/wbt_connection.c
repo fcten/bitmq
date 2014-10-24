@@ -11,6 +11,8 @@
 #include "wbt_heap.h"
 #include "wbt_module.h"
 
+wbt_status wbt_setnonblocking(int sock);
+
 wbt_module_t wbt_module_conn = {
     wbt_string("connection"),
     wbt_conn_init
@@ -83,6 +85,37 @@ wbt_status wbt_conn_close(wbt_event_t *ev) {
 }
 
 wbt_status wbt_on_connect(wbt_event_t *ev) {
+    int conn_sock, addrlen;
+    struct sockaddr_in remote;
+    while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
+        /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
+        wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
+
+        wbt_setnonblocking(conn_sock); 
+
+        wbt_event_t *p_ev, tmp_ev;
+        tmp_ev.callback = wbt_conn_close;
+        tmp_ev.events = EPOLLIN | EPOLLET;
+        tmp_ev.fd = conn_sock;
+        tmp_ev.time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+        if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
+            return WBT_ERROR;
+        }
+
+        wbt_on_connect(p_ev);
+    }
+    if (conn_sock == -1) { 
+        if (errno != EAGAIN && errno != ECONNABORTED 
+            && errno != EPROTO && errno != EINTR)
+        {
+            wbt_str_t p = wbt_string("accept failed");
+            wbt_log_write(p);
+
+            return WBT_ERROR;
+        }
+    }
+
     return WBT_OK;
 }
 wbt_status wbt_on_recv(wbt_event_t *ev) {
@@ -128,6 +161,22 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
     return WBT_OK;
 }
+
 wbt_status wbt_on_close(wbt_event_t *ev) {
+    return WBT_OK;
+}
+
+/* 将句柄设置为非阻塞 */
+wbt_status wbt_setnonblocking(int sock) {
+    int opts;
+    opts = fcntl(sock,F_GETFL);
+    if (opts < 0) {
+        return WBT_ERROR;
+    }
+    opts = opts|O_NONBLOCK;
+    if (fcntl(sock, F_SETFL, opts) < 0) {
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }

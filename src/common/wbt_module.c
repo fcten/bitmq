@@ -10,10 +10,12 @@
 extern wbt_module_t wbt_module_log;
 extern wbt_module_t wbt_module_event;
 extern wbt_module_t wbt_module_conn;
+extern wbt_module_t wbt_module_http;
 
 wbt_module_t * wbt_modules[] = {
     &wbt_module_log,
     &wbt_module_event,
     &wbt_module_conn,
+    &wbt_module_http,
     NULL
 };

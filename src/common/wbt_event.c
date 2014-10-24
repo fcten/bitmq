@@ -227,56 +227,25 @@ wbt_status wbt_event_dispatch() {;
     while (1) {
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
-            wbt_str_t p = wbt_string("epoll_wait failed");
-            wbt_log_write(p);
+            wbt_log_add("epoll_wait failed");
 
             return WBT_ERROR;
         }
         wbt_log_debug("%d event happened.",nfds);
         
+        /* 更新当前时间 */
         gettimeofday(&cur_utime, NULL);
         cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
 
         int i;
         for (i = 0; i < nfds; ++i) {
             ev = (wbt_event_t *)events[i].data.ptr;
+
             if (ev->fd == listen_fd) {
                 /* 有新的客户端请求建立连接 */
-                int conn_sock, addrlen;
-                struct sockaddr_in remote;
-                while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, 
-                    (int *)&addrlen)) >= 0)
-                {
-                    /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
-                    wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
-
-                    wbt_setnonblocking(conn_sock); 
-
-                    wbt_event_t *p_ev, tmp_ev;
-                    tmp_ev.callback = wbt_conn_close;
-                    tmp_ev.events = EPOLLIN | EPOLLET;
-                    tmp_ev.fd = conn_sock;
-                    tmp_ev.time_out = cur_mtime + WBT_CONN_TIMEOUT;
-
-                    if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
-                        return WBT_ERROR;
-                    }
-                    
-                    wbt_on_connect(p_ev);
-                }
-                if (conn_sock == -1) { 
-                    if (errno != EAGAIN && errno != ECONNABORTED 
-                        && errno != EPROTO && errno != EINTR)
-                    {
-                        wbt_str_t p = wbt_string("accept failed");
-                        wbt_log_write(p);
-
-                        return WBT_ERROR;
-                    }
-                }
+                wbt_on_connect(ev);
             } else if (events[i].events & EPOLLIN) {
                 /* 有新的数据到达 */
-                wbt_event_t *ev = (wbt_event_t *)events[i].data.ptr;
                 int fd = ev->fd;
                 wbt_mem_t *buff = &ev->buff;
                 wbt_log_debug("recv data of connection %d.", fd);
@@ -284,12 +253,7 @@ wbt_status wbt_event_dispatch() {;
                 int nread;
                 int bReadOk = 0;
 
-                while(1) {
-                    /* 限制数据包长度 */
-                    if( buff->len >= 20480 ) {
-                        /* 如果接收到的数据大于 20K */
-                        return WBT_ERROR;
-                    }
+                while( buff->len <= 40960 ) { /* 限制数据包长度 */
                     if( wbt_realloc(buff, buff->len + 4096) != WBT_OK ) {
                         /* 内存不足 */
                         return WBT_ERROR;
@@ -325,18 +289,23 @@ wbt_status wbt_event_dispatch() {;
                    }
                 }
 
-                /* 去除多余的缓存 */
-                wbt_realloc(buff, buff->len - 4096 + nread);
-
-                if( bReadOk ) {
-                    //printf("----\n%s\n----\n",buf);
-                    wbt_on_recv(ev);
+                if( buff->len > 40960 ) {
+                    /* TODO 返回4xx 错误 */
+                     wbt_conn_close(ev);
                 } else {
-                    /* 读取出错，或者客户端主动断开了连接 */
-                    wbt_conn_close(ev);
+                    /* 去除多余的缓存 */
+                    wbt_realloc(buff, buff->len - 4096 + nread);
+
+                    if( bReadOk ) {
+                        //printf("----\n%s\n----\n",buf);
+                        wbt_on_recv(ev);
+                    } else {
+                        /* 读取出错，或者客户端主动断开了连接 */
+                        wbt_conn_close(ev);
+                    }
                 }
             } else if (events[i].events & EPOLLOUT) {
-                wbt_event_t *ev = (wbt_event_t *)events[i].data.ptr;
+                /* 数据发送已经就绪 */
                 wbt_log_debug("send data to connection %d.", ev->fd);
                 
                 wbt_on_send(ev);
@@ -370,20 +339,5 @@ wbt_status wbt_event_dispatch() {;
         }
     }
 
-    return WBT_OK;
-}
-
-/* 将句柄设置为非阻塞 */
-wbt_status wbt_setnonblocking(int sock) {
-    int opts;
-    opts = fcntl(sock,F_GETFL);
-    if (opts < 0) {
-        return WBT_ERROR;
-    }
-    opts = opts|O_NONBLOCK;
-    if (fcntl(sock, F_SETFL, opts) < 0) {
-        return WBT_ERROR;
-    }
-    
     return WBT_OK;
 }
