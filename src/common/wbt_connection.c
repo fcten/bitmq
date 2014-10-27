@@ -10,6 +10,7 @@
 #include "wbt_log.h"
 #include "wbt_heap.h"
 #include "wbt_module.h"
+#include "../http/wbt_http.h"
 
 wbt_status wbt_setnonblocking(int sock);
 
@@ -116,7 +117,27 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 wbt_status wbt_on_recv(wbt_event_t *ev) {
     printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
 
-    /* 接收并完毕，准备向客户端输出响应数据 */
+    /* 检查是否读完 http 消息头 */
+    if( wbt_http_check_header_end( &ev->data ) != WBT_OK ) {
+        /* 尚未读完，继续等待数据，直至超时 */
+        return WBT_OK;
+    }
+    
+    /* 解析 http 消息头 */
+    if( wbt_http_parse_request_header( &ev->data ) != WBT_OK ) {
+        /* 消息头格式不正确 */
+        return WBT_ERROR;
+    }
+
+    /* 检查是否读完 http 消息体 */
+    if( wbt_http_check_body_end( &ev->data ) != WBT_OK ) {
+        /* 尚未读完，继续等待数据，直至超时 */
+        return WBT_OK;
+    }
+
+    /* 接收完毕，生成响应数据 */
+
+    /* 响应数据准备完毕，等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 

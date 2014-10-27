@@ -154,6 +154,10 @@ extern const char *REQUEST_METHOD[];
 extern const char *HTTP_HEADERS[];
 extern const char *STATUS_CODE[];
 
+wbt_status wbt_http_check_header_end( wbt_http_t* );
+wbt_status wbt_http_parse_request_header( wbt_http_t* );
+wbt_status wbt_http_check_body_end( wbt_http_t* );
+
 wbt_status wbt_http_new( wbt_http_t* );
 wbt_status wbt_http_parse( wbt_http_t* );
 wbt_status wbt_http_destroy( wbt_http_t* );

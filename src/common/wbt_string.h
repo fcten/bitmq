@@ -23,8 +23,12 @@ typedef struct {
 } wbt_str_t;
 
 #define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
+#define wbt_null_string     { 0, NULL }
 
 wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
+
+int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 );
+int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 
 #ifdef	__cplusplus
 }

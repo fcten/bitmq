@@ -171,8 +171,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev->fd, NULL) == -1) { 
-            wbt_str_t p = wbt_string("epoll_ctl:del failed.");
-            wbt_log_write(p);
+            wbt_log_add("epoll_ctl:del failed");
 
             return WBT_ERROR;
         }
@@ -191,8 +190,7 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
         epoll_ev.events   = ev->events;
         epoll_ev.data.ptr = ev;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, ev->fd, &epoll_ev) == -1) { 
-            wbt_str_t p = wbt_string("epoll_ctl:mod failed.");
-            wbt_log_write(p);
+            wbt_log_add("epoll_ctl:mod failed");
 
             return WBT_ERROR;
         }
@@ -297,7 +295,10 @@ wbt_status wbt_event_dispatch() {;
                     if( bReadOk ) {
                         /* 去除多余的缓存 */
                         wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
-                        wbt_on_recv(ev);
+                        if( wbt_on_recv(ev) != WBT_OK ) {
+                            /* 解析数据失败 */
+                             wbt_conn_close(ev);
+                        }
                     } else {
                         /* 读取出错，或者客户端主动断开了连接 */
                         wbt_conn_close(ev);
