@@ -297,6 +297,7 @@ wbt_status wbt_event_dispatch() {;
                         wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
                         if( wbt_on_recv(ev) != WBT_OK ) {
                             /* 解析数据失败 */
+                            /* TODO 返回4XX错误 */
                              wbt_conn_close(ev);
                         }
                     } else {

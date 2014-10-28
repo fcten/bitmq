@@ -136,6 +136,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     }
 
     /* 接收完毕，生成响应数据 */
+    wbt_free( &ev->data.buff );
 
     /* 响应数据准备完毕，等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;

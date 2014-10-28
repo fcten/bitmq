@@ -138,6 +138,7 @@ typedef enum {
 
 typedef struct wbt_http_header_s {
     wbt_http_line_t key;
+    wbt_str_t name;
     wbt_str_t value;
 } wbt_http_header_t;
     
@@ -150,9 +151,9 @@ typedef struct wbt_http_s {
     wbt_str_t body;
 } wbt_http_t;
 
-extern const char *REQUEST_METHOD[];
-extern const char *HTTP_HEADERS[];
-extern const char *STATUS_CODE[];
+extern wbt_str_t REQUEST_METHOD[];
+extern wbt_str_t HTTP_HEADERS[];
+extern wbt_str_t STATUS_CODE[];
 
 wbt_status wbt_http_check_header_end( wbt_http_t* );
 wbt_status wbt_http_parse_request_header( wbt_http_t* );
