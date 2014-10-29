@@ -135,10 +135,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    /* 接收完毕，生成响应数据，并释放掉旧的数据 */
-    wbt_http_destroy( &ev->data );
-
-    /* 响应数据准备完毕，等待socket可写 */
+    /* 等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
@@ -152,9 +149,38 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     wbt_mem_t buf;
 
-    wbt_malloc(&buf, 512);
+    int resp_file_fd = open("index.html", O_RDONLY);
 
-    sprintf(buf.ptr, "HTTP/1.1 200 OK\r\nServer: Webit/0.1\r\nConnection: keep-alive\r\nkeep-alive: timeout=15,max=50\r\nContent-Length: 209\r\n\r\n<html><head><title>Hello World</title></head><body style=\"background-color:#f1f2f3;\"><div style=\"line-height:30px;font-size:14px;font-family: Microsoft YaHei;color:gray;\"><p>Hello World</p></div></body></html>"); 
+    wbt_malloc(&buf, 2048);
+
+    if(resp_file_fd <= 0) {
+        perror("open error");
+        sprintf(buf.ptr,
+            "HTTP/1.1 404 Not Found\r\n"
+            "Server: Webit/0.1\r\n"
+            "Connection: keep-alive\r\n"
+            "keep-alive: timeout=15,max=50\r\n"
+            "Content-Length: 69\r\n"
+            "\r\n"
+            "<html><head><title>404</title></head><body><h1>404</h1></body></html>"); 
+    } else {
+        wbt_mem_t file_buf;
+        wbt_malloc(&file_buf, 1024);
+        int size = read( resp_file_fd, file_buf.ptr, file_buf.len );
+        
+        sprintf(buf.ptr,
+            "HTTP/1.1 200 OK\r\n"
+            "Server: Webit/0.1\r\n"
+            "Connection: keep-alive\r\n"
+            "keep-alive: timeout=15,max=50\r\n"
+            "Content-Length: %d\r\n"
+            "\r\n"
+            "%.*s",
+            size, size, file_buf.ptr); 
+    }
+    
+    printf("------\n%s\n------\n", buf.ptr);
+
     int nwrite, data_size = strlen(buf.ptr); 
     int n = data_size; 
     while (n > 0) { 
@@ -167,15 +193,25 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         } 
         n -= nwrite; 
     }
-    
+
+    /*
+    if((nwrite = sendfile( fd, resp_file_fd,&off, BUFF_SIZE)) < 0){
+        perror("sendfile");
+    }
+    */
+
     wbt_free(&buf);
 
+    /* 如果是 keep-alive 连接，继续等待数据到来 */
     ev->events = EPOLLIN | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
     }
+
+    /* 释放掉旧的数据 */
+    wbt_http_destroy( &ev->data );  
 
     return WBT_OK;
 }

@@ -16,11 +16,12 @@ wbt_module_t wbt_module_http = {
     NULL
 };
 
-/* 释放 http 结构体中动态分配的内存 */
+/* 释放 http 结构体中动态分配的内存，并将结构体初始化 */
 wbt_status wbt_http_destroy( wbt_http_t* http ) {
     wbt_http_header_t * header, * next;
     wbt_mem_t tmp;
 
+    /* 释放动态分配的内存 */
     header = http->headers;
     while( header != NULL ) {
         next = header->next;
@@ -31,18 +32,14 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
 
         header = next;
     }
-    http->headers = NULL;
 
+    /* 释放接收到的请求数据 */
     wbt_free( &http->buff );
     
-    http->body.len = 0;
-    http->body.str = NULL;
-    http->method.len = 0;
-    http->method.str = NULL;
-    http->uri.len = 0;
-    http->uri.str = NULL;
-    http->version.len = 0;
-    http->version.str = NULL;
+    /* 初始化结构体 */
+    tmp.ptr = http;
+    tmp.len = sizeof( wbt_http_t );
+    wbt_memset( &tmp, 0 );
 
     return WBT_OK;
 }
@@ -106,6 +103,7 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
             case 3:
                 if( ch == '\n' ) {
                     /* 生成一个新的 wbt_http_header_t 并加入到链表中 */
+                    /* 待优化，解析每个 http 都需要多次 malloc 影响性能 */
                     wbt_malloc( &tmp, sizeof( wbt_http_header_t ) );
                     wbt_memset( &tmp, 0 );
                     header = (wbt_http_header_t *)tmp.ptr;
@@ -131,10 +129,24 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     /* name 已经读完 */
                     tail->name.len = offset - ( tail->name.str - http_req.str );
                     
+                    /* 检测该name */
+                    int i;
+                    tail->key = HEADER_LENGTH;
+                    for( i = 0 ; i < HEADER_LENGTH ; i ++ ) {
+                        if( wbt_strcmp( &tail->name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
+                            tail->key = i;
+                            break;
+                        }
+                    }
+                    
                     state = 5;
                 } if( ch == '\r' ) {
-                    /* header 即将结束 */
-                    state = 7;
+                    if( tail->name.str == ( http_req.str + offset ) ) {
+                        /* header 即将结束 */
+                        state = 7;
+                    } else {
+                        error = 1;
+                    }
                 }
                 break;
             case 5:
@@ -192,27 +204,33 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         return WBT_ERROR;
     }
     
+#ifdef WBT_DEBUG
     wbt_log_debug(" METHOD: [%.*s]", http->method.len, http->method.str );
     wbt_log_debug("    URI: [%.*s]", http->uri.len, http->uri.str );
     wbt_log_debug("VERSION: [%.*s]", http->version.len, http->version.str );
     
     header = http->headers;
     while( header != NULL ) {
-        wbt_log_debug(" HEADER: [%.*s: %.*s]",
-            header->name.len, header->name.str,
-            header->value.len, header->value.str);
+        if( header->key < HEADER_LENGTH ) {
+            wbt_log_debug(" HEADER: [%.*s: %.*s]",
+                HTTP_HEADERS[header->key].len, HTTP_HEADERS[header->key].str,
+                header->value.len, header->value.str);
+        } else {
+            wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
+                header->name.len, header->name.str,
+                header->value.len, header->value.str);
+        }
         header = header->next;
     }
-    
-    //int i, flag = 0;
-    /*for( i = 0 ;i < METHOD_LENGTH ; i ++ ) {
-        if( wbt_strcmp( &http_req, &REQUEST_METHOD[i], REQUEST_METHOD[i].len ) == 0 ) {
-            http->method = i;
-            flag = 1;
-            break;
-        }
-    }*/
-    
+#endif /* WBT_DEBUG */
+
+    /* 检查 HTTP 版本信息 */
+    wbt_str_t http_ver = wbt_string("HTTP/1.1");
+    if( wbt_strcmp( &http->version, &http_ver, http_ver.len ) != 0 ) {
+        /* 400 Bad Request */
+        return WBT_ERROR;
+    }
+
     return WBT_OK;
 }
 
