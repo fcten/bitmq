@@ -140,6 +140,7 @@ typedef struct wbt_http_header_s {
     wbt_http_line_t key;
     wbt_str_t name;
     wbt_str_t value;
+    struct wbt_http_header_s * next;
 } wbt_http_header_t;
     
 typedef struct wbt_http_s {
@@ -147,7 +148,7 @@ typedef struct wbt_http_s {
     wbt_str_t method;
     wbt_str_t uri;
     wbt_str_t version;
-    wbt_mem_t * headers;
+    wbt_http_header_t * headers;
     wbt_str_t body;
 } wbt_http_t;
 
