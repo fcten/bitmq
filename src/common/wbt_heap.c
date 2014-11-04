@@ -34,8 +34,7 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {
             
             wbt_log_debug("heap resize to %d", p->max);
         } else {
-            wbt_str_t p = wbt_string("heap overflow.");
-            wbt_log_write(p);
+            wbt_log_add("heap overflow\n");
 
             return WBT_ERROR;
         }

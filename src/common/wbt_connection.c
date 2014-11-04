@@ -86,8 +86,8 @@ wbt_status wbt_conn_close(wbt_event_t *ev) {
 }
 
 wbt_status wbt_on_connect(wbt_event_t *ev) {
-    int conn_sock, addrlen;
     struct sockaddr_in remote;
+    int conn_sock, addrlen = sizeof(remote);
     while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
         wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
@@ -106,7 +106,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
     }
     if (conn_sock == -1) { 
         if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR) {
-            wbt_log_add("accept failed");
+            wbt_log_add("accept failed\n");
 
             return WBT_ERROR;
         }
@@ -149,12 +149,19 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     wbt_mem_t buf;
 
+    wbt_log_add("%.*s\n", ev->data.uri.len, ev->data.uri.str);
+    
     int resp_file_fd = open("index.html", O_RDONLY);
+    
+    wbt_str_t uri = wbt_string("/");
+    int is_index = 0;
+    if( wbt_strcmp( &uri, &ev->data.uri, ev->data.uri.len ) == 0 ) {
+        is_index = 1;
+    }
 
     wbt_malloc(&buf, 2048);
 
     if(resp_file_fd <= 0) {
-        perror("open error");
         sprintf(buf.ptr,
             "HTTP/1.1 404 Not Found\r\n"
             "Server: Webit/0.1\r\n"
@@ -168,15 +175,27 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         wbt_malloc(&file_buf, 1024);
         int size = read( resp_file_fd, file_buf.ptr, file_buf.len );
         
-        sprintf(buf.ptr,
-            "HTTP/1.1 200 OK\r\n"
-            "Server: Webit/0.1\r\n"
-            "Connection: keep-alive\r\n"
-            "keep-alive: timeout=15,max=50\r\n"
-            "Content-Length: %d\r\n"
-            "\r\n"
-            "%.*s",
-            size, size, file_buf.ptr); 
+        if( is_index ) {
+            sprintf(buf.ptr,
+                "HTTP/1.1 200 OK\r\n"
+                "Server: Webit/0.1\r\n"
+                "Connection: keep-alive\r\n"
+                "keep-alive: timeout=15,max=50\r\n"
+                "Content-Length: %d\r\n"
+                "\r\n"
+                "%.*s",
+                size, size, file_buf.ptr);
+        } else {
+            sprintf(buf.ptr,
+                "HTTP/1.1 404 Not Found\r\n"
+                "Server: Webit/0.1\r\n"
+                "Connection: keep-alive\r\n"
+                "keep-alive: timeout=15,max=50\r\n"
+                "Content-Length: %d\r\n"
+                "\r\n"
+                "%.*s",
+                size, size, file_buf.ptr);
+        }
     }
     
     printf("------\n%s\n------\n", buf.ptr);

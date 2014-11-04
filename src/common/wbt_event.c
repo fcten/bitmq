@@ -97,8 +97,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
         
         if(op_status == 0) {
-            wbt_str_t p = wbt_string("event pool overflow");
-            wbt_log_write(p);
+            wbt_log_add("event pool overflow\n");
 
             return NULL;
         } else {
@@ -125,8 +124,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         epoll_ev.events   = t->events;
         epoll_ev.data.ptr = t;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, t->fd, &epoll_ev) == -1) { 
-            wbt_str_t p = wbt_string("epoll_ctl:add failed.");
-            wbt_log_write(p);
+            wbt_log_add("epoll_ctl:add failed\n");
 
             return NULL;
         }
@@ -171,7 +169,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev->fd, NULL) == -1) { 
-            wbt_log_add("epoll_ctl:del failed");
+            wbt_log_add("epoll_ctl:del failed\n");
 
             return WBT_ERROR;
         }
@@ -190,7 +188,7 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
         epoll_ev.events   = ev->events;
         epoll_ev.data.ptr = ev;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, ev->fd, &epoll_ev) == -1) { 
-            wbt_log_add("epoll_ctl:mod failed");
+            wbt_log_add("epoll_ctl:mod failed\n");
 
             return WBT_ERROR;
         }
@@ -225,7 +223,7 @@ wbt_status wbt_event_dispatch() {;
     while (1) {
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
-            wbt_log_add("epoll_wait failed");
+            wbt_log_add("epoll_wait failed\n");
 
             return WBT_ERROR;
         }
@@ -255,6 +253,8 @@ wbt_status wbt_event_dispatch() {;
                 while( ev->data.buff.len <= 40960 ) { /* 限制数据包长度 */
                     if( wbt_realloc(&ev->data.buff, ev->data.buff.len + 4096) != WBT_OK ) {
                         /* 内存不足 */
+                        wbt_log_add("wbt_realloc failed\n");
+
                         return WBT_ERROR;
                     }
                     nread = recv(fd, ev->data.buff.ptr + ev->data.buff.len - 4096, 4096, 0);

@@ -116,13 +116,12 @@ int main(int argc, char** argv) {
         } else {
             /* In parent */
             setProcTitle(argc, argv, "Webit: master process (default)");
-            wbt_log_add("Webit startup (pid: %d)\n", getpid());
             waitpid( childpid, &status, 0 );
         }
     }
-#else
-    wbt_log_add("Webit startup (pid: %d)\n", getpid());
 #endif
+
+    wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 限制可以访问的目录 */
     if(chroot("/home/wwwroot/")) {
