@@ -19,6 +19,7 @@ wbt_status wbt_heap_new(wbt_heap_t * p, size_t max_size) {
 
     p->max = max_size;
     p->size = 0;
+    wbt_memset( &p->heap, 0 ); /* 象征性初始化一下 */
     
     return WBT_OK;
 }

@@ -28,6 +28,11 @@ wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...) {
 int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
     int pos = 0, i = 0, flag = 0;
 
+    /* Bugfix: 由于 len 是 size_t 类型，执行减法前必须先判断其大小 */
+    if( str1->len < str2->len ) {
+        return -1;
+    }
+
     for( pos = 0 ; pos <= (str1->len - str2->len) ; pos ++ ) {
         flag = 0;
         for( i = 0 ; i < str2->len ; i ++ ) {

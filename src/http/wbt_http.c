@@ -16,7 +16,7 @@ wbt_module_t wbt_module_http = {
     NULL
 };
 
-/* 释放 http 结构体中动态分配的内存，并将结构体初始化 */
+/* 释放 http 结构体中动态分配的内存，并重新初始化结构体 */
 wbt_status wbt_http_destroy( wbt_http_t* http ) {
     wbt_http_header_t * header, * next;
     wbt_mem_t tmp;
@@ -36,7 +36,9 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
     /* 释放接收到的请求数据 */
     wbt_free( &http->buff );
     
-    /* 初始化结构体 */
+    /* 初始化结构体
+     * 由于 keep-alive 请求会重用这段内存，必须重新初始化
+     */
     tmp.ptr = http;
     tmp.len = sizeof( wbt_http_t );
     wbt_memset( &tmp, 0 );
@@ -67,7 +69,7 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     int offset = 0, state = 0, error = 0;
     char ch;
     wbt_mem_t tmp;
-    wbt_http_header_t * header, * tail;
+    wbt_http_header_t * header, * tail = NULL;
     while( error == 0 && offset < http_req.len ) {
         ch = http_req.str[offset];
 
@@ -111,8 +113,16 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     if( http->headers == NULL ) {
                         http->headers = tail = header;
                     } else {
-                        tail->next = header;
-                        tail = header;
+                        if( tail != NULL ) {
+                            tail->next = header;
+                            tail = header;
+                        } else {
+                            /* 不应该出现这个错误 */
+                            wbt_log_add("wbt_http_parse_request_header error");
+                            wbt_free(&tmp);
+
+                            return WBT_ERROR;
+                        }
                     }
 
                     state = 4;
@@ -174,8 +184,12 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     header = http->headers;
 
                     if( header != NULL ) {
-                        while( header->next != tail ) header = header->next;
-                        header->next = NULL;
+                        if( header != tail ) { /* Bugfix: 当请求不包含任何header时不应当再发生段错误 */
+                            while( header->next != tail ) header = header->next;
+                            header->next = NULL;
+                        } else {
+                            http->headers = NULL;
+                        }
                         
                         wbt_mem_t tmp;
                         tmp.ptr = tail;

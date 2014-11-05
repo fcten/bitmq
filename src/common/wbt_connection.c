@@ -196,6 +196,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
                 "%.*s",
                 size, size, file_buf.ptr);
         }
+        
+        wbt_free(&file_buf);
     }
     
     printf("------\n%s\n------\n", buf.ptr);

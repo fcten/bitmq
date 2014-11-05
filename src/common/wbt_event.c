@@ -113,7 +113,13 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     tmp_ev[events.top]->fd = ev->fd;
     tmp_ev[events.top]->time_out = ev->time_out;
     tmp_ev[events.top]->events = ev->events;
-    tmp_ev[events.top]->modified ++;
+    tmp_ev[events.top]->modified ++;  /* 使用这个变量可能会提示未初始化的错误，但是无须在意 */
+    
+    /* 初始化结构体 */
+    wbt_mem_t tmp;
+    tmp.ptr = &tmp_ev[events.top]->data;
+    tmp.len = sizeof( wbt_http_t );
+    wbt_memset( &tmp, 0 );
     
     wbt_event_t *t = tmp_ev[events.top];
     events.top --;
@@ -321,7 +327,7 @@ wbt_status wbt_event_dispatch() {;
                 wbt_heap_delete(&timeout_events);
                 /* 如果该事件已经在超时前被修改过，就什么都不做 */
                 if(p->modified != p->ev->modified) {
-                    wbt_log_debug("modified %d %d",p->modified,p->ev->modified);
+                    /* wbt_log_debug("modified %d %d",p->modified,p->ev->modified); */
                     continue;
                 }
                 /* 该事件确实超时了，尝试调用回调函数 */
