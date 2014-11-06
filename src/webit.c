@@ -21,8 +21,6 @@
 
 extern wbt_module_t * wbt_modules[];
 
-void wbt_null() {}
-
 extern char **environ;
 char *last;
 
@@ -57,25 +55,24 @@ void setProcTitle(int argc, char **argv, const char *title)
     memset(p, 0x00, last - p); 
     strncpy(p, title, last - p); 
 }
- 
+
+int wating_to_exit = 0;
+
+void wbt_signal(int signal) {
+    wbt_log_add("received singal: %d\n", signal);
+    
+    wating_to_exit = 1;
+}
+
 /*
  * 
  */
 int main(int argc, char** argv) {    
-    wbt_log_debug("Webit startup (pid: %d)", getpid());
-
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
     rlim.rlim_cur = 65535;
     rlim.rlim_max = 65535;
     setrlimit(RLIMIT_NOFILE, &rlim);
-    
-    /* 设置需要监听的信号 */
-    /*sigaction(SIGCHLD, NULL, NULL);
-    sigaction(SIGALRM, NULL, NULL);
-    sigaction(SIGIO, NULL, NULL);
-    sigaction(SIGINT, NULL, NULL);*/
-    signal(SIGINT, wbt_null);
 
 #ifndef WBT_DEBUG 
     /* 转入后台运行 */
@@ -83,6 +80,16 @@ int main(int argc, char** argv) {
         perror("error daemon");  
         return 1;
     }
+    
+    /* 设置需要监听的信号(后台模式) */
+    /*sigaction(SIGCHLD, NULL, NULL);
+    sigaction(SIGALRM, NULL, NULL);
+    sigaction(SIGIO, NULL, NULL);
+    sigaction(SIGINT, NULL, NULL);*/
+#else
+    /* 设置需要监听的信号(前台模式) */
+    signal(SIGTERM, wbt_signal);
+    signal(SIGINT, wbt_signal);
 #endif
 
     initProcTitle(argc, argv);

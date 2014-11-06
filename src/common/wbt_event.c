@@ -220,18 +220,28 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
 wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
+extern int wating_to_exit;
+
 wbt_status wbt_event_dispatch() {;
     int timeout = -1;
     struct timeval cur_utime;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
 
-    while (1) {
+    while (!wating_to_exit) {
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
-            wbt_log_add("epoll_wait failed\n");
+            if (errno == EINTR) {
+                // 被信号中断
+                wbt_log_debug("epoll_wait: Interrupted system call");
+                
+                continue;
+            } else {
+                // 其他不可弥补的错误
+                wbt_log_add("epoll_wait: %s\n", strerror(errno));
 
-            return WBT_ERROR;
+                return WBT_ERROR;
+            }
         }
         wbt_log_debug("%d event happened.",nfds);
         
