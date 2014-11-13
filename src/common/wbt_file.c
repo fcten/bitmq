@@ -37,6 +37,8 @@ wbt_status wbt_file_init() {
 
 wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     wbt_str_t full_path;
+    /* TODO 需要判断 URI 是否以 / 开头 */
+    /* TODO 需要判断被打开的是否为目录，以及文件类型 */
     if( *(file_path->str + file_path->len - 1) == '/' ) {
         full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*sindex.html",
             wbt_dir_htdocs.len, wbt_dir_htdocs.str,
@@ -73,4 +75,14 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
 
     return &tmp;
+}
+
+wbt_status wbt_file_close( wbt_file_t * file ) {
+    close(file->fd);
+    
+    file->fd = -1;
+    file->offset = 0;
+    file->size = 0;
+
+    return WBT_OK;
 }

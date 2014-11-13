@@ -92,8 +92,8 @@ wbt_status wbt_log_add(const char *fmt, ...) {
     va_end(args);
 
     /* TODO 先写入缓存，定时写入磁盘 */
-    wbt_log_time();
-    write(wbt_log_file_fd, s.str, s.len);
+    //wbt_log_time();
+    //write(wbt_log_file_fd, s.str, s.len);
     
     return WBT_OK;
 }

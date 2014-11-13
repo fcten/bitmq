@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 限制可以访问的目录 */
-    if(chroot("/home/wwwroot/")) {
+    if(chroot("/mnt/htdocs/")) {
         perror("chroot");
         return 1;
     }

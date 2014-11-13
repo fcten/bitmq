@@ -178,7 +178,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
             "\r\n"
             "<html><head><title>404</title></head><body><h1>404</h1></body></html>"); 
     } else {
-        if(http->file.offset == 0) {
+        if(http->file.offset <= 0) {
             send_buf = wbt_sprintf(&wbt_send_buf,
                 "HTTP/1.1 200 OK\r\n"
                 "Server: Webit/0.1\r\n"
@@ -206,7 +206,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
 
     if( http->file.fd > 0 ) {
-        // TODO 在非阻塞模式下，对于大文件，每次只能发送一部分
+        // 在非阻塞模式下，对于大文件，每次只能发送一部分
         // 需要在未发送完成前继续监听可写事件
         n = http->file.size - http->file.offset;
         nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
@@ -228,6 +228,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
         }
+        
+        wbt_file_close( &http->file );
 
         /* 释放掉旧的数据 */
         wbt_http_destroy( &ev->data );  
