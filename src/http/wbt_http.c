@@ -217,26 +217,10 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         /* 400 Bad Request */
         return WBT_ERROR;
     }
-    
-#ifdef WBT_DEBUG
+
     wbt_log_debug(" METHOD: [%.*s]", http->method.len, http->method.str );
     wbt_log_debug("    URI: [%.*s]", http->uri.len, http->uri.str );
     wbt_log_debug("VERSION: [%.*s]", http->version.len, http->version.str );
-    
-    header = http->headers;
-    while( header != NULL ) {
-        if( header->key < HEADER_LENGTH ) {
-            wbt_log_debug(" HEADER: [%.*s: %.*s]",
-                HTTP_HEADERS[header->key].len, HTTP_HEADERS[header->key].str,
-                header->value.len, header->value.str);
-        } else {
-            wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
-                header->name.len, header->name.str,
-                header->value.len, header->value.str);
-        }
-        header = header->next;
-    }
-#endif /* WBT_DEBUG */
 
     /* 检查 HTTP 版本信息 */
     wbt_str_t http_ver = wbt_string("HTTP/1.1");
@@ -244,12 +228,33 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         /* 400 Bad Request */
         return WBT_ERROR;
     }
+    
+    /* 解析 request header */
+    header = http->headers;
+    while( header != NULL ) {
+        if( header->key == HEADER_LENGTH ) {
+            /* 忽略未知的 header */
+            wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
+                header->name.len, header->name.str,
+                header->value.len, header->value.str);
+        } else {
+            /* 处理已知的 header */
+            wbt_log_debug(" HEADER: [%.*s: %.*s]",
+                HTTP_HEADERS[header->key].len, HTTP_HEADERS[header->key].str,
+                header->value.len, header->value.str);
+        }
+
+        header = header->next;
+    }
 
     return WBT_OK;
 }
 
 wbt_status wbt_http_check_body_end( wbt_http_t* http ) {
     /* GET 请求没有body数据，所以不论是否有body都返回 WBT_OK */
+    if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_GET], REQUEST_METHOD[METHOD_GET].len ) == 0 ) {
+        return WBT_OK;
+    }
     /* POST 请求需要根据 Content-Length 检查body长度 */
     return WBT_OK;
 }

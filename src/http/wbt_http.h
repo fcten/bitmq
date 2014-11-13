@@ -16,6 +16,7 @@ extern "C" {
 #include "../webit.h"
 #include "../common/wbt_memory.h"
 #include "../common/wbt_string.h"
+#include "../common/wbt_file.h"
 
 typedef enum { 
     METHOD_GET,
@@ -150,6 +151,7 @@ typedef struct wbt_http_s {
     wbt_str_t version;
     wbt_http_header_t * headers;
     wbt_str_t body;
+    wbt_file_t file;
 } wbt_http_t;
 
 extern wbt_str_t REQUEST_METHOD[];

@@ -52,7 +52,7 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
 /*
  * 比较字符串 str1 和 str2
  * 大小写敏感
- * 相同返回 0，否则返回 1
+ * 相同返回 0，否则返回 差值
  */
 int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     int pos = 0;
@@ -68,4 +68,31 @@ int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     }
 
     return 0;
+}
+
+int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
+    int pos = 0;
+    int value, length;
+
+    if( str1->len > str2->len ) {
+        length = str2->len;
+    } else {
+        length = str1->len;
+    }
+    
+    for( pos = 0; pos < length ; pos ++ ) {
+        value =  *(str1->str + pos) - *(str2->str + pos);
+
+        if(value != 0) return value;
+    }
+
+    if( str1->len > str2->len ) {
+        value = *(str1->str + length);
+    } else if( str1->len < str2->len ) {
+        value = - *(str2->str + length);
+    } else {
+        value = 0;
+    }
+
+    return value;
 }

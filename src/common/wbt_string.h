@@ -29,6 +29,7 @@ wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
 
 int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 );
 int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len );
+int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2);
 
 #ifdef	__cplusplus
 }

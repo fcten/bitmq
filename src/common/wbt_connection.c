@@ -5,11 +5,14 @@
  * Created on 2014年8月25日, 下午3:57
  */
 
+#include <sys/sendfile.h>
+
 #include "wbt_connection.h"
 #include "wbt_string.h"
 #include "wbt_log.h"
 #include "wbt_heap.h"
 #include "wbt_module.h"
+#include "wbt_file.h"
 #include "../http/wbt_http.h"
 
 wbt_status wbt_setnonblocking(int sock);
@@ -22,6 +25,8 @@ wbt_module_t wbt_module_conn = {
 int listen_fd;
 
 extern time_t cur_mtime;
+
+wbt_mem_t wbt_send_buf;
 
 wbt_status wbt_conn_init() {
     /* 初始化用于监听消息的 Socket 句柄 */
@@ -67,6 +72,9 @@ wbt_status wbt_conn_init() {
     if(wbt_event_add(&tmp_ev) == NULL) {
         return WBT_ERROR;
     }
+    
+    /* 初始化 send_buf */
+    wbt_malloc(&wbt_send_buf, 10240);
 
     return WBT_OK;
 }
@@ -135,6 +143,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
 
+    /* 请求消息已经读完 */
+    wbt_log_add("%.*s\n", ev->data.uri.len, ev->data.uri.str);
+    
     /* 等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
@@ -147,22 +158,18 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 }
 wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
-    wbt_mem_t buf;
-
-    wbt_log_add("%.*s\n", ev->data.uri.len, ev->data.uri.str);
+    wbt_http_t *http = &ev->data;
     
-    int resp_file_fd = open("index.html", O_RDONLY);
-    
-    wbt_str_t uri = wbt_string("/");
-    int is_index = 0;
-    if( wbt_strcmp( &uri, &ev->data.uri, ev->data.uri.len ) == 0 ) {
-        is_index = 1;
+    if(http->file.fd == 0) {
+        wbt_file_t *tmp = wbt_file_open(&ev->data.uri);
+        http->file.fd = tmp->fd;
+        http->file.size = tmp->size;
+        http->file.offset = 0;
     }
 
-    wbt_malloc(&buf, 2048);
-
-    if(resp_file_fd <= 0) {
-        sprintf(buf.ptr,
+    wbt_str_t send_buf = wbt_null_string;
+    if(http->file.fd < 0) {
+        send_buf = wbt_sprintf(&wbt_send_buf,
             "HTTP/1.1 404 Not Found\r\n"
             "Server: Webit/0.1\r\n"
             "Connection: keep-alive\r\n"
@@ -171,68 +178,60 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
             "\r\n"
             "<html><head><title>404</title></head><body><h1>404</h1></body></html>"); 
     } else {
-        wbt_mem_t file_buf;
-        wbt_malloc(&file_buf, 1024);
-        int size = read( resp_file_fd, file_buf.ptr, file_buf.len );
-        
-        if( is_index ) {
-            sprintf(buf.ptr,
+        if(http->file.offset == 0) {
+            send_buf = wbt_sprintf(&wbt_send_buf,
                 "HTTP/1.1 200 OK\r\n"
                 "Server: Webit/0.1\r\n"
                 "Connection: keep-alive\r\n"
                 "keep-alive: timeout=15,max=50\r\n"
                 "Content-Length: %d\r\n"
-                "\r\n"
-                "%.*s",
-                size, size, file_buf.ptr);
-        } else {
-            sprintf(buf.ptr,
-                "HTTP/1.1 404 Not Found\r\n"
-                "Server: Webit/0.1\r\n"
-                "Connection: keep-alive\r\n"
-                "keep-alive: timeout=15,max=50\r\n"
-                "Content-Length: %d\r\n"
-                "\r\n"
-                "%.*s",
-                size, size, file_buf.ptr);
+                "\r\n",
+                http->file.size);
         }
-        
-        wbt_free(&file_buf);
     }
     
-    printf("------\n%s\n------\n", buf.ptr);
+    wbt_log_debug("\n------\n%.*s\n------\n", send_buf.len, send_buf.str);
 
-    int nwrite, data_size = strlen(buf.ptr); 
+    int nwrite, data_size = send_buf.len; 
     int n = data_size; 
     while (n > 0) { 
-        nwrite = write(fd, buf.ptr + data_size - n, n); 
-        if (nwrite < n) { 
-            if (nwrite == -1 && errno != EAGAIN) { 
-                perror("write error"); 
-            } 
-            break; 
-        } 
+        nwrite = write(fd, send_buf.str + data_size - n, n); 
+
+        if (nwrite == -1 && errno != EAGAIN) { 
+            perror("write error");
+            break;
+        }
+        
         n -= nwrite; 
     }
 
-    /*
-    if((nwrite = sendfile( fd, resp_file_fd,&off, BUFF_SIZE)) < 0){
-        perror("sendfile");
+    if( http->file.fd > 0 ) {
+        // TODO 在非阻塞模式下，对于大文件，每次只能发送一部分
+        // 需要在未发送完成前继续监听可写事件
+        n = http->file.size - http->file.offset;
+        nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
+
+        if (nwrite == -1 && errno != EAGAIN) { 
+            perror("write error");
+            //break;
+        }
+
+        n = n - nwrite;
+        wbt_log_debug("%d send, %d remain.", nwrite, n);
     }
-    */
 
-    wbt_free(&buf);
+    if( n == 0 ) {
+        /* 如果是 keep-alive 连接，继续等待数据到来 */
+        ev->events = EPOLLIN | EPOLLET;
+        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
-    /* 如果是 keep-alive 连接，继续等待数据到来 */
-    ev->events = EPOLLIN | EPOLLET;
-    ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
 
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        /* 释放掉旧的数据 */
+        wbt_http_destroy( &ev->data );  
     }
-
-    /* 释放掉旧的数据 */
-    wbt_http_destroy( &ev->data );  
 
     return WBT_OK;
 }
