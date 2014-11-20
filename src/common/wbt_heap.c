@@ -53,7 +53,7 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {
     p_node[i].ev = node->ev;
     p_node[i].modified = node->modified;
     
-    wbt_log_debug("heap insert at %d, %d nodes.", (p_node + i), p->size);
+    //wbt_log_debug("heap insert at %d, %d nodes.", (p_node + i), p->size);
     
     return WBT_OK;
 }
@@ -108,7 +108,7 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
     p_node[i].ev = last_node.ev;
     p_node[i].modified = last_node.modified;
     
-    wbt_log_debug("heap delete, %d nodes.", p->size);
+    //wbt_log_debug("heap delete, %d nodes.", p->size);
     
     return WBT_OK;
 }

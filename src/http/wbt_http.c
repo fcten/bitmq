@@ -233,15 +233,15 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     header = http->headers;
     while( header != NULL ) {
         if( header->key == HEADER_LENGTH ) {
-            /* 忽略未知的 header */
+            /* 忽略未知的 header 
             wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
                 header->name.len, header->name.str,
-                header->value.len, header->value.str);
+                header->value.len, header->value.str); */
         } else {
-            /* 处理已知的 header */
+            /* 处理已知的 header 
             wbt_log_debug(" HEADER: [%.*s: %.*s]",
                 HTTP_HEADERS[header->key].len, HTTP_HEADERS[header->key].str,
-                header->value.len, header->value.str);
+                header->value.len, header->value.str); */
         }
 
         header = header->next;

@@ -123,7 +123,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
     return WBT_OK;
 }
 wbt_status wbt_on_recv(wbt_event_t *ev) {
-    printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
+    //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
 
     /* 检查是否读完 http 消息头 */
     if( wbt_http_check_header_end( &ev->data ) != WBT_OK ) {
@@ -190,7 +190,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
     }
     
-    wbt_log_debug("\n------\n%.*s\n------\n", send_buf.len, send_buf.str);
+    //wbt_log_debug("\n------\n%.*s\n------\n", send_buf.len, send_buf.str);
 
     int nwrite, data_size = send_buf.len; 
     int n = data_size; 
@@ -229,7 +229,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
             return WBT_ERROR;
         }
         
-        wbt_file_close( &http->file );
+        wbt_file_close( &http->uri );
 
         /* 释放掉旧的数据 */
         wbt_http_destroy( &ev->data );  

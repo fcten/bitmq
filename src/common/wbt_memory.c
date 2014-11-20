@@ -42,3 +42,11 @@ inline void wbt_free(wbt_mem_t *p) {
 inline void wbt_memset(wbt_mem_t *p, int ch) {
     memset(p->ptr, ch, p->len);
 }
+
+inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len) {
+    if( dest->len >= len ) {
+        memcpy( dest->ptr, src->ptr, len );
+    } else {
+        memcpy( dest->ptr, src->ptr, dest->len );
+    }
+}

@@ -28,9 +28,7 @@ wbt_rbtree_t wbt_file_rbtree;
 wbt_status wbt_file_init() {
     wbt_malloc(&wbt_file_path, 256);
     
-    wbt_file_rbtree.root = NULL;
-    wbt_file_rbtree.max = WBT_MAX_OPEN_FILES;
-    wbt_file_rbtree.size = 0;
+    wbt_rbtree_init(&wbt_file_rbtree);
 
     return WBT_OK;
 }
@@ -51,6 +49,8 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     
     wbt_log_debug("try to open: %.*s", full_path.len, full_path.str);
     
+    tmp.offset = 0;
+
     if( full_path.len > 255 ) {
         /* 路径过长则拒绝打开 */
         /* 由于接收数据长度存在限制，这里无需担心溢出 */
@@ -58,31 +58,60 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
 
         tmp.fd = -1;
     } else {
-        *(full_path.str + full_path.len) = '\0';
-        tmp.fd = open(full_path.str, O_RDONLY);
-     
-        struct stat statbuff;  
-        if(stat(full_path.str, &statbuff) < 0){  
-            tmp.size = 0;  
-            perror("stat error");
-        }else{  
-            tmp.size = statbuff.st_size;  
+        wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
+        if( file == NULL ) {
+            tmp.fd = open(full_path.str, O_RDONLY);
+
+            struct stat statbuff;  
+            if(stat(full_path.str, &statbuff) < 0){  
+                tmp.size = 0;  
+                perror("stat error");
+            }else{  
+                tmp.size = statbuff.st_size;  
+            }
+            
+            if( tmp.fd > 0 ) {
+                file = wbt_rbtree_insert(&wbt_file_rbtree, &full_path);
+                file->file.fd = tmp.fd;
+                file->file.refer = 1;
+                file->file.size = tmp.size;
+
+                wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
+            }
+        } else {
+            file->file.refer ++;
+            
+            tmp.fd = file->file.fd;
+            tmp.size = file->file.size;
         }
-        
-        tmp.offset = 0;
     }
-    
-    wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
 
     return &tmp;
 }
 
-wbt_status wbt_file_close( wbt_file_t * file ) {
-    close(file->fd);
-    
-    file->fd = -1;
-    file->offset = 0;
-    file->size = 0;
+wbt_status wbt_file_close( wbt_str_t * file_path ) {
+    wbt_str_t full_path;
+    /* TODO 需要判断 URI 是否以 / 开头 */
+    /* TODO 需要判断被打开的是否为目录，以及文件类型 */
+    if( *(file_path->str + file_path->len - 1) == '/' ) {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*sindex.html",
+            wbt_dir_htdocs.len, wbt_dir_htdocs.str,
+            file_path->len, file_path->str);
+    } else {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+            wbt_dir_htdocs.len, wbt_dir_htdocs.str,
+            file_path->len, file_path->str);
+    }
+
+    wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
+
+    if(file != NULL) {
+        file->file.refer --;
+
+        if( file->file.refer == 0 ) {
+            /* close(file->fd); */
+        }
+    }
 
     return WBT_OK;
 }

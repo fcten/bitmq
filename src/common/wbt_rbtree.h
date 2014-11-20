@@ -14,11 +14,12 @@ extern "C" {
 
 #include "wbt_memory.h"
 #include "wbt_string.h"
+#include "wbt_file.h"
     
 /* 定义红黑树结点颜色颜色类型 */
 typedef enum { 
-    RED = 0, 
-    BLACK = 1 
+    WBT_RBT_COLOR_RED = 0, 
+    WBT_RBT_COLOR_BLACK = 1 
 } wbt_rbtree_color;
 
 typedef struct wbt_rbtree_node_s {
@@ -27,7 +28,7 @@ typedef struct wbt_rbtree_node_s {
     struct wbt_rbtree_node_s * parent;
     wbt_rbtree_color color;
     wbt_mem_t key;
-    int value;
+    wbt_file_t file;
 } wbt_rbtree_node_t;
 
 typedef struct wbt_rbtree_s {
@@ -36,9 +37,13 @@ typedef struct wbt_rbtree_s {
     size_t max;
 } wbt_rbtree_t;
 
-wbt_status wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key, int value);
+void wbt_rbtree_init(wbt_rbtree_t *rbt);
 
-wbt_status wbt_rbtree_delete(wbt_rbtree_t *rbt, wbt_str_t *key);
+void wbt_rbtree_print(wbt_rbtree_node_t *node);
+
+wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key);
+
+void wbt_rbtree_delete(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node);
 
 wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key);
 

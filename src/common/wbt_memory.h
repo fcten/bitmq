@@ -27,6 +27,7 @@ inline wbt_status wbt_malloc(wbt_mem_t * p, size_t len);
 inline void wbt_free(wbt_mem_t * p);
 inline void wbt_memset(wbt_mem_t * p, int ch);
 inline wbt_status wbt_realloc(wbt_mem_t * p, size_t len);
+inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len);
 
 #ifdef	__cplusplus
 }
