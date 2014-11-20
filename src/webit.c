@@ -156,31 +156,7 @@ int main(int argc, char** argv) {
     }
 
     wbt_event_dispatch();
-    /*
-    wbt_rbtree_t t;
-    wbt_rbtree_init(&t);
-    
-    wbt_str_t t1 = wbt_string("199");
-    wbt_str_t t2 = wbt_string("288");
-    wbt_str_t t3 = wbt_string("377");
-    wbt_str_t t4 = wbt_string("466");
-    wbt_str_t t5 = wbt_string("555");
-    wbt_str_t t6 = wbt_string("644");
-    
-    wbt_rbtree_insert(&t,&t1);
-    wbt_rbtree_insert(&t,&t2);
-    wbt_rbtree_insert(&t,&t3);
-    wbt_rbtree_insert(&t,&t4);
-    wbt_rbtree_insert(&t,&t5);
-    wbt_rbtree_insert(&t,&t6);
-    
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t4));
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t1));
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t6));
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t3));
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t2));
-    wbt_rbtree_delete(&t, wbt_rbtree_get(&t, &t5));
-    */
+
     wbt_conn_cleanup();
 
     wbt_log_add("Webit exit (pid: %d)\n", getpid());

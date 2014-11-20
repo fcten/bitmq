@@ -52,7 +52,7 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
 /*
  * 比较字符串 str1 和 str2
  * 大小写敏感
- * 相同返回 0，否则返回 差值
+ * 相同返回 0，否则返回 1
  */
 int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     int pos = 0;

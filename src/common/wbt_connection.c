@@ -228,7 +228,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
         }
-        
+
         wbt_file_close( &http->uri );
 
         /* 释放掉旧的数据 */

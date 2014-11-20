@@ -103,12 +103,14 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
             file_path->len, file_path->str);
     }
 
+    /* TODO 目前这个函数需要执行一次额外的搜索操作，因为搜索已经在 open 的时候做过了 */
     wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
 
     if(file != NULL) {
         file->file.refer --;
 
         if( file->file.refer == 0 ) {
+            /* TODO 需要添加文件句柄的释放机制 */
             /* close(file->fd); */
         }
     }
