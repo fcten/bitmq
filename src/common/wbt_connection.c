@@ -184,6 +184,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
                 "Server: Webit/0.1\r\n"
                 "Connection: keep-alive\r\n"
                 "keep-alive: timeout=15,max=50\r\n"
+                "Expires: Sun, 16 Oct 2016 05:43:02 GMT\r\n"
+                "Cache-control: max-age=3600\r\n"
                 "Content-Length: %d\r\n"
                 "\r\n",
                 http->file.size);

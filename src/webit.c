@@ -131,8 +131,17 @@ int main(int argc, char** argv) {
 
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
+    /* 接下来的 chroot 会导致程序无法访问 /etc/timezone
+     * TODO 读取 /etc/timezone 的内容并保存
+     */
+    if( setenv("TZ", "Asia/Shanghai", 1) != 0 ) {
+        perror("setenv");
+        return 1;
+    }
+    tzset();
+
     /* 限制可以访问的目录 */
-    if(chroot("/mnt/htdocs/")) {
+    if( chroot("/mnt/htdocs/") != 0 ) {
         perror("chroot");
         return 1;
     }

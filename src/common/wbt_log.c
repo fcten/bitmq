@@ -70,13 +70,11 @@ wbt_status wbt_log_time() {
     
     int fp = wbt_log_file_fd;
 
-    time(&now);
+    now = time(NULL);
     timenow = localtime(&now);
-    
-    write(fp, "[", 1);
-    strftime(tmpbuf, 32, "%F %T", timenow);
+
+    strftime(tmpbuf, 32, "[%F %T] ", timenow);
     write(fp, tmpbuf, strlen(tmpbuf));
-    write(fp, "] ", 2);
 
     return WBT_OK;
 }
