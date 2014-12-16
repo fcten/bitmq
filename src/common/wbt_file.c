@@ -61,16 +61,16 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
         if( file == NULL ) {
             tmp.fd = open(full_path.str, O_RDONLY);
-
-            struct stat statbuff;  
-            if(stat(full_path.str, &statbuff) < 0){  
-                tmp.size = 0;  
-                perror("stat error");
-            }else{  
-                tmp.size = statbuff.st_size;  
-            }
             
             if( tmp.fd > 0 ) {
+                struct stat statbuff;  
+                if(stat(full_path.str, &statbuff) < 0){  
+                    tmp.size = 0;  
+                    perror("stat error");
+                }else{  
+                    tmp.size = statbuff.st_size;  
+                }
+
                 file = wbt_rbtree_insert(&wbt_file_rbtree, &full_path);
 
                 wbt_malloc(&file->value, sizeof(wbt_file_t));

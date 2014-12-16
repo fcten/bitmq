@@ -8,7 +8,7 @@
 #include "../webit.h"
 #include "../common/wbt_string.h"
 
-wbt_str_t REQUEST_METHOD[] = { 
+const wbt_str_t REQUEST_METHOD[] = { 
     wbt_string("GET"),
     wbt_string("POST"),
     wbt_string("HEAD"),
@@ -20,7 +20,7 @@ wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string
 };
 
-wbt_str_t HTTP_HEADERS[] = {
+const wbt_str_t HTTP_HEADERS[] = {
     wbt_string("Cache-Control"),
     wbt_string("Connection"),
     wbt_string("Date"),
@@ -73,7 +73,7 @@ wbt_str_t HTTP_HEADERS[] = {
     wbt_null_string
 };
 
-wbt_str_t STATUS_CODE[] = {
+const wbt_str_t STATUS_CODE[] = {
     wbt_string("100 Continue"),
     wbt_string("101 Switching Protocols"), 
     wbt_string("102 Processing"),

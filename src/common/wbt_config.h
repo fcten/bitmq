@@ -14,6 +14,7 @@ extern "C" {
 
 #include "wbt_string.h"
 #include "wbt_module.h"
+#include "wbt_file.h"
 
 wbt_status wbt_conf_init();
 
