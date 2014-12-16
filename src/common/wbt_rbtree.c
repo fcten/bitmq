@@ -320,8 +320,9 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
 
     if( y != node ) {
         // 如果被删除的结点 y 不是原来将要删除的结点 node，
-        // 即只是用 y 的值来代替 node 的值，然后变相删除 y 以达到删除 node 的效果 
-        node->file = y->file;
+        // 即只是用 y 的值来代替 node 的值，然后变相删除 y 以达到删除 node 的效果
+        wbt_free( &node->value );
+        node->value = y->value;
         wbt_free( &node->key );
         node->key = y->key;
         

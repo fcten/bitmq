@@ -72,17 +72,22 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
             
             if( tmp.fd > 0 ) {
                 file = wbt_rbtree_insert(&wbt_file_rbtree, &full_path);
-                file->file.fd = tmp.fd;
-                file->file.refer = 1;
-                file->file.size = tmp.size;
+
+                wbt_malloc(&file->value, sizeof(wbt_file_t));
+                wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+
+                tmp_file->fd = tmp.fd;
+                tmp_file->refer = 1;
+                tmp_file->size = tmp.size;
 
                 wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
             }
         } else {
-            file->file.refer ++;
+            wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+            tmp_file->refer ++;
             
-            tmp.fd = file->file.fd;
-            tmp.size = file->file.size;
+            tmp.fd = tmp_file->fd;
+            tmp.size = tmp_file->size;
         }
     }
 
@@ -107,9 +112,11 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
     wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
 
     if(file != NULL) {
-        file->file.refer --;
+        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
 
-        if( file->file.refer == 0 ) {
+        tmp_file->refer --;
+
+        if( tmp_file->refer == 0 ) {
             /* TODO 需要添加文件句柄的释放机制 */
             /* close(file->fd); */
         }
