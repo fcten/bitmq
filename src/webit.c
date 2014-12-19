@@ -19,6 +19,7 @@
 #include "common/wbt_log.h"
 #include "common/wbt_module.h"
 #include "common/wbt_rbtree.h"
+#include "common/wbt_config.h"
 
 extern wbt_module_t * wbt_modules[];
 
@@ -141,7 +142,8 @@ int main(int argc, char** argv) {
     tzset();
 
     /* 限制可以访问的目录 */
-    if( chroot("/mnt/htdocs/") != 0 ) {
+
+    if( chroot( wbt_conf_get() ) != 0 ) {
         perror("chroot");
         return 1;
     }

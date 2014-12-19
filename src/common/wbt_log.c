@@ -14,7 +14,7 @@ wbt_module_t wbt_module_log = {
 };
 
 int wbt_log_file_fd;
-char * wbt_log_file = "/home/wwwroot/webit.log";
+char * wbt_log_file = "./webit.log";
 wbt_mem_t wbt_log_buf;
 
 wbt_status wbt_log_init() {

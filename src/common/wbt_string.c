@@ -7,6 +7,18 @@
 
 #include "wbt_string.h"
 
+wbt_mem_t wbt_stdstr_tmp;
+
+const char * wbt_stdstr(wbt_str_t * str) {
+    if( str->len + 1 > wbt_stdstr_tmp.len ) {
+        wbt_realloc( &wbt_stdstr_tmp, str->len + 1 );
+    }
+    wbt_memcpy( &wbt_stdstr_tmp, (wbt_mem_t *)str, str->len );
+    *( (char *)wbt_stdstr_tmp.ptr + str->len ) = '\0';
+    
+    return wbt_stdstr_tmp.ptr;
+}
+
 wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...) {
     wbt_str_t    p;
     va_list   args;

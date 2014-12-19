@@ -16,10 +16,13 @@ extern "C" {
 #include "wbt_module.h"
 #include "wbt_file.h"
 #include "wbt_log.h"
+#include "wbt_rbtree.h"
 
 wbt_status wbt_conf_init();
 
 wbt_status wbt_conf_reload();
+
+const char * wbt_conf_get( /*wbt_conf_t conf*/ );
 
 #ifdef	__cplusplus
 }

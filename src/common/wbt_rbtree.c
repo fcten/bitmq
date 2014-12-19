@@ -375,7 +375,7 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
 void wbt_rbtree_print(wbt_rbtree_node_t *node) {
     if(node != wbt_rbtree_node_nil) {
         wbt_rbtree_print(node->left);
-        printf("%.*s\n", node->key.len, node->key.ptr);
+        wbt_log_debug("%.*s", node->key.len, node->key.ptr);
         wbt_rbtree_print(node->right);
     }
 }

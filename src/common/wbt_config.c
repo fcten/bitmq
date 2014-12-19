@@ -12,14 +12,18 @@ wbt_module_t wbt_module_conf = {
     wbt_conf_init
 };
 
-wbt_status wbt_conf_init() {
-    return wbt_conf_reload();
-}
-
 wbt_mem_t wbt_config_file_content;
+
+wbt_rbtree_t wbt_config_rbtree;
 
 int wbt_conf_line = 1;
 int wbt_conf_charactor = 0;
+
+wbt_status wbt_conf_init() {
+    wbt_rbtree_init(&wbt_config_rbtree);
+    
+    return wbt_conf_reload();
+}
 
 static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
     int status = 0;
@@ -87,8 +91,19 @@ static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
                     value.len = p + i - value.str;
                     status = 0;
                     
-                    wbt_log_debug("key: %.*s, value: %.*s", key.len, key.str, value.len, value.str);
-                    /* TODO 储存配置信息 */
+                    /* 储存配置信息 */
+                    wbt_rbtree_node_t *option =  wbt_rbtree_get(&wbt_config_rbtree, &key);
+                    if( option == NULL ) {
+                        /* 新的值 */
+                        option = wbt_rbtree_insert(&wbt_config_rbtree, &key);
+                    } else {
+                        /* 已有的值 */
+                        wbt_free(&option->value);
+                    }
+                    wbt_malloc(&option->value, value.len);
+                    /* 直接把 (wbt_str_t *) 转换为 (wbt_mem_t *) 会导致越界访问，
+                     * 不过目前我认为这不是问题 */
+                    wbt_memcpy(&option->value, (wbt_mem_t *)&value, value.len);
                 }
                 break;
             default:
@@ -101,6 +116,9 @@ static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
 }
 
 wbt_status wbt_conf_reload() {
+    /* TODO 清理已保存的配置信息 */
+
+    /* 尝试读取配置文件 */
     wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
     
     wbt_file_t wbt_config_file;
@@ -120,7 +138,6 @@ wbt_status wbt_conf_reload() {
         wbt_config_file.size = statbuff.st_size;  
     }
 
-    wbt_free(&wbt_config_file_content);
     wbt_malloc(&wbt_config_file_content, wbt_config_file.size);
     read(wbt_config_file.fd, wbt_config_file_content.ptr, wbt_config_file_content.len);
     
@@ -129,9 +146,18 @@ wbt_status wbt_conf_reload() {
     
     /* 解析配置文件 */
     if( wbt_conf_parse(&wbt_config_file_content) == WBT_OK ) {
+        wbt_free(&wbt_config_file_content);
+        wbt_rbtree_print(wbt_config_rbtree.root);
         return WBT_OK;
     } else {
+        wbt_free(&wbt_config_file_content);
         wbt_log_add("Syntax error on config file: line %d, charactor %d\n", wbt_conf_line, wbt_conf_charactor);
         return WBT_ERROR;
     }
+}
+
+const char * wbt_conf_get( /*wbt_conf_t conf*/ ) {
+    wbt_str_t config_root = wbt_string("root");
+    wbt_rbtree_node_t * root = wbt_rbtree_get(&wbt_config_rbtree, &config_root);
+    return wbt_stdstr( (wbt_str_t *)&root->value );
 }
