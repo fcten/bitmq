@@ -156,8 +156,14 @@ wbt_status wbt_conf_reload() {
     }
 }
 
-const char * wbt_conf_get( /*wbt_conf_t conf*/ ) {
-    wbt_str_t config_root = wbt_string("root");
-    wbt_rbtree_node_t * root = wbt_rbtree_get(&wbt_config_rbtree, &config_root);
-    return wbt_stdstr( (wbt_str_t *)&root->value );
+const char * wbt_conf_get( const char * name ) {
+    wbt_str_t config_name;
+    config_name.str = (u_char *)name;
+    config_name.len = strlen(name);
+    wbt_rbtree_node_t * root = wbt_rbtree_get(&wbt_config_rbtree, &config_name);
+    if( root == NULL ) {
+        return NULL;
+    } else {
+        return wbt_stdstr( (wbt_str_t *)&root->value );
+    }
 }

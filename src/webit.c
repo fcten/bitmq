@@ -142,10 +142,12 @@ int main(int argc, char** argv) {
     tzset();
 
     /* 限制可以访问的目录 */
-
-    if( chroot( wbt_conf_get() ) != 0 ) {
-        perror("chroot");
+    const char * wwwroot = wbt_conf_get("root");
+    if( chroot( wwwroot ) != 0 ) {
+        wbt_log_add("%s not exists.\n", wwwroot);
         return 1;
+    } else {
+        wbt_log_add("Root path: %s.\n", wwwroot);
     }
 
     /* 降低 worker 进程的权限 */

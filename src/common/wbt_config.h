@@ -22,7 +22,7 @@ wbt_status wbt_conf_init();
 
 wbt_status wbt_conf_reload();
 
-const char * wbt_conf_get( /*wbt_conf_t conf*/ );
+const char * wbt_conf_get( const char * name );
 
 #ifdef	__cplusplus
 }
