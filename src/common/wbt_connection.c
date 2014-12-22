@@ -28,6 +28,8 @@ int listen_fd;
 extern time_t cur_mtime;
 
 wbt_mem_t wbt_send_buf;
+wbt_mem_t wbt_file_path;
+wbt_mem_t wbt_default_file; 
 
 wbt_status wbt_conn_init() {
     /* 初始化用于监听消息的 Socket 句柄 */
@@ -80,8 +82,18 @@ wbt_status wbt_conn_init() {
         return WBT_ERROR;
     }
     
-    /* 初始化 send_buf */
+    /* 初始化 send_buf 与 file_path */
     wbt_malloc(&wbt_send_buf, 10240);
+    wbt_malloc(&wbt_file_path, 512);
+    wbt_malloc(&wbt_default_file, 256);
+    
+    wbt_mem_t * default_file = wbt_conf_get_v("default");
+    wbt_memcpy(&wbt_default_file, default_file, default_file->len);
+    if( default_file->len >= 255 ) {
+        *((u_char *)wbt_default_file.ptr + 255) = '\0';
+    } else {
+        *((u_char *)wbt_default_file.ptr + default_file->len) = '\0';
+    }
 
     return WBT_OK;
 }
@@ -168,7 +180,18 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     wbt_http_t *http = &ev->data;
     
     if(http->file.fd == 0) {
-        wbt_file_t *tmp = wbt_file_open(&ev->data.uri);
+        /* TODO 需要判断 URI 是否以 / 开头 */
+        wbt_str_t full_path;
+        if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                ev->data.uri.len, ev->data.uri.str,
+                wbt_default_file.len, wbt_default_file.ptr);
+        } else {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+                ev->data.uri.len, ev->data.uri.str);
+        }
+
+        wbt_file_t *tmp = wbt_file_open(&full_path);
         http->file.fd = tmp->fd;
         http->file.size = tmp->size;
         http->file.offset = 0;

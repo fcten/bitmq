@@ -23,6 +23,7 @@ wbt_status wbt_conf_init();
 wbt_status wbt_conf_reload();
 
 const char * wbt_conf_get( const char * name );
+wbt_mem_t * wbt_conf_get_v( const char * name );
 
 #ifdef	__cplusplus
 }

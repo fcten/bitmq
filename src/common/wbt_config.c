@@ -167,3 +167,15 @@ const char * wbt_conf_get( const char * name ) {
         return wbt_stdstr( (wbt_str_t *)&root->value );
     }
 }
+
+wbt_mem_t * wbt_conf_get_v( const char * name ) {
+    wbt_str_t config_name;
+    config_name.str = (u_char *)name;
+    config_name.len = strlen(name);
+    wbt_rbtree_node_t * root = wbt_rbtree_get(&wbt_config_rbtree, &config_name);
+    if( root == NULL ) {
+        return NULL;
+    } else {
+        return &root->value;
+    }
+}
