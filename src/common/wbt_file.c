@@ -60,27 +60,34 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     } else {
         wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, &full_path);
         if( file == NULL ) {
-            tmp.fd = open(full_path.str, O_RDONLY);
-            
-            if( tmp.fd > 0 ) {
-                struct stat statbuff;  
-                if(stat(full_path.str, &statbuff) < 0){  
-                    tmp.size = 0;  
-                    perror("stat error");
-                }else{  
-                    tmp.size = statbuff.st_size;  
+            struct stat statbuff;  
+            if(stat(full_path.str, &statbuff) < 0){  
+                tmp.size = 0;
+                tmp.fd   = -1;
+                perror("stat error");
+            }else{  
+                if( S_ISDIR(statbuff.st_mode) ) {
+                     /* 尝试打开的是目录 */
+                    tmp.size = 0;
+                    tmp.fd   = -1;
+                } else {
+                    /* 尝试打开的是文件 */
+                    tmp.size = statbuff.st_size;
+                    tmp.fd = open(full_path.str, O_RDONLY);
+
+                    if( tmp.fd > 0 ) {
+                        file = wbt_rbtree_insert(&wbt_file_rbtree, &full_path);
+
+                        wbt_malloc(&file->value, sizeof(wbt_file_t));
+                        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+
+                        tmp_file->fd = tmp.fd;
+                        tmp_file->refer = 1;
+                        tmp_file->size = tmp.size;
+
+                        wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
+                    }
                 }
-
-                file = wbt_rbtree_insert(&wbt_file_rbtree, &full_path);
-
-                wbt_malloc(&file->value, sizeof(wbt_file_t));
-                wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
-
-                tmp_file->fd = tmp.fd;
-                tmp_file->refer = 1;
-                tmp_file->size = tmp.size;
-
-                wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
             }
         } else {
             wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
