@@ -158,6 +158,8 @@ extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];
 extern wbt_str_t STATUS_CODE[];
 
+extern wbt_str_t wbt_http_error_page;
+
 wbt_status wbt_http_check_header_end( wbt_http_t* );
 wbt_status wbt_http_parse_request_header( wbt_http_t* );
 wbt_status wbt_http_check_body_end( wbt_http_t* );

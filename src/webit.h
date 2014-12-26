@@ -22,6 +22,10 @@ extern "C" {
 #define WBT_CONN_BACKLOG    511
 #define WBT_CONN_TIMEOUT    15000    /* 单位毫秒 */
 
+#define CR      "\r"
+#define LF      "\n"
+#define CRLF    CR LF
+    
 typedef enum {
     WBT_OK,
     WBT_ERROR

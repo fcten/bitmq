@@ -200,24 +200,24 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     wbt_str_t send_buf = wbt_null_string;
     if(http->file.fd < 0) {
         send_buf = wbt_sprintf(&wbt_send_buf,
-            "HTTP/1.1 404 Not Found\r\n"
-            "Server: Webit/0.1\r\n"
-            "Connection: keep-alive\r\n"
-            "keep-alive: timeout=15,max=50\r\n"
-            "Content-Length: 69\r\n"
-            "\r\n"
+            "HTTP/1.1 404 Not Found" CRLF
+            "Server: Webit" CRLF
+            "Connection: keep-alive" CRLF
+            "keep-alive: timeout=15,max=50" CRLF
+            "Content-Length: 69" CRLF
+            CRLF
             "<html><head><title>404</title></head><body><h1>404</h1></body></html>"); 
     } else {
         if(http->file.offset <= 0) {
             send_buf = wbt_sprintf(&wbt_send_buf,
-                "HTTP/1.1 200 OK\r\n"
-                "Server: Webit/0.1\r\n"
-                "Connection: keep-alive\r\n"
-                "keep-alive: timeout=15,max=50\r\n"
-                "Expires: Sun, 16 Oct 2016 05:43:02 GMT\r\n"
-                "Cache-control: max-age=3600\r\n"
-                "Content-Length: %d\r\n"
-                "\r\n",
+                "HTTP/1.1 200 OK" CRLF
+                "Server: Webit" CRLF
+                "Connection: keep-alive" CRLF
+                "keep-alive: timeout=15,max=50" CRLF
+                "Expires: Sun, 16 Oct 2016 05:43:02 GMT" CRLF
+                "Cache-control: max-age=3600" CRLF
+                "Content-Length: %d" CRLF
+                CRLF,
                 http->file.size);
         }
     }

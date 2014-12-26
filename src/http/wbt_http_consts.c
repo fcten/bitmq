@@ -126,3 +126,13 @@ const wbt_str_t STATUS_CODE[] = {
     wbt_string("510 Not Extended"),
     wbt_null_string
 };
+
+const wbt_str_t wbt_http_error_page = wbt_string(
+    "<html>" CRLF
+    "<head><title>%.*s</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>%.*s</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"
+);
