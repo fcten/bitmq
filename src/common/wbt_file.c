@@ -10,6 +10,7 @@
 #include "wbt_log.h"
 #include "wbt_file.h"
 #include "wbt_rbtree.h"
+#include "wbt_event.h"
 
 wbt_module_t wbt_module_file = {
     wbt_string("file"),
@@ -22,9 +23,57 @@ wbt_file_t tmp;
 
 wbt_rbtree_t wbt_file_rbtree;
 
+extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
+extern time_t cur_mtime;
+
+void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
+    /*
+     * 这个清理过程有问题
+    if(node != wbt_rbtree_node_nil) {
+        wbt_file_cleanup_recursive(node->left);
+        wbt_file_cleanup_recursive(node->right);
+        
+        wbt_file_t * tmp_file = (wbt_file_t *)node->value.ptr;
+        if( tmp_file->refer == 0 && cur_mtime - tmp_file->last_use_mtime > 10000 ) {
+            wbt_log_debug("closed fd:%d %.*s", tmp_file->fd, node->key.len, node->key.ptr);
+            wbt_rbtree_delete(&wbt_file_rbtree, node);
+        }
+    }
+    */
+}
+
+wbt_status wbt_file_cleanup(wbt_event_t *ev) {
+    wbt_log_debug("opened fd before cleanup: %d", wbt_file_rbtree.size);
+    
+    wbt_file_cleanup_recursive(wbt_file_rbtree.root);
+    
+    wbt_log_debug("opened fd after cleanup: %d", wbt_file_rbtree.size);
+
+    /* 重新注册定时事件 */
+    ev->time_out = cur_mtime + 10000;
+
+    if(wbt_event_mod(ev) != WBT_OK) {
+        return WBT_ERROR;
+    }
+
+    return WBT_OK;
+}
+
 wbt_status wbt_file_init() {
+    /* 初始化一个红黑树用以保存已打开的文件句柄 */
     wbt_rbtree_init(&wbt_file_rbtree);
 
+    /* 添加一个定时任务用以清理过期的文件句柄 */
+    wbt_event_t tmp_ev;
+    tmp_ev.callback = wbt_file_cleanup;
+    tmp_ev.fd = -1;
+    /* tmp_ev.events = 0; // fd 大于等于 0 时该属性才有意义 */
+    tmp_ev.time_out = cur_mtime + 10000;
+
+    if(wbt_event_add(&tmp_ev) == NULL) {
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }
 
@@ -93,8 +142,8 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
         tmp_file->refer --;
 
         if( tmp_file->refer == 0 ) {
-            /* TODO 需要添加文件句柄的释放机制 */
-            /* close(file->fd); */
+            /* 当所有对该文件的使用都被释放后，更新时间戳 */
+            tmp_file->last_use_mtime = cur_mtime;
         }
     }
 

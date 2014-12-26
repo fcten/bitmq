@@ -105,7 +105,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    //wbt_log_debug("event add, fd %d, addr %d, %d enents.", ev->fd ,ev, events.max-events.top);
+    wbt_log_debug("event add, fd %d, addr %d, %d enents.", ev->fd ,ev, events.max-events.top);
     
     /* 添加到事件池内 */
     wbt_event_t **tmp_ev = events.available.ptr;
@@ -159,7 +159,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    //wbt_log_debug("event del, fd %d, addr %d, %d events", ev->fd, ev, events.max-events.top-2);
+    wbt_log_debug("event del, fd %d, addr %d, %d events", ev->fd, ev, events.max-events.top-2);
 
     /* 从事件池中移除 */
     wbt_event_t **tmp_ev = events.available.ptr;
@@ -333,17 +333,12 @@ wbt_status wbt_event_dispatch() {;
         if(timeout_events.size > 0) {
             wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
             while(timeout_events.size > 0 && p->time_out <= cur_mtime) {
-                /* 从堆中移除超时事件 */
-                wbt_heap_delete(&timeout_events);
-                /* 如果该事件已经在超时前被修改过，就什么都不做 */
-                if(p->modified != p->ev->modified) {
-                    /* wbt_log_debug("modified %d %d",p->modified,p->ev->modified); */
-                    continue;
-                }
-                /* 该事件确实超时了，尝试调用回调函数 */
-                if(p->ev->callback != NULL) {
+                /* 尝试调用回调函数 */
+                if(p->modified == p->ev->modified && p->ev->callback != NULL) {
                     p->ev->callback(p->ev);
                 }
+                /* 移除超时事件 */
+                wbt_heap_delete(&timeout_events);
                 p = wbt_heap_get(&timeout_events);
             }
             if(timeout_events.size > 0) {
