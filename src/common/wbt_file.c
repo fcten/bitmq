@@ -78,6 +78,9 @@ wbt_status wbt_file_init() {
 
 wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {    
     wbt_log_debug("try to open: %.*s", file_path->len, file_path->str);
+    /* TODO 不存在的文件也可以考虑放入文件树内
+     * 如果发生大量的 404 请求，可以提高性能
+     */
     
     tmp.offset = 0;
 
