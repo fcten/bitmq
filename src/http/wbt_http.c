@@ -223,8 +223,10 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     wbt_log_debug("VERSION: [%.*s]", http->version.len, http->version.str );
 
     /* 检查 HTTP 版本信息 */
-    wbt_str_t http_ver = wbt_string("HTTP/1.1");
-    if( wbt_strcmp( &http->version, &http_ver, http_ver.len ) != 0 ) {
+    wbt_str_t http_ver_1_0 = wbt_string("HTTP/1.0");
+    wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
+    if( wbt_strcmp( &http->version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
+        wbt_strcmp( &http->version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
         /* 400 Bad Request */
         return WBT_ERROR;
     }

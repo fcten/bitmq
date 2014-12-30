@@ -6,6 +6,7 @@
  */
 
 #include <sys/sendfile.h>
+#include <netinet/tcp.h>
 
 #include "wbt_connection.h"
 #include "wbt_string.h"
@@ -74,7 +75,7 @@ wbt_status wbt_conn_init() {
     /* 把监听socket加入epoll中 */
     wbt_event_t tmp_ev;
     tmp_ev.callback = NULL;
-    tmp_ev.events = EPOLLIN;
+    tmp_ev.events = EPOLLIN | EPOLLET;
     tmp_ev.fd = listen_fd;
     tmp_ev.time_out = 0;
 
@@ -115,11 +116,18 @@ wbt_status wbt_conn_close(wbt_event_t *ev) {
 wbt_status wbt_on_connect(wbt_event_t *ev) {
     struct sockaddr_in remote;
     int conn_sock, addrlen = sizeof(remote);
+#ifdef WBT_USE_ACCEPT4
+    while((conn_sock = accept4(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen, SOCK_NONBLOCK)) >= 0) {
+#else
     while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
+        wbt_setnonblocking(conn_sock); 
+#endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
         wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
-
-        wbt_setnonblocking(conn_sock); 
+        
+        /* 关闭 Nagle 算法保证网络利用率 */
+        int on = 1;
+        setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
 
         wbt_event_t *p_ev, tmp_ev;
         tmp_ev.callback = wbt_conn_close;
@@ -180,7 +188,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     wbt_http_t *http = &ev->data;
     
     if(http->file.fd == 0) {
-        /* TODO 需要判断 URI 是否以 / 开头 */
+        // TODO 需要判断 URI 是否以 / 开头
         wbt_str_t full_path;
         if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
             full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
@@ -212,8 +220,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
             send_buf = wbt_sprintf(&wbt_send_buf,
                 "HTTP/1.1 200 OK" CRLF
                 "Server: Webit" CRLF
-                "Connection: keep-alive" CRLF
-                "keep-alive: timeout=15,max=50" CRLF
+                "Connection: close" CRLF
+                //"keep-alive: timeout=15,max=50" CRLF
                 "Expires: Sun, 16 Oct 2016 05:43:02 GMT" CRLF
                 "Cache-control: max-age=3600" CRLF
                 "Content-Length: %d" CRLF
@@ -253,13 +261,14 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
 
     if( n == 0 ) {
-        /* 如果是 keep-alive 连接，继续等待数据到来 */
+        /* 如果是 keep-alive 连接，继续等待数据到来 
         ev->events = EPOLLIN | EPOLLET;
         ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
-        }
+        }*/
+        wbt_conn_close(ev);
 
         wbt_file_close( &http->uri );
 

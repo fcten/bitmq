@@ -27,8 +27,7 @@ extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 extern time_t cur_mtime;
 
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
-    /*
-     * 这个清理过程有问题
+    /* 从叶节点递归处理至根节点 */
     if(node != wbt_rbtree_node_nil) {
         wbt_file_cleanup_recursive(node->left);
         wbt_file_cleanup_recursive(node->right);
@@ -36,10 +35,10 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         wbt_file_t * tmp_file = (wbt_file_t *)node->value.ptr;
         if( tmp_file->refer == 0 && cur_mtime - tmp_file->last_use_mtime > 10000 ) {
             wbt_log_debug("closed fd:%d %.*s", tmp_file->fd, node->key.len, node->key.ptr);
+            close(tmp_file->fd);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
         }
     }
-    */
 }
 
 wbt_status wbt_file_cleanup(wbt_event_t *ev) {

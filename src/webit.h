@@ -17,7 +17,7 @@ extern "C" {
 
 #define WBT_DEBUG
 
-#define WBT_MAX_EVENTS      256
+#define WBT_MAX_EVENTS      512
 #define WBT_EVENT_LIST_SIZE 1024
 #define WBT_CONN_BACKLOG    511
 #define WBT_CONN_TIMEOUT    15000    /* 单位毫秒 */
@@ -25,6 +25,8 @@ extern "C" {
 #define CR      "\r"
 #define LF      "\n"
 #define CRLF    CR LF
+    
+#define WBT_USE_ACCEPT4
     
 typedef enum {
     WBT_OK,
