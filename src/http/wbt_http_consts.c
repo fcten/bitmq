@@ -131,7 +131,7 @@ wbt_str_t STATUS_CODE[] = {
 };
 
 wbt_str_t wbt_http_error_page[] = {
-    wbt_null_string,
+    wbt_null_string,  /* STATUS UNKNOWN */
     wbt_string("100 Continue"),
     wbt_string("101 Switching Protocols"), 
     wbt_string("102 Processing"),
@@ -154,7 +154,7 @@ wbt_str_t wbt_http_error_page[] = {
     wbt_string("400 Bad Request"),
     wbt_string("401 Unauthorized"),
     wbt_string("402 Payment Required"),
-    wbt_string(
+    wbt_string(  /* STATUS 403 */
     "<html>" CRLF
     "<head><title>403 Forbidden</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
@@ -162,7 +162,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<!-- Webit -->" CRLF
     "</body>" CRLF
     "</html>"
-    ),wbt_string(
+    ),wbt_string(  /* STATUS 404 */
     "<html>" CRLF
     "<head><title>404 Not Found</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF

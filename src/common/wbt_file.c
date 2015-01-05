@@ -95,10 +95,14 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         if( file == NULL ) {
             struct stat statbuff;  
             if(stat(file_path->str, &statbuff) < 0){  
-                /* 文件不存在 */
+                /* 文件访问失败 */
                 tmp.size = 0;
-                tmp.fd   = -1;
-                wbt_log_debug("stat error, %.*s not exists.", file_path->len, file_path->str);
+                if( errno == ENOENT ) {
+                    tmp.fd   = -1;  /* 文件不存在 */
+                } else {
+                    tmp.fd   = -2;  /* 权限不足或者其他错误 */
+                }
+                wbt_log_debug("stat: %s", strerror(errno));
             }else{  
                 if( S_ISDIR(statbuff.st_mode) ) {
                      /* 尝试打开的是目录 */
@@ -120,6 +124,13 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         tmp_file->size = tmp.size;
 
                         wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
+                    } else {
+                        tmp.size = 0;
+                        if( errno == EACCES ) {
+                            tmp.fd   = -2;
+                        } else {
+                            tmp.fd   = -1;
+                        }
                     }
                 }
             }
@@ -136,6 +147,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
 }
 
 wbt_status wbt_file_close( wbt_str_t * file_path ) {
+    wbt_log_debug("try to close: %.*s", file_path->len, file_path->str);
     /* TODO 目前这个函数需要执行一次额外的搜索操作，因为搜索已经在 open 的时候做过了 */
     wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
 

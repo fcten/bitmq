@@ -149,6 +149,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 
     return WBT_OK;
 }
+
 wbt_status wbt_on_recv(wbt_event_t *ev) {
     //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
 
@@ -186,7 +187,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     }
 
     wbt_http_t *http = &ev->data;
-    wbt_file_t *tmp = wbt_file_open(&full_path);
+    wbt_file_t *tmp = wbt_file_open( &full_path );
     if( tmp->fd < 0 ) {
         if( tmp->fd  == -1 ) {
             /* 文件不存在 */
@@ -284,19 +285,32 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
 
     if( n == 0 ) {
-        /* 如果是 keep-alive 连接，继续等待数据到来 
-        ev->events = EPOLLIN | EPOLLET;
-        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        // TODO 需要判断 URI 是否以 / 开头
+        // TODO 需要和前面的代码整合到一起
+        wbt_str_t full_path;
+        if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                ev->data.uri.len, ev->data.uri.str,
+                wbt_default_file.len, wbt_default_file.ptr);
+        } else {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+                ev->data.uri.len, ev->data.uri.str);
+        }
+        wbt_file_close( &full_path );
+        
+        /* 如果是 keep-alive 连接，继续等待数据到来 */
+        if( 0 ) {
+            wbt_http_destroy( &ev->data );
 
-        if(wbt_event_mod(ev) != WBT_OK) {
-            return WBT_ERROR;
-        }*/
-        wbt_conn_close(ev);
+            ev->events = EPOLLIN | EPOLLET;
+            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
-        wbt_file_close( &http->uri );
-
-        /* 释放掉旧的数据 */
-        wbt_http_destroy( &ev->data );  
+            if(wbt_event_mod(ev) != WBT_OK) {
+                return WBT_ERROR;
+            }
+        } else {
+            wbt_conn_close(ev);
+        }
     }
 
     return WBT_OK;
