@@ -172,6 +172,37 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
     /* 请求消息已经读完 */
     wbt_log_add("%.*s\n", ev->data.uri.len, ev->data.uri.str);
+
+    /* 打开所请求的文件 */
+    // TODO 需要判断 URI 是否以 / 开头
+    wbt_str_t full_path;
+    if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+            ev->data.uri.len, ev->data.uri.str,
+            wbt_default_file.len, wbt_default_file.ptr);
+    } else {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+            ev->data.uri.len, ev->data.uri.str);
+    }
+
+    wbt_http_t *http = &ev->data;
+    wbt_file_t *tmp = wbt_file_open(&full_path);
+    if( tmp->fd < 0 ) {
+        if( tmp->fd  == -1 ) {
+            /* 文件不存在 */
+            http->status = STATUS_404;
+        } else if( tmp->fd  == -2 ) {
+            /* 试图访问目录 */
+            http->status = STATUS_403;
+        }
+        return WBT_ERROR;
+    } else {
+        http->status = STATUS_200;
+
+        http->file.fd = tmp->fd;
+        http->file.size = tmp->size;
+        http->file.offset = 0;
+    }
     
     /* 等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
@@ -186,35 +217,27 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     wbt_http_t *http = &ev->data;
-    
-    if(http->file.fd == 0) {
-        // TODO 需要判断 URI 是否以 / 开头
-        wbt_str_t full_path;
-        if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-                ev->data.uri.len, ev->data.uri.str,
-                wbt_default_file.len, wbt_default_file.ptr);
-        } else {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-                ev->data.uri.len, ev->data.uri.str);
-        }
-
-        wbt_file_t *tmp = wbt_file_open(&full_path);
-        http->file.fd = tmp->fd;
-        http->file.size = tmp->size;
-        http->file.offset = 0;
-    }
 
     wbt_str_t send_buf = wbt_null_string;
-    if(http->file.fd < 0) {
+    
+    if( http->status != STATUS_200 ) {
+        if( http->status == STATUS_UNKNOWN || http->status >=  STATUS_LENGTH ) {
+            /* 这种情况不应当发生，只是为了避免一旦出现导致后续代码出现段错误 */
+            wbt_log_add("Unknow Status Code: %d\n", http->status);
+            http->status = STATUS_500;
+        }
+        /* 返回错误响应 */
         send_buf = wbt_sprintf(&wbt_send_buf,
-            "HTTP/1.1 404 Not Found" CRLF
+            "HTTP/1.1 %.*s" CRLF
             "Server: Webit" CRLF
             "Connection: keep-alive" CRLF
             "keep-alive: timeout=15,max=50" CRLF
-            "Content-Length: 69" CRLF
+            "Content-Length: %d" CRLF
             CRLF
-            "<html><head><title>404</title></head><body><h1>404</h1></body></html>"); 
+            "%.*s",
+            STATUS_CODE[http->status].len, STATUS_CODE[http->status].str,
+            wbt_http_error_page[http->status].len,
+            wbt_http_error_page[http->status].len, wbt_http_error_page[http->status].str); 
     } else {
         if(http->file.offset <= 0) {
             send_buf = wbt_sprintf(&wbt_send_buf,

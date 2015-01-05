@@ -313,8 +313,18 @@ wbt_status wbt_event_dispatch() {;
                         wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
                         if( wbt_on_recv(ev) != WBT_OK ) {
                             /* 解析数据失败 */
-                            /* TODO 返回4XX错误 */
-                             wbt_conn_close(ev);
+                            if( ev->data.status > STATUS_UNKNOWN ) {
+                                /* 需要返回错误响应 */
+                                /* 等待socket可写 */
+                                ev->events = EPOLLOUT | EPOLLET;
+                                ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+                                if(wbt_event_mod(ev) != WBT_OK) {
+                                    return WBT_ERROR;
+                                }
+                            } else {
+                                wbt_conn_close(ev);
+                            }
                         }
                     } else {
                         /* 读取出错，或者客户端主动断开了连接 */

@@ -19,6 +19,7 @@ extern "C" {
 #include "../common/wbt_file.h"
 
 typedef enum { 
+    METHOD_UNKNOWN,
     METHOD_GET,
     METHOD_POST,
     METHOD_HEAD,
@@ -31,6 +32,7 @@ typedef enum {
 } wbt_http_method_t;
 
 typedef enum {
+    HEADER_UNKNOWN,
     HEADER_CACHE_CONTROL,
     HEADER_CONNECTION,
     HEADER_DATE,
@@ -84,6 +86,7 @@ typedef enum {
 } wbt_http_line_t;
 
 typedef enum {
+    STATUS_UNKNOWN,  // Unknown
     STATUS_100,  // Continue
     STATUS_101,  // Switching Protocols
     STATUS_102,  // Processing
@@ -145,20 +148,22 @@ typedef struct wbt_http_header_s {
 } wbt_http_header_t;
     
 typedef struct wbt_http_s {
+    /* 以下变量用于保存接收到的请求数据 */
     wbt_mem_t buff;
     wbt_str_t method;
     wbt_str_t uri;
     wbt_str_t version;
     wbt_http_header_t * headers;
     wbt_str_t body;
+    /* 以下变量用于保存响应数据 */
+    wbt_http_status_t status;
     wbt_file_t file;
 } wbt_http_t;
 
 extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];
 extern wbt_str_t STATUS_CODE[];
-
-extern wbt_str_t wbt_http_error_page;
+extern wbt_str_t wbt_http_error_page[];
 
 wbt_status wbt_http_check_header_end( wbt_http_t* );
 wbt_status wbt_http_parse_request_header( wbt_http_t* );

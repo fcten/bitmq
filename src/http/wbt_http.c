@@ -141,8 +141,8 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     
                     /* 检测该name */
                     int i;
-                    tail->key = HEADER_LENGTH;
-                    for( i = 0 ; i < HEADER_LENGTH ; i ++ ) {
+                    tail->key = HEADER_UNKNOWN;
+                    for( i = 1 ; i < HEADER_LENGTH ; i ++ ) {
                         if( wbt_strcmp( &tail->name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
                             tail->key = i;
                             break;
@@ -227,14 +227,15 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
     if( wbt_strcmp( &http->version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
         wbt_strcmp( &http->version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
-        /* 400 Bad Request */
+        /* HTTP Version not supported */
+        http->status = STATUS_505;
         return WBT_ERROR;
     }
     
     /* 解析 request header */
     header = http->headers;
     while( header != NULL ) {
-        if( header->key == HEADER_LENGTH ) {
+        if( header->key == HEADER_UNKNOWN ) {
             /* 忽略未知的 header 
             wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
                 header->name.len, header->name.str,

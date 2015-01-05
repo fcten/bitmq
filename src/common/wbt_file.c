@@ -95,6 +95,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         if( file == NULL ) {
             struct stat statbuff;  
             if(stat(file_path->str, &statbuff) < 0){  
+                /* 文件不存在 */
                 tmp.size = 0;
                 tmp.fd   = -1;
                 wbt_log_debug("stat error, %.*s not exists.", file_path->len, file_path->str);
@@ -102,7 +103,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                 if( S_ISDIR(statbuff.st_mode) ) {
                      /* 尝试打开的是目录 */
                     tmp.size = 0;
-                    tmp.fd   = -1;
+                    tmp.fd   = -2;
                 } else {
                     /* 尝试打开的是文件 */
                     tmp.size = statbuff.st_size;

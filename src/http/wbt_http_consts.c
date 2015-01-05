@@ -8,7 +8,8 @@
 #include "../webit.h"
 #include "../common/wbt_string.h"
 
-const wbt_str_t REQUEST_METHOD[] = { 
+wbt_str_t REQUEST_METHOD[] = {
+    wbt_null_string,
     wbt_string("GET"),
     wbt_string("POST"),
     wbt_string("HEAD"),
@@ -20,7 +21,8 @@ const wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string
 };
 
-const wbt_str_t HTTP_HEADERS[] = {
+wbt_str_t HTTP_HEADERS[] = {
+    wbt_null_string,
     wbt_string("Cache-Control"),
     wbt_string("Connection"),
     wbt_string("Date"),
@@ -73,7 +75,8 @@ const wbt_str_t HTTP_HEADERS[] = {
     wbt_null_string
 };
 
-const wbt_str_t STATUS_CODE[] = {
+wbt_str_t STATUS_CODE[] = {
+    wbt_null_string,
     wbt_string("100 Continue"),
     wbt_string("101 Switching Protocols"), 
     wbt_string("102 Processing"),
@@ -127,12 +130,80 @@ const wbt_str_t STATUS_CODE[] = {
     wbt_null_string
 };
 
-const wbt_str_t wbt_http_error_page = wbt_string(
+wbt_str_t wbt_http_error_page[] = {
+    wbt_null_string,
+    wbt_string("100 Continue"),
+    wbt_string("101 Switching Protocols"), 
+    wbt_string("102 Processing"),
+    wbt_string("200 OK"),
+    wbt_string("201 Created"),
+    wbt_string("202 Accepted"),
+    wbt_string("203 Non-Authoritative Information"),
+    wbt_string("204 No Content"),
+    wbt_string("205 Reset Content"),
+    wbt_string("206 Partial Content"),
+    wbt_string("207 Multi-Status"),
+    wbt_string("300 Multiple Choices"),
+    wbt_string("301 Moved Permanently"),
+    wbt_string("302 Found"),
+    wbt_string("302 Moved Temporarily"), // 注意：这并不是一个标准的 HTTP/1.1 状态码，只是为了兼容而添加
+    wbt_string("303 See Other"),
+    wbt_string("304 Not Modified"),
+    wbt_string("305 Use Proxy"),
+    wbt_string("307 Temporary Redirect"),
+    wbt_string("400 Bad Request"),
+    wbt_string("401 Unauthorized"),
+    wbt_string("402 Payment Required"),
+    wbt_string(
     "<html>" CRLF
-    "<head><title>%.*s</title></head>" CRLF
+    "<head><title>403 Forbidden</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
-    "<center><h1>%.*s</h1></center>" CRLF
+    "<center><h1>403 Forbidden</h1></center>" CRLF
     "<!-- Webit -->" CRLF
     "</body>" CRLF
     "</html>"
-);
+    ),wbt_string(
+    "<html>" CRLF
+    "<head><title>404 Not Found</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>404 Not Found</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"
+    ),
+    wbt_string("405 Method Not Allowed"),
+    wbt_string("406 Not Acceptable"),
+    wbt_string("407 Proxy Authentication Required"),
+    wbt_string("408 Request Time-out"),
+    wbt_string("409 Conflict"),
+    wbt_string("410 Gone"),
+    wbt_string("411 Length Required"),
+    wbt_string("412 Precondition Failed"),
+    wbt_string("413 Request Entity Too Large"),
+    wbt_string("414 Request-URI Too Large"),
+    wbt_string("415 Unsupported Media Type"),
+    wbt_string("416 Requested range not satisfiable"),
+    wbt_string("417 Expectation Failed"),
+    wbt_string("422 Unprocessable Entity"),
+    wbt_string("423 Locked"),
+    wbt_string("424 Failed Dependency"),
+    wbt_string("426 Upgrade Required"),
+    wbt_string(
+    "<html>" CRLF
+    "<head><title>500 Internal Server Error</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>500 Internal Server Error</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"
+    ),
+    wbt_string("501 Not Implemented"),
+    wbt_string("502 Bad Gateway"),
+    wbt_string("503 Service Unavailable"),
+    wbt_string("504 Gateway Time-out"),
+    wbt_string("505 HTTP Version not supported"),
+    wbt_string("506 Variant Also Negotiates"),
+    wbt_string("507 Insufficient Storage"),
+    wbt_string("510 Not Extended"),
+    wbt_null_string
+};
