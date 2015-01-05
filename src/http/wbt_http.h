@@ -158,7 +158,10 @@ typedef struct wbt_http_s {
     /* 以下变量用于保存响应数据 */
     wbt_http_status_t status;
     wbt_file_t file;
+    unsigned int bit_flag;
 } wbt_http_t;
+
+#define WBT_HTTP_KEEP_ALIVE 1
 
 extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];

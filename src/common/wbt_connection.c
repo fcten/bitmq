@@ -302,7 +302,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
         
         /* 如果是 keep-alive 连接，继续等待数据到来 */
-        if( 0 ) {
+        if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
             /* 为下一个连接初始化相关结构 */
             wbt_http_destroy( &ev->data );
 

@@ -232,19 +232,26 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         return WBT_ERROR;
     }
     
+    wbt_str_t keep_alive = wbt_string("keep-alive");
+    
     /* 解析 request header */
     header = http->headers;
     while( header != NULL ) {
-        if( header->key == HEADER_UNKNOWN ) {
-            /* 忽略未知的 header 
-            wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
-                header->name.len, header->name.str,
-                header->value.len, header->value.str); */
-        } else {
-            /* 处理已知的 header 
-            wbt_log_debug(" HEADER: [%.*s: %.*s]",
-                HTTP_HEADERS[header->key].len, HTTP_HEADERS[header->key].str,
-                header->value.len, header->value.str); */
+        switch( header->key ) {
+            case HEADER_UNKNOWN:
+                /* 忽略未知的 header 
+                wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
+                    header->name.len, header->name.str,
+                    header->value.len, header->value.str); */
+                break;
+            case HEADER_CONNECTION:
+                if( wbt_strcmp( &header->value, &keep_alive, keep_alive.len ) == 0 ) {
+                    /* 声明为 keep-alive 连接 */
+                    http->bit_flag |= WBT_HTTP_KEEP_ALIVE;
+                } else {
+                    http->bit_flag &= ~WBT_HTTP_KEEP_ALIVE;
+                }
+                break;
         }
 
         header = header->next;
