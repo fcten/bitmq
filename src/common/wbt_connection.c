@@ -285,21 +285,25 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
 
     if( n == 0 ) {
-        // TODO 需要判断 URI 是否以 / 开头
-        // TODO 需要和前面的代码整合到一起
-        wbt_str_t full_path;
-        if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-                ev->data.uri.len, ev->data.uri.str,
-                wbt_default_file.len, wbt_default_file.ptr);
-        } else {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-                ev->data.uri.len, ev->data.uri.str);
+        /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
+        if( http->file.fd > 0 ) {
+            // TODO 需要判断 URI 是否以 / 开头
+            // TODO 需要和前面的代码整合到一起
+            wbt_str_t full_path;
+            if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                    ev->data.uri.len, ev->data.uri.str,
+                    wbt_default_file.len, wbt_default_file.ptr);
+            } else {
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+                    ev->data.uri.len, ev->data.uri.str);
+            }
+            wbt_file_close( &full_path );
         }
-        wbt_file_close( &full_path );
         
         /* 如果是 keep-alive 连接，继续等待数据到来 */
         if( 0 ) {
+            /* 为下一个连接初始化相关结构 */
             wbt_http_destroy( &ev->data );
 
             ev->events = EPOLLIN | EPOLLET;
@@ -309,6 +313,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
                 return WBT_ERROR;
             }
         } else {
+            /* 非 keep-alive 连接，直接关闭 */
             wbt_conn_close(ev);
         }
     }
