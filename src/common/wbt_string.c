@@ -111,7 +111,9 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
 
 /* 连接字符串 */
 void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src ) {
-    wbt_memcpy( (wbt_mem_t *)dest, (wbt_mem_t *)src, src->len );
-    dest->str += src->len;
-    dest->len -= src->len;
+    wbt_mem_t mdest;
+    mdest.ptr = dest->str + dest->len;
+    mdest.len = src->len;
+    wbt_memcpy( &mdest, (wbt_mem_t *)src, src->len );
+    dest->len += src->len;
 }

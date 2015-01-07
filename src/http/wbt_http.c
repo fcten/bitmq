@@ -329,7 +329,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     wbt_str_t space = wbt_string(" ");
     wbt_str_t colonspace = wbt_string(": ");
     dest.str = (u_char *)http->response.ptr;
-    dest.len = http->response.len;
+    dest.len = 0;
     /* "HTTP/1.1 200 OK\r\n" */
     wbt_strcat( &dest, &http_ver_1_1 );
     wbt_strcat( &dest, &space );
@@ -348,7 +348,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     wbt_strcat( &dest, &crlf );
     wbt_strcat( &dest, &http->resp_body );
     
-    wbt_log_debug("malloc: %d, left: %d", mem_len, dest.len );
+    wbt_log_debug("malloc: %d, use: %d", mem_len, dest.len );
     
     return WBT_OK;
 }
