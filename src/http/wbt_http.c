@@ -33,6 +33,17 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
         header = next;
     }
 
+    header = http->resp_headers;
+    while( header != NULL ) {
+        next = header->next;
+        
+        tmp.ptr = header;
+        tmp.len = 1;
+        wbt_free( &tmp );
+
+        header = next;
+    }
+    
     /* 释放接收到的请求数据 */
     wbt_free( &http->buff );
     
@@ -233,8 +244,6 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         return WBT_ERROR;
     }
     
-    wbt_str_t keep_alive = wbt_string("keep-alive");
-    
     /* 解析 request header */
     header = http->headers;
     while( header != NULL ) {
@@ -246,7 +255,7 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     header->value.len, header->value.str); */
                 break;
             case HEADER_CONNECTION:
-                if( wbt_strcmp( &header->value, &keep_alive, keep_alive.len ) == 0 ) {
+                if( wbt_strcmp( &header->value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
                     /* 声明为 keep-alive 连接 */
                     http->bit_flag |= WBT_HTTP_KEEP_ALIVE;
                 } else {
@@ -270,5 +279,27 @@ wbt_status wbt_http_check_body_end( wbt_http_t* http ) {
         return WBT_OK;
     }
 
+    return WBT_OK;
+}
+
+wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t * value ) {
+    wbt_http_header_t * header, * tail;
+
+    /* 创建新的节点 */
+    wbt_mem_t tmp;
+    wbt_malloc( &tmp, sizeof( wbt_http_header_t ) );
+    wbt_memset( &tmp, 0 );
+    header = (wbt_http_header_t *)tmp.ptr;
+    header->key = key;
+    header->value = *(value);
+
+    if( http->resp_headers == NULL ) {
+        http->resp_headers = header;
+    } else {
+        tail = http->resp_headers;
+        while( tail->next != NULL ) tail = tail->next;
+        tail->next = header;
+    }
+    
     return WBT_OK;
 }

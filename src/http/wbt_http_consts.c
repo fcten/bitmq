@@ -8,6 +8,10 @@
 #include "../webit.h"
 #include "../common/wbt_string.h"
 
+wbt_str_t header_server = wbt_string("Webit");
+wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
+wbt_str_t header_connection_close = wbt_string("keep-alive");
+
 wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string,
     wbt_string("GET"),

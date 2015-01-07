@@ -205,6 +205,14 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         http->file.offset = 0;
     }
     
+    /* 生成响应消息头 */
+    wbt_http_set_header( http, HEADER_SERVER, &header_server );
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
+    } else {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );
+    }
+    
     /* 等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
     ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
