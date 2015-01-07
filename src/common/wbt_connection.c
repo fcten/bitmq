@@ -250,17 +250,22 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     wbt_http_t *http = &ev->data;
 
-    int nwrite, data_size = http->response.len; 
-    int n = data_size; 
-    while (n > 0) { 
-        nwrite = write(fd, http->response.ptr + data_size - n, n); 
+    int nwrite, data_size, n;
+    
+    
+    if( http->file.offset == 0 ) {
+        data_size = http->response.len; 
+        n = data_size; 
+        while (n > 0) { 
+            nwrite = write(fd, http->response.ptr + data_size - n, n); 
 
-        if (nwrite == -1 && errno != EAGAIN) { 
-            perror("write error");
-            break;
+            if (nwrite == -1 && errno != EAGAIN) { 
+                perror("write error");
+                break;
+            }
+
+            n -= nwrite; 
         }
-        
-        n -= nwrite; 
     }
 
     if( http->file.fd > 0 ) {
