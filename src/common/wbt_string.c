@@ -108,3 +108,10 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
 
     return value;
 }
+
+/* 连接字符串 */
+void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src ) {
+    wbt_memcpy( (wbt_mem_t *)dest, (wbt_mem_t *)src, src->len );
+    dest->str += src->len;
+    dest->len -= src->len;
+}

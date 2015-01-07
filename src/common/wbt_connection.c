@@ -197,21 +197,14 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             http->status = STATUS_403;
         }
         return WBT_ERROR;
-    } else {
-        http->status = STATUS_200;
-
-        http->file.fd = tmp->fd;
-        http->file.size = tmp->size;
-        http->file.offset = 0;
     }
+    http->status = STATUS_200;
+    http->file.fd = tmp->fd;
+    http->file.size = tmp->size;
+    http->file.offset = 0;
     
-    /* 生成响应消息头 */
-    wbt_http_set_header( http, HEADER_SERVER, &header_server );
-    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
-        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
-    } else {
-        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );
-    }
+    /* 需要返回响应数据 */
+    wbt_on_process(ev);
     
     /* 等待socket可写 */
     ev->events = EPOLLOUT | EPOLLET;
@@ -223,51 +216,44 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     
     return WBT_OK;
 }
+
+wbt_status wbt_on_process(wbt_event_t *ev) {
+    /* 生成响应消息头 */
+    wbt_http_t *http = &ev->data;
+
+    wbt_http_set_header( http, HEADER_SERVER, &header_server );
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
+    } else {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );
+    }
+    wbt_str_t send_buf;
+    if( http->status == STATUS_200 ) {
+        send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size); 
+        
+        wbt_http_set_header( http, HEADER_EXPIRES, &header_expires );
+        wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
+    } else {
+        send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
+        
+        http->resp_body = wbt_http_error_page[http->status];
+    }
+    wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
+    
+    wbt_http_generate_response_header( http );
+    wbt_log_debug("%.*s", http->response.len, http->response.ptr);
+    
+    return WBT_OK;
+}
+
 wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     wbt_http_t *http = &ev->data;
 
-    wbt_str_t send_buf = wbt_null_string;
-    
-    if( http->status != STATUS_200 ) {
-        if( http->status == STATUS_UNKNOWN || http->status >=  STATUS_LENGTH ) {
-            /* 这种情况不应当发生，只是为了避免一旦出现导致后续代码出现段错误 */
-            wbt_log_add("Unknow Status Code: %d\n", http->status);
-            http->status = STATUS_500;
-        }
-        /* 返回错误响应 */
-        send_buf = wbt_sprintf(&wbt_send_buf,
-            "HTTP/1.1 %.*s" CRLF
-            "Server: Webit" CRLF
-            "Connection: keep-alive" CRLF
-            "keep-alive: timeout=15,max=50" CRLF
-            "Content-Length: %d" CRLF
-            CRLF
-            "%.*s",
-            STATUS_CODE[http->status].len, STATUS_CODE[http->status].str,
-            wbt_http_error_page[http->status].len,
-            wbt_http_error_page[http->status].len, wbt_http_error_page[http->status].str); 
-    } else {
-        if(http->file.offset <= 0) {
-            send_buf = wbt_sprintf(&wbt_send_buf,
-                "HTTP/1.1 200 OK" CRLF
-                "Server: Webit" CRLF
-                "Connection: close" CRLF
-                //"keep-alive: timeout=15,max=50" CRLF
-                "Expires: Sun, 16 Oct 2016 05:43:02 GMT" CRLF
-                "Cache-control: max-age=3600" CRLF
-                "Content-Length: %d" CRLF
-                CRLF,
-                http->file.size);
-        }
-    }
-    
-    //wbt_log_debug("\n------\n%.*s\n------\n", send_buf.len, send_buf.str);
-
-    int nwrite, data_size = send_buf.len; 
+    int nwrite, data_size = http->response.len; 
     int n = data_size; 
     while (n > 0) { 
-        nwrite = write(fd, send_buf.str + data_size - n, n); 
+        nwrite = write(fd, http->response.ptr + data_size - n, n); 
 
         if (nwrite == -1 && errno != EAGAIN) { 
             perror("write error");

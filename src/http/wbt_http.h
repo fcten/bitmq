@@ -159,6 +159,8 @@ typedef struct wbt_http_s {
     wbt_http_status_t status;
     wbt_file_t file;
     wbt_http_header_t * resp_headers;
+    wbt_str_t resp_body;
+    wbt_mem_t response;
     unsigned int bit_flag;
 } wbt_http_t;
 
@@ -169,24 +171,21 @@ extern wbt_str_t HTTP_HEADERS[];
 extern wbt_str_t STATUS_CODE[];
 extern wbt_str_t wbt_http_error_page[];
 
+extern wbt_str_t http_ver_1_0;
+extern wbt_str_t http_ver_1_1;
+
 extern wbt_str_t header_server;
 extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
+extern wbt_str_t header_expires;
+extern wbt_str_t header_cache_control;
 
 wbt_status wbt_http_check_header_end( wbt_http_t* );
 wbt_status wbt_http_parse_request_header( wbt_http_t* );
 wbt_status wbt_http_check_body_end( wbt_http_t* );
-
-wbt_status wbt_http_new( wbt_http_t* );
-wbt_status wbt_http_parse( wbt_http_t* );
 wbt_status wbt_http_destroy( wbt_http_t* );
-
-wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t*);
-wbt_status wbt_http_set_body( wbt_http_t*, const char * );
-
-wbt_status wbt_http_get_body( wbt_http_t* );
-wbt_status wbt_http_get_header( wbt_http_t*, int );
-
+wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
+wbt_status wbt_http_generate_response_header( wbt_http_t* );
 
 #ifdef	__cplusplus
 }

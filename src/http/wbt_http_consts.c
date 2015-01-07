@@ -8,9 +8,14 @@
 #include "../webit.h"
 #include "../common/wbt_string.h"
 
+wbt_str_t http_ver_1_0 = wbt_string("HTTP/1.0");
+wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
+
 wbt_str_t header_server = wbt_string("Webit");
 wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
 wbt_str_t header_connection_close = wbt_string("keep-alive");
+wbt_str_t header_expires = wbt_string("Sun, 16 Oct 2016 05:43:02 GMT");
+wbt_str_t header_cache_control = wbt_string("max-age=3600");
 
 wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string,

@@ -20,7 +20,7 @@ extern "C" {
 #define WBT_MAX_EVENTS      512
 #define WBT_EVENT_LIST_SIZE 1024
 #define WBT_CONN_BACKLOG    511
-#define WBT_CONN_TIMEOUT    15000    /* 单位毫秒 */
+#define WBT_CONN_TIMEOUT    15000    /* keep-alive 保持时间，单位毫秒 */
 
 #define CR      "\r"
 #define LF      "\n"

@@ -44,6 +44,9 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
         header = next;
     }
     
+    /* 释放生成的响应消息头 */
+    wbt_free( &http->response );
+    
     /* 释放接收到的请求数据 */
     wbt_free( &http->buff );
     
@@ -235,8 +238,6 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     wbt_log_debug("VERSION: [%.*s]", http->version.len, http->version.str );
 
     /* 检查 HTTP 版本信息 */
-    wbt_str_t http_ver_1_0 = wbt_string("HTTP/1.0");
-    wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
     if( wbt_strcmp( &http->version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
         wbt_strcmp( &http->version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
         /* HTTP Version not supported */
@@ -300,6 +301,54 @@ wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t
         while( tail->next != NULL ) tail = tail->next;
         tail->next = header;
     }
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
+    /* 释放掉上次生成的数据，以免多次调用本方法出现内存泄漏 */
+    wbt_free( &http->response );
+    
+    /* 计算并申请所需要的内存 */
+    int mem_len = 13;    // "HTTP/1.1 " CRLF CRLF
+    mem_len += STATUS_CODE[http->status].len;
+    wbt_http_header_t * header = http->resp_headers;
+    while( header != NULL ) {
+        mem_len += HTTP_HEADERS[header->key].len;
+        mem_len += header->value.len;
+        mem_len += 4;   // ": " CRLF
+            
+        header = header->next;
+    }
+    mem_len += http->resp_body.len;
+    wbt_malloc( &http->response, mem_len );
+    
+    /* 生成响应消息头 */
+    wbt_str_t dest;
+    wbt_str_t crlf = wbt_string(CRLF);
+    wbt_str_t space = wbt_string(" ");
+    wbt_str_t colonspace = wbt_string(": ");
+    dest.str = (u_char *)http->response.ptr;
+    dest.len = http->response.len;
+    /* "HTTP/1.1 200 OK\r\n" */
+    wbt_strcat( &dest, &http_ver_1_1 );
+    wbt_strcat( &dest, &space );
+    wbt_strcat( &dest, &STATUS_CODE[http->status] );
+    wbt_strcat( &dest, &crlf );
+    /* headers */
+    header = http->resp_headers;
+    while( header != NULL ) {
+        wbt_strcat( &dest, &HTTP_HEADERS[header->key] );
+        wbt_strcat( &dest, &colonspace );
+        wbt_strcat( &dest, &header->value );
+        wbt_strcat( &dest, &crlf );
+            
+        header = header->next;
+    }
+    wbt_strcat( &dest, &crlf );
+    wbt_strcat( &dest, &http->resp_body );
+    
+    wbt_log_debug("malloc: %d, left: %d", mem_len, dest.len );
     
     return WBT_OK;
 }

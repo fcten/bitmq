@@ -315,6 +315,7 @@ wbt_status wbt_event_dispatch() {;
                             /* 解析数据失败 */
                             if( ev->data.status > STATUS_UNKNOWN ) {
                                 /* 需要返回错误响应 */
+                                wbt_on_process(ev);
                                 /* 等待socket可写 */
                                 ev->events = EPOLLOUT | EPOLLET;
                                 ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
