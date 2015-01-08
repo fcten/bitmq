@@ -16,6 +16,7 @@ wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
 wbt_str_t header_connection_close = wbt_string("keep-alive");
 wbt_str_t header_expires = wbt_string("Sun, 16 Oct 2016 05:43:02 GMT");
 wbt_str_t header_cache_control = wbt_string("max-age=3600");
+wbt_str_t header_content_type_text_html = wbt_string("text/html");
 
 wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string,

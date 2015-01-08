@@ -236,6 +236,8 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
         
+        wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+        
         http->resp_body = wbt_http_error_page[http->status];
     }
     wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );

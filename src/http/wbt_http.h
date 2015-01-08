@@ -180,6 +180,7 @@ extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
 extern wbt_str_t header_expires;
 extern wbt_str_t header_cache_control;
+extern wbt_str_t header_content_type_text_html;
 
 wbt_status wbt_http_check_header_end( wbt_http_t* );
 wbt_status wbt_http_parse_request_header( wbt_http_t* );
