@@ -16,10 +16,30 @@ wbt_module_t wbt_module_http = {
     NULL
 };
 
+/* TODO 临时解决方案所引入的变量 */
+extern wbt_mem_t wbt_file_path;
+extern wbt_mem_t wbt_default_file; 
+
 /* 释放 http 结构体中动态分配的内存，并重新初始化结构体 */
 wbt_status wbt_http_destroy( wbt_http_t* http ) {
     wbt_http_header_t * header, * next;
     wbt_mem_t tmp;
+    
+    /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
+    if( http->file.fd > 0 ) {
+        // TODO 需要判断 URI 是否以 / 开头
+        // TODO 需要和前面的代码整合到一起
+        wbt_str_t full_path;
+        if( *(http->uri.str + http->uri.len - 1) == '/' ) {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                http->uri.len, http->uri.str,
+                wbt_default_file.len, wbt_default_file.ptr);
+        } else {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+                http->uri.len, http->uri.str);
+        }
+        wbt_file_close( &full_path );
+    }
 
     /* 释放动态分配的内存 */
     header = http->headers;

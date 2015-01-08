@@ -161,10 +161,11 @@ typedef struct wbt_http_s {
     wbt_http_header_t * resp_headers;
     wbt_str_t resp_body;
     wbt_mem_t response;
+    unsigned int resp_offset;
     unsigned int bit_flag;
 } wbt_http_t;
 
-#define WBT_HTTP_KEEP_ALIVE 1
+#define WBT_HTTP_KEEP_ALIVE     1
 
 extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];

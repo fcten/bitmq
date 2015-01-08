@@ -248,73 +248,62 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
 
 wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
+    int nwrite, n;
     wbt_http_t *http = &ev->data;
 
-    int nwrite, data_size, n;
-    
-    
-    if( http->file.offset == 0 ) {
-        data_size = http->response.len; 
-        n = data_size; 
-        while (n > 0) { 
-            nwrite = write(fd, http->response.ptr + data_size - n, n); 
+    /* 如果存在 response，发送 response */
+    if( http->response.len - http->resp_offset > 0 ) {
+        n = http->response.len - http->resp_offset; 
+        nwrite = write(fd, http->response.ptr + http->resp_offset, n); 
 
-            if (nwrite == -1 && errno != EAGAIN) { 
-                perror("write error");
-                break;
-            }
+        if (nwrite == -1 && errno != EAGAIN) {
+            wbt_conn_close(ev);
+            return WBT_ERROR;
+        }
 
-            n -= nwrite; 
+        http->resp_offset += nwrite;
+
+        wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
+        if( http->response.len > http->resp_offset ) {
+            /* 尚未发送完，缓冲区满 */
+            return WBT_OK;
         }
     }
-
-    if( http->file.fd > 0 ) {
+    
+    if( http->file.fd > 0 && http->file.size > http->file.offset  ) {
         // 在非阻塞模式下，对于大文件，每次只能发送一部分
         // 需要在未发送完成前继续监听可写事件
         n = http->file.size - http->file.offset;
         nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
 
         if (nwrite == -1 && errno != EAGAIN) { 
-            perror("write error");
-            //break;
-        }
-
-        n = n - nwrite;
-        wbt_log_debug("%d send, %d remain.", nwrite, n);
-    }
-
-    if( n == 0 ) {
-        /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
-        if( http->file.fd > 0 ) {
-            // TODO 需要判断 URI 是否以 / 开头
-            // TODO 需要和前面的代码整合到一起
-            wbt_str_t full_path;
-            if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-                    ev->data.uri.len, ev->data.uri.str,
-                    wbt_default_file.len, wbt_default_file.ptr);
-            } else {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-                    ev->data.uri.len, ev->data.uri.str);
-            }
-            wbt_file_close( &full_path );
-        }
-        
-        /* 如果是 keep-alive 连接，继续等待数据到来 */
-        if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
-            /* 为下一个连接初始化相关结构 */
-            wbt_http_destroy( &ev->data );
-
-            ev->events = EPOLLIN | EPOLLET;
-            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
-
-            if(wbt_event_mod(ev) != WBT_OK) {
-                return WBT_ERROR;
-            }
-        } else {
-            /* 非 keep-alive 连接，直接关闭 */
             wbt_conn_close(ev);
+            return WBT_ERROR;
         }
+
+        wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
+        if( n > nwrite ) {
+            /* 尚未发送完，缓冲区满 */
+            return WBT_OK;
+        }
+    }
+    
+    /* 所有数据发送完毕 */
+
+    /* 如果是 keep-alive 连接，继续等待数据到来 */
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+        /* 为下一个连接初始化相关结构 */
+        wbt_http_destroy( &ev->data );
+
+        ev->events = EPOLLIN | EPOLLET;
+        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    } else {
+        /* 非 keep-alive 连接，直接关闭 */
+        wbt_conn_close(ev);
     }
 
     return WBT_OK;
