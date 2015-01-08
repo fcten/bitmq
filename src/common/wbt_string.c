@@ -110,10 +110,14 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
 }
 
 /* 连接字符串 */
-void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src ) {
+void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
+    /* 防止缓冲区溢出 */
+    int src_len = src->len;
+    if( dest->len + src->len > max_len ) src_len = max_len - dest->len;
+
     wbt_mem_t mdest;
     mdest.ptr = dest->str + dest->len;
-    mdest.len = src->len;
-    wbt_memcpy( &mdest, (wbt_mem_t *)src, src->len );
-    dest->len += src->len;
+    mdest.len = src_len;
+    wbt_memcpy( &mdest, (wbt_mem_t *)src, src_len );
+    dest->len += src_len;
 }

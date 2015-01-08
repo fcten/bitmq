@@ -351,22 +351,22 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     dest.str = (u_char *)http->response.ptr;
     dest.len = 0;
     /* "HTTP/1.1 200 OK\r\n" */
-    wbt_strcat( &dest, &http_ver_1_1 );
-    wbt_strcat( &dest, &space );
-    wbt_strcat( &dest, &STATUS_CODE[http->status] );
-    wbt_strcat( &dest, &crlf );
+    wbt_strcat( &dest, &http_ver_1_1, mem_len );
+    wbt_strcat( &dest, &space, mem_len );
+    wbt_strcat( &dest, &STATUS_CODE[http->status], mem_len );
+    wbt_strcat( &dest, &crlf, mem_len );
     /* headers */
     header = http->resp_headers;
     while( header != NULL ) {
-        wbt_strcat( &dest, &HTTP_HEADERS[header->key] );
-        wbt_strcat( &dest, &colonspace );
-        wbt_strcat( &dest, &header->value );
-        wbt_strcat( &dest, &crlf );
+        wbt_strcat( &dest, &HTTP_HEADERS[header->key], mem_len );
+        wbt_strcat( &dest, &colonspace, mem_len );
+        wbt_strcat( &dest, &header->value, mem_len );
+        wbt_strcat( &dest, &crlf, mem_len );
             
         header = header->next;
     }
-    wbt_strcat( &dest, &crlf );
-    wbt_strcat( &dest, &http->resp_body );
+    wbt_strcat( &dest, &crlf, mem_len );
+    wbt_strcat( &dest, &http->resp_body, mem_len );
     
     wbt_log_debug("malloc: %d, use: %d", mem_len, dest.len );
     
