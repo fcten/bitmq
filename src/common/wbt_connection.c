@@ -234,7 +234,7 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
     if( http->status == STATUS_200 ) {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size); 
         
-        wbt_http_set_header( http, HEADER_EXPIRES, &header_expires );
+        wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);

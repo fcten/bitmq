@@ -178,7 +178,6 @@ extern wbt_str_t http_ver_1_1;
 extern wbt_str_t header_server;
 extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
-extern wbt_str_t header_expires;
 extern wbt_str_t header_cache_control;
 extern wbt_str_t header_content_type_text_html;
 

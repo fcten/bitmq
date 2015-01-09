@@ -20,6 +20,7 @@ extern "C" {
 extern time_t cur_mtime;
 extern wbt_str_t wbt_time_str_log;
 extern wbt_str_t wbt_time_str_http;
+extern wbt_str_t wbt_time_str_expire;
 
 wbt_status wbt_time_init();
 wbt_status wbt_time_update();
