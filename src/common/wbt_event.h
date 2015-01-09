@@ -14,7 +14,6 @@ extern "C" {
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
-#include <sys/time.h>
 #include <netinet/in.h> 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -44,6 +43,8 @@ typedef struct wbt_event_pool_s {
 
 /* 初始化事件池 */
 wbt_status wbt_event_init();
+/* 程序退出前关闭所有未超时的连接 */
+wbt_status wbt_event_exit();
 /* 添加事件 */
 wbt_event_t * wbt_event_add(wbt_event_t *ev);
 /* 删除事件 */

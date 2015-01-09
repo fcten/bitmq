@@ -14,7 +14,6 @@ extern "C" {
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
-#include <sys/time.h>
 #include <netinet/in.h> 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -23,7 +22,7 @@ extern "C" {
 #include <errno.h>
 
 #include "../webit.h"
-#include "wbt_event.h"
+#include "../http/wbt_http.h"
 
 wbt_status wbt_conn_init();
 wbt_status wbt_conn_close(wbt_event_t *ev);

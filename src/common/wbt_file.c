@@ -11,6 +11,7 @@
 #include "wbt_file.h"
 #include "wbt_rbtree.h"
 #include "wbt_event.h"
+#include "wbt_time.h"
 
 wbt_module_t wbt_module_file = {
     wbt_string("file"),
@@ -24,7 +25,6 @@ wbt_file_t tmp;
 wbt_rbtree_t wbt_file_rbtree;
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
-extern time_t cur_mtime;
 
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     /* 从叶节点递归处理至根节点 */

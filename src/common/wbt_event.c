@@ -11,16 +11,18 @@
 #include "wbt_log.h"
 #include "wbt_connection.h"
 #include "wbt_module.h"
+#include "wbt_time.h"
 
 wbt_module_t wbt_module_event = {
     wbt_string("event"),
-    wbt_event_init
+    wbt_event_init,
+    wbt_event_exit
 };
 
 int epoll_fd;
 extern int listen_fd;
 
-time_t cur_mtime;
+extern int wating_to_exit;
 
 /* 事件队列 */
 wbt_event_pool_t events;
@@ -64,9 +66,29 @@ wbt_status wbt_event_init() {
 
     return WBT_OK;
 }
+    
+/* 程序退出前执行所有尚未触发的超时事件 */
+wbt_status wbt_event_exit() {
+    if(timeout_events.size > 0) {
+        wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
+        while(timeout_events.size > 0) {
+            /* 尝试调用回调函数 */
+            if(p->modified == p->ev->modified && p->ev->callback != NULL) {
+                p->ev->callback(p->ev);
+            }
+            /* 移除超时事件 */
+            wbt_heap_delete(&timeout_events);
+            p = wbt_heap_get(&timeout_events);
+        }
+    }
+    
+    return WBT_OK;
+}
 
 /* 添加事件 */
 wbt_event_t * wbt_event_add(wbt_event_t *ev) {
+    if( wating_to_exit ) return NULL;
+
     if( events.top == 0 ) {
         /* 事件池已满,尝试动态扩充 */
         wbt_mem_t *tmp_mem, new_mem;
@@ -186,6 +208,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
+    if( wating_to_exit ) return WBT_OK;
     //wbt_log_debug("event mod, fd %d, addr %d",ev->fd,ev);
 
     /* 修改epoll事件 */
@@ -220,11 +243,8 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
 wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
-extern int wating_to_exit;
-
 wbt_status wbt_event_dispatch() {;
     int timeout = -1;
-    struct timeval cur_utime;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
 
@@ -246,8 +266,7 @@ wbt_status wbt_event_dispatch() {;
         //wbt_log_debug("%d event happened.",nfds);
         
         /* 更新当前时间 */
-        gettimeofday(&cur_utime, NULL);
-        cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
+        wbt_time_update();
 
         int i;
         for (i = 0; i < nfds; ++i) {

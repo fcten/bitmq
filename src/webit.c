@@ -170,7 +170,15 @@ int main(int argc, char** argv) {
 
     wbt_event_dispatch();
 
-    wbt_conn_cleanup();
+    /* 卸载所有模块 */
+    for( i = 0 ; wbt_modules[i] ; i++ ) {
+        if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
+            /* fatal */
+            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        } else {
+            wbt_log_debug( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        }
+    }
 
     wbt_log_add("Webit exit (pid: %d)\n", getpid());
 

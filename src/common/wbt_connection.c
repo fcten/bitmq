@@ -8,6 +8,7 @@
 #include <sys/sendfile.h>
 #include <netinet/tcp.h>
 
+#include "wbt_event.h"
 #include "wbt_connection.h"
 #include "wbt_string.h"
 #include "wbt_log.h"
@@ -15,18 +16,17 @@
 #include "wbt_module.h"
 #include "wbt_file.h"
 #include "wbt_config.h"
-#include "../http/wbt_http.h"
+#include "wbt_time.h"
 
 wbt_status wbt_setnonblocking(int sock);
 
 wbt_module_t wbt_module_conn = {
     wbt_string("connection"),
-    wbt_conn_init
+    wbt_conn_init,
+    wbt_conn_cleanup
 };
 
 int listen_fd;
-
-extern time_t cur_mtime;
 
 wbt_mem_t wbt_send_buf;
 wbt_mem_t wbt_file_path;
@@ -101,6 +101,8 @@ wbt_status wbt_conn_init() {
 
 wbt_status wbt_conn_cleanup() {
     close(listen_fd);
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_conn_close(wbt_event_t *ev) {

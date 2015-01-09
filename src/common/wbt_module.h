@@ -22,6 +22,7 @@ extern "C" {
 typedef struct wbt_module_s {
     wbt_str_t   name;
     wbt_status  (*init)();                      /* 模块初始化方法 */
+    wbt_status  (*exit)();                      /* 模块卸载方法 */
     wbt_status  (*on_conn)( wbt_http_t * );
     wbt_status  (*on_recv)( wbt_http_t * );
     wbt_status  (*on_send)( wbt_http_t * );
