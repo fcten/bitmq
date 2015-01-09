@@ -224,6 +224,7 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
     wbt_http_t *http = &ev->data;
 
     wbt_http_set_header( http, HEADER_SERVER, &header_server );
+    wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
         wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
     } else {
