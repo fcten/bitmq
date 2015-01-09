@@ -7,6 +7,7 @@
 
 #include "wbt_log.h"
 #include "wbt_module.h"
+#include "wbt_time.h"
 
 wbt_module_t wbt_module_log = {
     wbt_string("log"),
@@ -63,22 +64,6 @@ wbt_status wbt_log_write(wbt_str_t p) {
     return WBT_OK;
 }
 
-wbt_status wbt_log_time() {
-    time_t     now;
-    struct tm *timenow;
-    char tmpbuf[32];
-    
-    int fp = wbt_log_file_fd;
-
-    now = time(NULL);
-    timenow = localtime(&now);
-
-    strftime(tmpbuf, 32, "[%F %T] ", timenow);
-    write(fp, tmpbuf, strlen(tmpbuf));
-
-    return WBT_OK;
-}
-
 wbt_status wbt_log_add(const char *fmt, ...) {
     wbt_str_t s;
     va_list   args;
@@ -90,7 +75,7 @@ wbt_status wbt_log_add(const char *fmt, ...) {
     va_end(args);
 
     /* TODO 先写入缓存，定时写入磁盘 */
-    wbt_log_time();
+    write(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
     write(wbt_log_file_fd, s.str, s.len);
     
     return WBT_OK;
