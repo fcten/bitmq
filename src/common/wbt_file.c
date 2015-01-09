@@ -89,7 +89,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         /* 由于接收数据长度存在限制，这里无需担心溢出 */
         wbt_log_debug("file path too long");
 
-        tmp.fd = -1;
+        tmp.fd = -3;
     } else {
         wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
         if( file == NULL ) {

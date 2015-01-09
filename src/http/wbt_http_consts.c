@@ -13,7 +13,7 @@ wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
 
 wbt_str_t header_server = wbt_string("Webit");
 wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
-wbt_str_t header_connection_close = wbt_string("keep-alive");
+wbt_str_t header_connection_close = wbt_string("close");
 wbt_str_t header_cache_control = wbt_string("max-age=3600");
 wbt_str_t header_content_type_text_html = wbt_string("text/html");
 
@@ -160,8 +160,15 @@ wbt_str_t wbt_http_error_page[] = {
     wbt_string("304 Not Modified"),
     wbt_string("305 Use Proxy"),
     wbt_string("307 Temporary Redirect"),
-    wbt_string("400 Bad Request"),
-    wbt_string("401 Unauthorized"),
+    wbt_string(  /* STATUS 400 */
+    "<html>" CRLF
+    "<head><title>400 Bad Request</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>400 Bad Request</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"
+    ),wbt_string("401 Unauthorized"),
     wbt_string("402 Payment Required"),
     wbt_string(  /* STATUS 403 */
     "<html>" CRLF
@@ -188,8 +195,22 @@ wbt_str_t wbt_http_error_page[] = {
     wbt_string("410 Gone"),
     wbt_string("411 Length Required"),
     wbt_string("412 Precondition Failed"),
-    wbt_string("413 Request Entity Too Large"),
-    wbt_string("414 Request-URI Too Large"),
+    wbt_string(  /* STATUS 413 */
+    "<html>" CRLF
+    "<head><title>413 Request Entity Too Large</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>413 Request Entity Too Large</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"),
+    wbt_string(  /* STATUS 414 */
+    "<html>" CRLF
+    "<head><title>414 Request-URI Too Large</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>414 Request-URI Too Large</h1></center>" CRLF
+    "<!-- Webit -->" CRLF
+    "</body>" CRLF
+    "</html>"),
     wbt_string("415 Unsupported Media Type"),
     wbt_string("416 Requested range not satisfiable"),
     wbt_string("417 Expectation Failed"),

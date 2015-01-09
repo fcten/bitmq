@@ -324,32 +324,32 @@ wbt_status wbt_event_dispatch() {;
                 }
 
                 if( ev->data.buff.len > 40960 ) {
-                    /* TODO 返回4xx 错误 */
-                     wbt_conn_close(ev);
-                } else {
-                    if( bReadOk ) {
-                        /* 去除多余的缓存 */
-                        wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
-                        if( wbt_on_recv(ev) != WBT_OK ) {
-                            /* 解析数据失败 */
-                            if( ev->data.status > STATUS_UNKNOWN ) {
-                                /* 需要返回错误响应 */
-                                wbt_on_process(ev);
-                                /* 等待socket可写 */
-                                ev->events = EPOLLOUT | EPOLLET;
-                                ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+                     /* 413 Request Entity Too Large */
+                     ev->data.status = STATUS_413;
+                }
 
-                                if(wbt_event_mod(ev) != WBT_OK) {
-                                    return WBT_ERROR;
-                                }
-                            } else {
-                                wbt_conn_close(ev);
+                if( bReadOk ) {
+                    /* 去除多余的缓存 */
+                    wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
+                    if( wbt_on_recv(ev) != WBT_OK ) {
+                        /* 解析数据失败 */
+                        if( ev->data.status > STATUS_UNKNOWN ) {
+                            /* 需要返回错误响应 */
+                            wbt_on_process(ev);
+                            /* 等待socket可写 */
+                            ev->events = EPOLLOUT | EPOLLET;
+                            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+                            if(wbt_event_mod(ev) != WBT_OK) {
+                                return WBT_ERROR;
                             }
+                        } else {
+                            wbt_conn_close(ev);
                         }
-                    } else {
-                        /* 读取出错，或者客户端主动断开了连接 */
-                        wbt_conn_close(ev);
                     }
+                } else {
+                    /* 读取出错，或者客户端主动断开了连接 */
+                    wbt_conn_close(ev);
                 }
             } else if (events[i].events & EPOLLOUT) {
                 /* 数据发送已经就绪 */

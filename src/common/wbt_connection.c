@@ -154,6 +154,10 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 
 wbt_status wbt_on_recv(wbt_event_t *ev) {
     //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
+    /* 检查是否已解析过 */
+    if( ev->data.status > 0 ) {
+        return WBT_ERROR;
+    }
 
     /* 检查是否读完 http 消息头 */
     if( wbt_http_check_header_end( &ev->data ) != WBT_OK ) {
@@ -163,7 +167,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     
     /* 解析 http 消息头 */
     if( wbt_http_parse_request_header( &ev->data ) != WBT_OK ) {
-        /* 消息头格式不正确 */
+        /* 消息头格式不正确，具体状态码由所调用的函数设置 */
         return WBT_ERROR;
     }
 
@@ -197,6 +201,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         } else if( tmp->fd  == -2 ) {
             /* 试图访问目录 */
             http->status = STATUS_403;
+        } else if( tmp->fd  == -3 ) {
+            /* 路径过长 */
+            http->status = STATUS_414;
         }
         return WBT_ERROR;
     }
