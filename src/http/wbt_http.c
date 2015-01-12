@@ -256,6 +256,12 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     wbt_log_debug(" METHOD: [%.*s]", http->method.len, http->method.str );
     wbt_log_debug("    URI: [%.*s]", http->uri.len, http->uri.str );
     wbt_log_debug("VERSION: [%.*s]", http->version.len, http->version.str );
+    /* 检查 URI 长度 */
+    if( http->uri.len >= 512 ) {
+        /* 414 Request-URI Too Large */
+        http->status = STATUS_414;
+        return WBT_ERROR;
+    }
 
     /* 检查 HTTP 版本信息 */
     if( wbt_strcmp( &http->version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
