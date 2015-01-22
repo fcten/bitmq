@@ -112,6 +112,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                     /* 尝试打开的是文件 */
                     tmp.size = statbuff.st_size;
                     tmp.fd = open(file_path->str, O_RDONLY);
+                    tmp.last_modified =  statbuff.st_mtime;
 
                     if( tmp.fd > 0 ) {
                         file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
@@ -122,6 +123,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         tmp_file->fd = tmp.fd;
                         tmp_file->refer = 1;
                         tmp_file->size = tmp.size;
+                        tmp_file->last_modified = tmp.last_modified;
 
                         wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
                     } else {
@@ -140,6 +142,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
             
             tmp.fd = tmp_file->fd;
             tmp.size = tmp_file->size;
+            tmp.last_modified = tmp_file->last_modified;
         }
     }
 

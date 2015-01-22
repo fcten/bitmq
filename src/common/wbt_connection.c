@@ -210,6 +210,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     http->status = STATUS_200;
     http->file.fd = tmp->fd;
     http->file.size = tmp->size;
+    http->file.last_modified = tmp->last_modified;
     http->file.offset = 0;
     
     /* 需要返回响应数据 */
@@ -243,6 +244,8 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
         
         wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
+        
+        wbt_http_set_header( http, HEADER_LAST_MODIFIED, &header_connection_close );
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
         

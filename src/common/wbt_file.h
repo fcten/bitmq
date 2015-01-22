@@ -31,6 +31,7 @@ typedef struct wbt_file_s {
     size_t size;            /* 文件大小 */
     off_t offset;           /* 已发送数据偏移量 */
     time_t last_use_mtime;  /* 最近使用时间 */
+    time_t last_modified;   /* 最近修改时间 */
 } wbt_file_t;
 
 wbt_status wbt_file_init();
