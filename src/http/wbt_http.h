@@ -165,7 +165,8 @@ typedef struct wbt_http_s {
     unsigned int bit_flag;
 } wbt_http_t;
 
-#define WBT_HTTP_KEEP_ALIVE     1
+#define WBT_HTTP_KEEP_ALIVE         1
+#define WBT_HTTP_IF_MODIFIED_SINCE  2
 
 extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];

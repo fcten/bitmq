@@ -240,7 +240,24 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
     }
     wbt_str_t send_buf;
     if( http->status == STATUS_200 ) {
-        send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size); 
+        wbt_str_t * last_modified = wbt_time_to_str( http->file.last_modified );
+        if( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) {
+            wbt_http_header_t * header = http->headers;
+            while( header != NULL ) {
+                if( header->key == HEADER_IF_MODIFIED_SINCE &&
+                    wbt_strcmp2( last_modified, &header->value ) == 0 ) {
+                    /* 304 Not Modified */
+                    http->status = STATUS_304;
+                }
+                header = header->next;
+            }
+        }
+
+        if( http->status == STATUS_200 ) {
+            send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size);
+        } else {
+            send_buf = wbt_sprintf(&wbt_send_buf, "%d", 0);
+        }
         
         wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
@@ -285,7 +302,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
     }
     
-    if( http->file.fd > 0 && http->file.size > http->file.offset  ) {
+    if( http->status == STATUS_200 &&
+        http->file.fd > 0 && http->file.size > http->file.offset  ) {
         // 在非阻塞模式下，对于大文件，每次只能发送一部分
         // 需要在未发送完成前继续监听可写事件
         n = http->file.size - http->file.offset;

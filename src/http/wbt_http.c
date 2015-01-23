@@ -289,6 +289,10 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                     http->bit_flag &= ~WBT_HTTP_KEEP_ALIVE;
                 }
                 break;
+            case HEADER_IF_MODIFIED_SINCE:
+                /* 此时还没有读取文件，因此先记录此项 */
+                http->bit_flag |= WBT_HTTP_IF_MODIFIED_SINCE;
+                break;
         }
 
         header = header->next;
