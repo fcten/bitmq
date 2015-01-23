@@ -245,7 +245,7 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
         wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
         
-        wbt_http_set_header( http, HEADER_LAST_MODIFIED, &header_connection_close );
+        wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
         
