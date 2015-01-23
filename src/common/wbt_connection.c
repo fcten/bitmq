@@ -127,9 +127,11 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
         wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
         
-        /* 关闭 Nagle 算法保证网络利用率 */
+        /* 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
+        /*
         int on = 1;
         setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
+         */
 
         wbt_event_t *p_ev, tmp_ev;
         tmp_ev.callback = wbt_conn_close;
@@ -256,6 +258,7 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
         if( http->status == STATUS_200 ) {
             send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size);
         } else {
+            /* 目前，这里可能是 304 */
             send_buf = wbt_sprintf(&wbt_send_buf, "%d", 0);
         }
         
