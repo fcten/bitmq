@@ -27,7 +27,8 @@ extern "C" {
 
 typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
-    wbt_status (*callback)(struct wbt_event_s *);   /* 事件回调函数 */
+    wbt_status (*callback)(struct wbt_event_s *);   /* 超时回调函数 */
+    wbt_status (*trigger)(struct wbt_event_s *);    /* 触发回调函数 */
     time_t time_out;                                /* 事件超时时间 */
     unsigned int events;                            /* 事件类型 */
     unsigned int modified;                          /* 事件版本 */

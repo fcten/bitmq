@@ -382,3 +382,66 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     
     return WBT_OK;
 }
+
+wbt_status wbt_http_parse( wbt_http_t * http ) {
+    //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
+    /* 检查是否已解析过 */
+    if( http->status > 0 ) {
+        return WBT_ERROR;
+    }
+
+    /* 检查是否读完 http 消息头 */
+    if( wbt_http_check_header_end( http ) != WBT_OK ) {
+        /* 尚未读完，继续等待数据，直至超时 */
+        return WBT_OK;
+    }
+    
+    /* 解析 http 消息头 */
+    if( wbt_http_parse_request_header( http ) != WBT_OK ) {
+        /* 消息头格式不正确，具体状态码由所调用的函数设置 */
+        return WBT_ERROR;
+    }
+
+    /* 检查是否读完 http 消息体 */
+    if( wbt_http_check_body_end( http ) != WBT_OK ) {
+        /* 尚未读完，继续等待数据，直至超时 */
+        return WBT_OK;
+    }
+
+    /* 请求消息已经读完 */
+    wbt_log_add("%.*s\n", http->uri.len, http->uri.str);
+
+    /* 打开所请求的文件 */
+    // TODO 需要判断 URI 是否以 / 开头
+    wbt_str_t full_path;
+    if( *(http->uri.str + http->uri.len - 1) == '/' ) {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+            http->uri.len, http->uri.str,
+            wbt_default_file.len, wbt_default_file.ptr);
+    } else {
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+            http->uri.len, http->uri.str);
+    }
+
+    wbt_file_t *tmp = wbt_file_open( &full_path );
+    if( tmp->fd < 0 ) {
+        if( tmp->fd  == -1 ) {
+            /* 文件不存在 */
+            http->status = STATUS_404;
+        } else if( tmp->fd  == -2 ) {
+            /* 试图访问目录 */
+            http->status = STATUS_403;
+        } else if( tmp->fd  == -3 ) {
+            /* 路径过长 */
+            http->status = STATUS_414;
+        }
+        return WBT_ERROR;
+    }
+    http->status = STATUS_200;
+    http->file.fd = tmp->fd;
+    http->file.size = tmp->size;
+    http->file.last_modified = tmp->last_modified;
+    http->file.offset = 0;
+    
+    return WBT_OK;
+}

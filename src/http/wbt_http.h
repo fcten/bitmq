@@ -188,6 +188,7 @@ wbt_status wbt_http_check_body_end( wbt_http_t* );
 wbt_status wbt_http_destroy( wbt_http_t* );
 wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
 wbt_status wbt_http_generate_response_header( wbt_http_t* );
+wbt_status wbt_http_parse( wbt_http_t* );
 
 #ifdef	__cplusplus
 }

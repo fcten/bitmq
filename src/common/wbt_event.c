@@ -131,11 +131,10 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     
     /* 添加到事件池内 */
     wbt_event_t **tmp_ev = events.available.ptr;
-    tmp_ev[events.top]->callback = ev->callback;
-    tmp_ev[events.top]->fd = ev->fd;
-    tmp_ev[events.top]->time_out = ev->time_out;
-    tmp_ev[events.top]->events = ev->events;
-    tmp_ev[events.top]->modified ++;  /* 使用这个变量可能会提示未初始化的错误，但是无须在意 */
+    /* 使用这个变量可能会提示未初始化的错误，但是无须在意 */
+    unsigned int modified = tmp_ev[events.top]->modified + 1;
+    *(tmp_ev[events.top]) = *(ev);
+    tmp_ev[events.top]->modified = modified;
     
     /* 初始化结构体 */
     wbt_mem_t tmp;
@@ -272,85 +271,13 @@ wbt_status wbt_event_dispatch() {;
         for (i = 0; i < nfds; ++i) {
             ev = (wbt_event_t *)events[i].data.ptr;
 
-            if (ev->fd == listen_fd) {
-                /* 有新的客户端请求建立连接 */
-                if( wbt_on_connect(ev) != WBT_OK ) {
+            /* 尝试调用该事件的回调函数 */
+            if( ev->trigger != NULL ) {
+                if( ev->trigger(ev) != WBT_OK ) {
                     return WBT_ERROR;
                 }
             } else if (events[i].events & EPOLLIN) {
-                /* 有新的数据到达 */
-                int fd = ev->fd;
-                wbt_log_debug("recv data of connection %d.", fd);
 
-                int nread;
-                int bReadOk = 0;
-
-                while( ev->data.buff.len <= 40960 ) { /* 限制数据包长度 */
-                    if( wbt_realloc(&ev->data.buff, ev->data.buff.len + 4096) != WBT_OK ) {
-                        /* 内存不足 */
-                        wbt_log_add("wbt_realloc failed\n");
-
-                        return WBT_ERROR;
-                    }
-                    nread = recv(fd, ev->data.buff.ptr + ev->data.buff.len - 4096, 4096, 0);
-                    if(nread < 0) {
-                        if(errno == EAGAIN) {
-                            // 当前缓冲区已无数据可读
-                            bReadOk = 1;
-                            break;
-                        } else if (errno == ECONNRESET) {
-                            // 对方发送了RST
-                            break;
-                        } else if (errno == EINTR) {
-                            // 被信号中断
-                            continue;
-                        } else {
-                            // 其他不可弥补的错误
-                            break;
-                        }
-                    } else if( nread == 0) {
-                        // 这里表示对端的socket已正常关闭.发送过FIN了。
-                        break;
-                    }
-
-                    // recvNum > 0
-                   if ( nread == 4096) {
-                       continue;   // 需要再次读取
-                   } else {
-                       // 安全读完
-                       bReadOk = 1;
-                       break; // 退出while(1),表示已经全部读完数据
-                   }
-                }
-
-                if( ev->data.buff.len > 40960 ) {
-                     /* 413 Request Entity Too Large */
-                     ev->data.status = STATUS_413;
-                }
-
-                if( bReadOk ) {
-                    /* 去除多余的缓存 */
-                    wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
-                    if( wbt_on_recv(ev) != WBT_OK ) {
-                        /* 解析数据失败 */
-                        if( ev->data.status > STATUS_UNKNOWN ) {
-                            /* 需要返回错误响应 */
-                            wbt_on_process(ev);
-                            /* 等待socket可写 */
-                            ev->events = EPOLLOUT | EPOLLET;
-                            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
-
-                            if(wbt_event_mod(ev) != WBT_OK) {
-                                return WBT_ERROR;
-                            }
-                        } else {
-                            wbt_conn_close(ev);
-                        }
-                    }
-                } else {
-                    /* 读取出错，或者客户端主动断开了连接 */
-                    wbt_conn_close(ev);
-                }
             } else if (events[i].events & EPOLLOUT) {
                 /* 数据发送已经就绪 */
                 wbt_log_debug("send data to connection %d.", ev->fd);

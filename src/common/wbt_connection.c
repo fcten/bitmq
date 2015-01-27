@@ -75,6 +75,7 @@ wbt_status wbt_conn_init() {
     /* 把监听socket加入epoll中 */
     wbt_event_t tmp_ev;
     tmp_ev.callback = NULL;
+    tmp_ev.trigger = wbt_on_connect;
     tmp_ev.events = EPOLLIN | EPOLLET;
     tmp_ev.fd = listen_fd;
     tmp_ev.time_out = 0;
@@ -135,6 +136,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 
         wbt_event_t *p_ev, tmp_ev;
         tmp_ev.callback = wbt_conn_close;
+        tmp_ev.trigger = wbt_on_recv;
         tmp_ev.events = EPOLLIN | EPOLLET;
         tmp_ev.fd = conn_sock;
         tmp_ev.time_out = cur_mtime + WBT_CONN_TIMEOUT;
@@ -155,75 +157,78 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 }
 
 wbt_status wbt_on_recv(wbt_event_t *ev) {
-    //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
-    /* 检查是否已解析过 */
-    if( ev->data.status > 0 ) {
-        return WBT_ERROR;
-    }
+    /* 有新的数据到达 */
+    int fd = ev->fd;
+    wbt_log_debug("recv data of connection %d.", fd);
 
-    /* 检查是否读完 http 消息头 */
-    if( wbt_http_check_header_end( &ev->data ) != WBT_OK ) {
-        /* 尚未读完，继续等待数据，直至超时 */
-        return WBT_OK;
-    }
-    
-    /* 解析 http 消息头 */
-    if( wbt_http_parse_request_header( &ev->data ) != WBT_OK ) {
-        /* 消息头格式不正确，具体状态码由所调用的函数设置 */
-        return WBT_ERROR;
-    }
+    int nread;
+    int bReadOk = 0;
 
-    /* 检查是否读完 http 消息体 */
-    if( wbt_http_check_body_end( &ev->data ) != WBT_OK ) {
-        /* 尚未读完，继续等待数据，直至超时 */
-        return WBT_OK;
-    }
+    while( ev->data.buff.len <= 40960 ) { /* 限制数据包长度 */
+        if( wbt_realloc(&ev->data.buff, ev->data.buff.len + 4096) != WBT_OK ) {
+            /* 内存不足 */
+            wbt_log_add("wbt_realloc failed\n");
 
-    /* 请求消息已经读完 */
-    wbt_log_add("%.*s\n", ev->data.uri.len, ev->data.uri.str);
-
-    /* 打开所请求的文件 */
-    // TODO 需要判断 URI 是否以 / 开头
-    wbt_str_t full_path;
-    if( *(ev->data.uri.str + ev->data.uri.len - 1) == '/' ) {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-            ev->data.uri.len, ev->data.uri.str,
-            wbt_default_file.len, wbt_default_file.ptr);
-    } else {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-            ev->data.uri.len, ev->data.uri.str);
-    }
-
-    wbt_http_t *http = &ev->data;
-    wbt_file_t *tmp = wbt_file_open( &full_path );
-    if( tmp->fd < 0 ) {
-        if( tmp->fd  == -1 ) {
-            /* 文件不存在 */
-            http->status = STATUS_404;
-        } else if( tmp->fd  == -2 ) {
-            /* 试图访问目录 */
-            http->status = STATUS_403;
-        } else if( tmp->fd  == -3 ) {
-            /* 路径过长 */
-            http->status = STATUS_414;
+            return WBT_ERROR;
         }
-        return WBT_ERROR;
-    }
-    http->status = STATUS_200;
-    http->file.fd = tmp->fd;
-    http->file.size = tmp->size;
-    http->file.last_modified = tmp->last_modified;
-    http->file.offset = 0;
-    
-    /* 需要返回响应数据 */
-    wbt_on_process(ev);
-    
-    /* 等待socket可写 */
-    ev->events = EPOLLOUT | EPOLLET;
-    ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        nread = recv(fd, ev->data.buff.ptr + ev->data.buff.len - 4096, 4096, 0);
+        if(nread < 0) {
+            if(errno == EAGAIN) {
+                // 当前缓冲区已无数据可读
+                bReadOk = 1;
+                break;
+            } else if (errno == ECONNRESET) {
+                // 对方发送了RST
+                break;
+            } else if (errno == EINTR) {
+                // 被信号中断
+                continue;
+            } else {
+                // 其他不可弥补的错误
+                break;
+            }
+        } else if( nread == 0) {
+            // 这里表示对端的socket已正常关闭.发送过FIN了。
+            break;
+        }
 
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        // recvNum > 0
+       if ( nread == 4096) {
+           continue;   // 需要再次读取
+       } else {
+           // 安全读完
+           bReadOk = 1;
+           break; // 退出while(1),表示已经全部读完数据
+       }
+    }
+
+    if( ev->data.buff.len > 40960 ) {
+         /* 413 Request Entity Too Large */
+         ev->data.status = STATUS_413;
+    }
+
+    if( bReadOk ) {
+        /* 去除多余的缓存 */
+        wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
+        wbt_http_parse(&ev->data);
+        /* 需要返回响应 */
+        if( ev->data.status > STATUS_UNKNOWN ) {
+            /* 需要返回错误响应 */
+            wbt_on_process(ev);
+            /* 等待socket可写 */
+            ev->trigger = wbt_on_send;
+            ev->events = EPOLLOUT | EPOLLET;
+            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+            if(wbt_event_mod(ev) != WBT_OK) {
+                return WBT_ERROR;
+            }
+        } else {
+            wbt_conn_close(ev);
+        }
+    } else {
+        /* 读取出错，或者客户端主动断开了连接 */
+        wbt_conn_close(ev);
     }
     
     return WBT_OK;
