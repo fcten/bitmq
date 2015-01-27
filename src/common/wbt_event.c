@@ -279,10 +279,7 @@ wbt_status wbt_event_dispatch() {;
             } else if (events[i].events & EPOLLIN) {
 
             } else if (events[i].events & EPOLLOUT) {
-                /* 数据发送已经就绪 */
-                wbt_log_debug("send data to connection %d.", ev->fd);
-                
-                wbt_on_send(ev);
+
             }
         }
         

@@ -287,6 +287,9 @@ wbt_status wbt_on_process(wbt_event_t *ev) {
 }
 
 wbt_status wbt_on_send(wbt_event_t *ev) {
+    /* 数据发送已经就绪 */
+    wbt_log_debug("send data to connection %d.", ev->fd);
+
     int fd = ev->fd;
     int nwrite, n;
     wbt_http_t *http = &ev->data;
@@ -336,6 +339,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         /* 为下一个连接初始化相关结构 */
         wbt_http_destroy( &ev->data );
 
+        ev->trigger = wbt_on_send;
         ev->events = EPOLLIN | EPOLLET;
         ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 
