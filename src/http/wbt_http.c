@@ -9,16 +9,36 @@
 #include "../common/wbt_module.h"
 #include "../common/wbt_memory.h"
 #include "../common/wbt_log.h"
+#include "../common/wbt_time.h"
+#include "../common/wbt_config.h"
 #include "wbt_http.h"
 
 wbt_module_t wbt_module_http = {
     wbt_string("http"),
+    wbt_http_init,
     NULL
 };
 
-/* TODO 临时解决方案所引入的变量 */
-extern wbt_mem_t wbt_file_path;
-extern wbt_mem_t wbt_default_file; 
+wbt_mem_t wbt_file_path;
+wbt_mem_t wbt_default_file; 
+wbt_mem_t wbt_send_buf;
+
+wbt_status wbt_http_init() {
+    /* 初始化 sendbuf 与 file_path */
+    wbt_malloc(&wbt_send_buf, 10240);
+    wbt_malloc(&wbt_file_path, 512);
+    wbt_malloc(&wbt_default_file, 256);
+    
+    wbt_mem_t * default_file = wbt_conf_get_v("default");
+    wbt_memcpy(&wbt_default_file, default_file, default_file->len);
+    if( default_file->len >= 255 ) {
+        *((u_char *)wbt_default_file.ptr + 255) = '\0';
+    } else {
+        *((u_char *)wbt_default_file.ptr + default_file->len) = '\0';
+    }
+    
+    return WBT_OK;
+}
 
 /* 释放 http 结构体中动态分配的内存，并重新初始化结构体 */
 wbt_status wbt_http_destroy( wbt_http_t* http ) {
@@ -442,6 +462,56 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
     http->file.size = tmp->size;
     http->file.last_modified = tmp->last_modified;
     http->file.offset = 0;
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_http_process(wbt_http_t *http) {
+    /* 生成响应消息头 */
+    wbt_http_set_header( http, HEADER_SERVER, &header_server );
+    wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
+    } else {
+        wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );
+    }
+    wbt_str_t send_buf;
+    if( http->status == STATUS_200 ) {
+        wbt_str_t * last_modified = wbt_time_to_str( http->file.last_modified );
+        if( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) {
+            wbt_http_header_t * header = http->headers;
+            while( header != NULL ) {
+                if( header->key == HEADER_IF_MODIFIED_SINCE &&
+                    wbt_strcmp2( last_modified, &header->value ) == 0 ) {
+                    /* 304 Not Modified */
+                    http->status = STATUS_304;
+                }
+                header = header->next;
+            }
+        }
+
+        if( http->status == STATUS_200 ) {
+            send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size);
+        } else {
+            /* 目前，这里可能是 304 */
+            send_buf = wbt_sprintf(&wbt_send_buf, "%d", 0);
+        }
+        
+        wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
+        wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
+        
+        wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
+    } else {
+        send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
+        
+        wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+        
+        http->resp_body = wbt_http_error_page[http->status];
+    }
+    wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
+    
+    wbt_http_generate_response_header( http );
+    wbt_log_debug("%.*s", http->response.len, http->response.ptr);
     
     return WBT_OK;
 }
