@@ -191,10 +191,10 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     }
 
     if( bReadOk ) {
-        /* 去除多余的缓存 */
+        /* 去除多余的缓冲区 */
         wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
-        wbt_http_parse(&ev->data);
-        /* 需要返回响应 */
+        wbt_status ret = wbt_http_parse(&ev->data);
+
         if( ev->data.status > STATUS_UNKNOWN ) {
             /* 需要返回错误响应 */
             wbt_http_process(&ev->data);
@@ -206,7 +206,10 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             if(wbt_event_mod(ev) != WBT_OK) {
                 return WBT_ERROR;
             }
+        } else if( ret == WBT_OK ) {
+            /* 需要继续等待数据 */
         } else {
+            /* 严重的错误，直接断开连接 */
             wbt_conn_close(ev);
         }
     } else {
