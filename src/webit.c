@@ -66,36 +66,9 @@ void wbt_signal(int signal) {
     wating_to_exit = 1;
 }
 
-/*
- * 
- */
-int main(int argc, char** argv) {    
-    /* 设置程序允许打开的最大文件句柄数 */
-    struct rlimit rlim;
-    rlim.rlim_cur = 65535;
-    rlim.rlim_max = 65535;
-    setrlimit(RLIMIT_NOFILE, &rlim);
+int wbt_debug_on = 0;
 
-#ifndef WBT_DEBUG 
-    /* 转入后台运行 */
-    if( daemon(1,0) < 0 ) {
-        perror("error daemon");  
-        return 1;
-    }
-    
-    /* 设置需要监听的信号(后台模式) */
-    /*sigaction(SIGCHLD, NULL, NULL);
-    sigaction(SIGALRM, NULL, NULL);
-    sigaction(SIGIO, NULL, NULL);
-    sigaction(SIGINT, NULL, NULL);*/
-#else
-    /* 设置需要监听的信号(前台模式) */
-    signal(SIGTERM, wbt_signal);
-    signal(SIGINT, wbt_signal);
-#endif
-
-    initProcTitle(argc, argv);
-    
+int main(int argc, char** argv) {
     /* 初始化模块 */
     int i;
     for( i = 0 ; wbt_modules[i] ; i++ ) {
@@ -108,29 +81,58 @@ int main(int argc, char** argv) {
         }
     }
 
-#ifndef WBT_DEBUG 
-    /* 创建运行实例 */
-    pid_t childpid;
-    int status;
-    while(1) {
-        childpid = fork();
+    /* 设置程序允许打开的最大文件句柄数 */
+    struct rlimit rlim;
+    rlim.rlim_cur = 65535;
+    rlim.rlim_max = 65535;
+    setrlimit(RLIMIT_NOFILE, &rlim);
 
-        if ( -1 == childpid ) {
-            perror( "fork()" );
-            exit( EXIT_FAILURE );
-        } else if ( 0 == childpid ) {
-            /* In child process */
-            setProcTitle(argc, argv, "Webit: worker process");
-            break;
-        } else {
-            /* In parent */
-            setProcTitle(argc, argv, "Webit: master process (default)");
-            waitpid( childpid, &status, 0 );
+    /* 判断是否进入 debug 模式 */
+    wbt_str_t * run_mode = (wbt_str_t *)wbt_conf_get_v("run_mode");
+    wbt_str_t debug_on = wbt_string("debug");
+    if( run_mode != NULL && wbt_strcmp2( run_mode, &debug_on ) == 0 ) {
+        wbt_debug_on = 1;
+    }
+
+    if( wbt_debug_on ) {
+        /* 设置需要监听的信号(前台模式) */
+        signal(SIGTERM, wbt_signal);
+        signal(SIGINT, wbt_signal);
+    } else {
+        /* 转入后台运行 */
+        if( daemon(1,0) < 0 ) {
+            perror("error daemon");  
+            return 1;
+        }
+
+        /* 设置需要监听的信号(后台模式) */
+        /*sigaction(SIGCHLD, NULL, NULL);
+        sigaction(SIGALRM, NULL, NULL);
+        sigaction(SIGIO, NULL, NULL);
+        sigaction(SIGINT, NULL, NULL);*/
+
+        initProcTitle(argc, argv);
+
+        /* 创建运行实例 */
+        pid_t childpid;
+        int status;
+        while(1) {
+            childpid = fork();
+
+            if ( -1 == childpid ) {
+                perror( "fork()" );
+                exit( EXIT_FAILURE );
+            } else if ( 0 == childpid ) {
+                /* In child process */
+                setProcTitle(argc, argv, "Webit: worker process");
+                break;
+            } else {
+                /* In parent */
+                setProcTitle(argc, argv, "Webit: master process (default)");
+                waitpid( childpid, &status, 0 );
+            }
         }
     }
-#endif
-
-    wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 接下来的 chroot 会导致程序无法访问 /etc/timezone
      * TODO 读取 /etc/timezone 的内容并保存
@@ -140,15 +142,20 @@ int main(int argc, char** argv) {
         return 1;
     }
     tzset();
-
-    /* 限制可以访问的目录 */
+    
+    /* 限制可以访问的目录
+     * 这个操作会导致 daemon() 不能正常运行
+     * 所以检测 root 目录是否存在应该添加到 http 模块的初始化方法中
+     */
     const char * wwwroot = wbt_conf_get("root");
     if( chroot( wwwroot ) != 0 ) {
         wbt_log_add("%s not exists.\n", wwwroot);
         return 1;
     } else {
-        wbt_log_add("Root path: %s.\n", wwwroot);
+        wbt_log_add("Root path: %s\n", wwwroot);
     }
+    
+    wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 降低 worker 进程的权限 */
     if (geteuid() == 0) {
