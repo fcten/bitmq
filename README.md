@@ -1,6 +1,7 @@
 # Webit
 
 Webit 是一款使用 C 语言编写的高性能 HTTP 服务器。
+
 Webit 目前只支持在 GNU/Linux 平台上运行。
 
 ## 授权协议
