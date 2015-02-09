@@ -34,11 +34,12 @@ wbt_status wbt_module_init() {
         if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
             /* fatal */
             wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
-            return 1;
+            return WBT_ERROR;
         } else {
             wbt_log_debug( "module %.*s loaded", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         }
     }
+    return WBT_OK;
 }
 wbt_status wbt_module_exit() {
     /* 卸载所有模块 */
@@ -51,4 +52,5 @@ wbt_status wbt_module_exit() {
             wbt_log_debug( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         }
     }
+    return WBT_OK;
 }

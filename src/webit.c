@@ -7,8 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>  
+#include <signal.h>
 #include <grp.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
@@ -24,7 +23,10 @@
 extern char **environ;
 char *last;
 
-void initProcTitle(int argc, char **argv)
+int wbt_argc;
+char** wbt_argv;
+
+void initProcTitle()
 {
     size_t size = 0;
     int i;
@@ -39,37 +41,37 @@ void initProcTitle(int argc, char **argv)
         raw += strlen(environ[i]) + 1;
     }   
  
-    last = argv[0];
-    for (i = 0; i < argc; ++i) {
-        last += strlen(argv[i]) + 1;   
+    last = wbt_argv[0];
+    for (i = 0; i < wbt_argc; ++i) {
+        last += strlen(wbt_argv[i]) + 1;   
     }   
     for (i = 0; environ[i]; ++i) {
         last += strlen(environ[i]) + 1;
     }   
 }
  
-void setProcTitle(int argc, char **argv, const char *title)
+void setProcTitle(const char *title)
 {
-    argv[1] = 0;
-    char *p = argv[0];
+    wbt_argv[1] = 0;
+    char *p = wbt_argv[0];
     memset(p, 0x00, last - p); 
     strncpy(p, title, last - p); 
 }
 
 int wating_to_exit = 0;
 
-void wbt_signal(int signal) {
-    wbt_log_add("received singal: %d\n", signal);
+void wbt_signal(int signo, siginfo_t *info, void *context) {
+    wbt_log_add("received singal: %d\n", signo);
     
-    switch( signal ) {
+    switch( signo ) {
         case SIGCHLD:
-            /* 仅父进程：子进程退出，重新创建一个子进程 */
+            /* 仅父进程：子进程退出，从列表中移除 */
+            wbt_proc_remove(info->si_pid);
             break;
         case SIGTERM:
             /* 父进程：停止所有子进程并退出 */
             /* 子进程：停止事件循环并退出 */
             wating_to_exit = 1;
-
             break;
             /* 仅父进程：reload 信号 */
         case SIGINT:
@@ -79,7 +81,29 @@ void wbt_signal(int signal) {
     }
 }
 
-void wbt_worker_process() {    
+void wbt_worker_process() {
+    /* 设置进程标题 */
+    setProcTitle("Webit: worker process");
+
+    /* 设置需要监听的信号(后台模式) */
+    struct sigaction act;
+    sigset_t set;
+
+    act.sa_sigaction = wbt_signal;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO;
+
+    sigemptyset(&set);
+    sigaddset(&set, SIGCHLD);
+    sigaddset(&set, SIGTERM);
+
+    if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
+        wbt_log_add("sigprocmask() failed");
+    }
+
+    sigaction(SIGINT, &act, NULL); /* 退出信号 */
+    sigaction(SIGTERM, &act, NULL); /* 退出信号 */
+    
     /* 限制可以访问的目录
      * 这个操作会导致 daemon() 不能正常运行
      * 所以检测 root 目录是否存在应该添加到 http 模块的初始化方法中
@@ -114,16 +138,27 @@ void wbt_worker_process() {
 
     /* 进入事件循环 */
     wbt_event_dispatch();
+    
+    wbt_exit(0);
 }
 
 void wbt_master_process() {
+    /* 设置进程标题 */
+    setProcTitle("Webit: master process (default)");
+
+    /* 转入后台运行 */
+    if( daemon(1,0) < 0 ) {
+        perror("error daemon");  
+        return;
+    }
+    
     /* 设置需要监听的信号(后台模式) */
     struct sigaction act;
     sigset_t set;
 
-    act.sa_handler = wbt_signal;
+    act.sa_sigaction = wbt_signal;
     sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
+    act.sa_flags = SA_SIGINFO;
 
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
@@ -140,20 +175,41 @@ void wbt_master_process() {
     /* 自定义的 reload 信号 */
 
     while(!wating_to_exit) {
+        /* 创建子进程直至指定数量 */
+        wbt_proc_create(wbt_worker_process, 4);
+        
         sigsuspend(&set);
     }
+
+    /* 结束所有子进程 */
+    pid_t child;
+    while( ( child = wbt_proc_pop() ) != 0 ) {
+        kill( child, SIGTERM );
+    }
+    
+    wbt_exit(0);
 }
 
-pid_t wbt_fork_process() {
-    /* 创建运行实例 */
-    return fork();
+void wbt_exit(int exit_code) {
+    /* 卸载所有模块 */
+    wbt_module_exit();
+
+    wbt_log_add("Webit exit (pid: %d)\n", getpid());
+    
+    exit(exit_code);
 }
 
 int wbt_debug_on = 0;
 
 int main(int argc, char** argv) {
+    /* 保存传入参数 */
+    wbt_argc = argc;
+    wbt_argv = argv;
+
     /* 初始化所有组件 */
-    wbt_module_init();
+    if( wbt_module_init() != WBT_OK ) {
+        return 1;
+    }
 
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
@@ -177,43 +233,13 @@ int main(int argc, char** argv) {
         wbt_debug_on = 1;
     }
 
-    if( wbt_debug_on ) {
-        /* 设置需要监听的信号(前台模式) */
-        signal(SIGTERM, wbt_signal);
-        signal(SIGINT, wbt_signal);
-        
+    initProcTitle();
+
+    if( wbt_debug_on ) {     
         wbt_worker_process();
     } else {
-        /* 转入后台运行 */
-        if( daemon(1,0) < 0 ) {
-            perror("error daemon");  
-            return 1;
-        }
-
-        initProcTitle(argc, argv);
-
-        /* 创建运行实例 */
-        pid_t childpid;
-
-        childpid = wbt_fork_process();
-
-        if ( -1 == childpid ) {
-            return 1;
-        } else if ( 0 == childpid ) {
-            /* In child process */
-            setProcTitle(argc, argv, "Webit: worker process");
-            wbt_worker_process();
-        } else {
-            /* In parent */
-            setProcTitle(argc, argv, "Webit: master process (default)");
-            wbt_master_process();
-        }
+        wbt_master_process();
     }
-
-    /* 卸载所有模块 */
-    wbt_module_exit();
-
-    wbt_log_add("Webit exit (pid: %d)\n", getpid());
 
     return 0;
 }

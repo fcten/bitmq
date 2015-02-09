@@ -33,6 +33,8 @@ typedef enum {
     WBT_ERROR
 } wbt_status;
 
+void wbt_exit(int exit_code);
+
 #ifdef	__cplusplus
 }
 #endif
