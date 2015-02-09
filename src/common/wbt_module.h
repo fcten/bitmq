@@ -28,6 +28,8 @@ typedef struct wbt_module_s {
     wbt_status  (*on_send)( wbt_http_t * );
 } wbt_module_t;
 
+wbt_status wbt_module_init();
+wbt_status wbt_module_exit();
 
 #ifdef	__cplusplus
 }

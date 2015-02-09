@@ -6,6 +6,7 @@
  */
 
 #include "wbt_module.h"
+#include "wbt_log.h"
 
 extern wbt_module_t wbt_module_time;
 extern wbt_module_t wbt_module_log;
@@ -25,3 +26,29 @@ wbt_module_t * wbt_modules[] = {
     &wbt_module_http,
     NULL
 };
+
+wbt_status wbt_module_init() {
+    /* 初始化模块 */
+    int i;
+    for( i = 0 ; wbt_modules[i] ; i++ ) {
+        if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
+            /* fatal */
+            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            return 1;
+        } else {
+            wbt_log_debug( "module %.*s loaded", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        }
+    }
+}
+wbt_status wbt_module_exit() {
+    /* 卸载所有模块 */
+    int i;
+    for( i = 0 ; wbt_modules[i] ; i++ ) {
+        if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
+            /* fatal */
+            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        } else {
+            wbt_log_debug( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        }
+    }
+}

@@ -21,8 +21,6 @@
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
 
-extern wbt_module_t * wbt_modules[];
-
 extern char **environ;
 char *last;
 
@@ -148,39 +146,14 @@ void wbt_master_process() {
 
 pid_t wbt_fork_process() {
     /* 创建运行实例 */
-    int worker_num = 4;
-    pid_t childpid;
-
-    childpid = fork();
-
-    while(worker_num --) {
-        if ( -1 == childpid ) {
-            return childpid;
-        } else if ( 0 == childpid ) {
-            /* In child process */
-            return childpid;
-        } else {
-            /* In parent */
-        }
-    }
-    
-    return childpid;
+    return fork();
 }
 
 int wbt_debug_on = 0;
 
 int main(int argc, char** argv) {
-    /* 初始化模块 */
-    int i;
-    for( i = 0 ; wbt_modules[i] ; i++ ) {
-        if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
-            /* fatal */
-            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
-            return 1;
-        } else {
-            wbt_log_debug( "module %.*s loaded", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
-        }
-    }
+    /* 初始化所有组件 */
+    wbt_module_init();
 
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
@@ -238,14 +211,7 @@ int main(int argc, char** argv) {
     }
 
     /* 卸载所有模块 */
-    for( i = 0 ; wbt_modules[i] ; i++ ) {
-        if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
-            /* fatal */
-            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
-        } else {
-            wbt_log_debug( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
-        }
-    }
+    wbt_module_exit();
 
     wbt_log_add("Webit exit (pid: %d)\n", getpid());
 
