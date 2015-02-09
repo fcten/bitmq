@@ -26,6 +26,9 @@ char *last;
 int wbt_argc;
 char** wbt_argv;
 
+int wating_to_exit = 0;
+int wbt_debug_on = 0;
+
 void initProcTitle()
 {
     size_t size = 0;
@@ -57,8 +60,6 @@ void setProcTitle(const char *title)
     memset(p, 0x00, last - p); 
     strncpy(p, title, last - p); 
 }
-
-int wating_to_exit = 0;
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_add("received singal: %d\n", signo);
@@ -145,12 +146,6 @@ void wbt_worker_process() {
 void wbt_master_process() {
     /* 设置进程标题 */
     setProcTitle("Webit: master process (default)");
-
-    /* 转入后台运行 */
-    if( daemon(1,0) < 0 ) {
-        perror("error daemon");  
-        return;
-    }
     
     /* 设置需要监听的信号(后台模式) */
     struct sigaction act;
@@ -176,7 +171,7 @@ void wbt_master_process() {
 
     while(!wating_to_exit) {
         /* 创建子进程直至指定数量 */
-        wbt_proc_create(wbt_worker_process, 4);
+        wbt_proc_create(wbt_worker_process, 2);
         
         sigsuspend(&set);
     }
@@ -198,8 +193,6 @@ void wbt_exit(int exit_code) {
     
     exit(exit_code);
 }
-
-int wbt_debug_on = 0;
 
 int main(int argc, char** argv) {
     /* 保存传入参数 */
@@ -235,11 +228,15 @@ int main(int argc, char** argv) {
 
     initProcTitle();
 
-    if( wbt_debug_on ) {     
-        wbt_worker_process();
-    } else {
-        wbt_master_process();
+    if( !wbt_debug_on ) {
+        /* 转入后台运行 */
+        if( daemon(1,0) < 0 ) {
+            perror("error daemon");  
+            return 1;
+        }
     }
+    
+    wbt_master_process();
 
     return 0;
 }

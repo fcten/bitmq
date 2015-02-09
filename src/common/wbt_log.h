@@ -19,6 +19,7 @@ extern "C" {
 #include <fcntl.h>
 
 #include "../webit.h"
+#include "wbt_time.h"
 #include "wbt_string.h"
 
 typedef enum {
@@ -34,9 +35,12 @@ wbt_status wbt_log_add(const char *fmt, ...);
 
 #ifdef WBT_DEBUG
 #define wbt_log_debug(fmt, arg...) \
-	printf ("\033[31;49;1mDEBUG\033[0m ~ \033[32;49m%s@%d\033[0m " fmt "\n", strrchr (__FILE__, '/') == 0 ?  \
+	printf ("\033[31;49;1mDEBUG\033[0m ~ %d ~ \033[32;49m%s@%d\033[0m %.*s" fmt "\n", getpid(), \
+        strrchr (__FILE__, '/') == 0 ?  \
 		__FILE__ : strrchr (__FILE__, '/') + 1, \
-		__LINE__, ##arg);
+		__LINE__, \
+        wbt_time_str_log.len, wbt_time_str_log.str, \
+        ##arg);
 #else
 #define wbt_log_debug(fmt, arg...) ((void)0);
 #endif

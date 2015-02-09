@@ -68,18 +68,6 @@ wbt_status wbt_conn_init() {
         return WBT_ERROR;
     }
 
-    /* 把监听socket加入epoll中 */
-    wbt_event_t tmp_ev;
-    tmp_ev.callback = NULL;
-    tmp_ev.trigger = wbt_on_connect;
-    tmp_ev.events = EPOLLIN | EPOLLET;
-    tmp_ev.fd = listen_fd;
-    tmp_ev.time_out = 0;
-
-    if(wbt_event_add(&tmp_ev) == NULL) {
-        return WBT_ERROR;
-    }
-
     return WBT_OK;
 }
 
@@ -273,7 +261,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         /* 为下一个连接初始化相关结构 */
         wbt_http_destroy( &ev->data );
 
-        ev->trigger = wbt_on_send;
+        ev->trigger = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
         ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
 

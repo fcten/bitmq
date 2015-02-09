@@ -49,14 +49,6 @@ wbt_status wbt_event_init() {
         tmp_ev_p[i] = tmp_ev + i;
     }
 
-    /* 初始化 EPOLL */
-    epoll_fd = epoll_create(WBT_MAX_EVENTS);
-    if(epoll_fd <= 0) {
-        wbt_log_add("create epoll failed\n");
-
-        return WBT_ERROR;
-    }
-
     /* 初始化事件超时队列 */
     if(wbt_heap_new(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
         wbt_log_add("create heap failed\n");
@@ -247,22 +239,40 @@ wbt_status wbt_event_dispatch() {;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
 
+    /* 初始化 EPOLL */
+    epoll_fd = epoll_create(WBT_MAX_EVENTS);
+    if(epoll_fd <= 0) {
+        wbt_log_add("create epoll failed\n");
+
+        return WBT_ERROR;
+    }
+    
+    /* 把监听socket加入epoll中 */
+    wbt_event_t tmp_ev;
+    tmp_ev.callback = NULL;
+    tmp_ev.trigger = wbt_on_connect;
+    tmp_ev.events = EPOLLIN | EPOLLET;
+    tmp_ev.fd = listen_fd;
+    tmp_ev.time_out = 0;
+
+    if(wbt_event_add(&tmp_ev) == NULL) {
+        return WBT_ERROR;
+    }
+
     while (!wating_to_exit) {
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
             if (errno == EINTR) {
                 // 被信号中断
                 wbt_log_debug("epoll_wait: Interrupted system call");
-                
                 continue;
             } else {
                 // 其他不可弥补的错误
                 wbt_log_add("epoll_wait: %s\n", strerror(errno));
-
                 return WBT_ERROR;
             }
         }
-        //wbt_log_debug("%d event happened.",nfds);
+        wbt_log_debug("%d event happened.",nfds);
         
         /* 更新当前时间 */
         wbt_time_update();
