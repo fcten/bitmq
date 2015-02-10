@@ -26,6 +26,8 @@ wbt_rbtree_t wbt_file_rbtree;
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 
+int wbt_lock_accept;
+
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     /* 从叶节点递归处理至根节点 */
     if(node != wbt_rbtree_node_nil) {
@@ -70,6 +72,10 @@ wbt_status wbt_file_init() {
     tmp_ev.time_out = cur_mtime + 10000;
 
     if(wbt_event_add(&tmp_ev) == NULL) {
+        return WBT_ERROR;
+    }
+    
+    if( ( wbt_lock_accept = wbt_lock_create("/tmp/.wbt_accept_lock") ) <= 0 ) {
         return WBT_ERROR;
     }
     
@@ -166,4 +172,50 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
     }
 
     return WBT_OK;
+}
+
+wbt_status wbt_trylock_fd(int fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type   = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        return WBT_ERROR;
+    }
+
+    return WBT_OK;
+}
+
+wbt_status wbt_lock_fd(int fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLKW, &fl) == -1) {
+        return WBT_ERROR;
+    }
+
+    return WBT_OK;
+}
+
+wbt_status wbt_unlock_fd(int fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type = F_UNLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        return  WBT_ERROR;
+    }
+
+    return WBT_OK;
+}
+
+int wbt_lock_create( const char *name ) {
+    return open( name, O_RDWR | O_CREAT, 644 );
 }

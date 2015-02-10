@@ -97,7 +97,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         wbt_setnonblocking(conn_sock); 
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
-        wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
+        //wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
         
         /* 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
         /*

@@ -429,7 +429,7 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
     }
 
     /* 请求消息已经读完 */
-    wbt_log_add("%.*s\n", http->uri.len, http->uri.str);
+    //wbt_log_add("%.*s\n", http->uri.len, http->uri.str);
 
     /* 打开所请求的文件 */
     // TODO 需要判断 URI 是否以 / 开头

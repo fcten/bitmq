@@ -19,6 +19,7 @@
 #include "common/wbt_module.h"
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
+#include "os/linux/wbt_sigsegv.h"
 
 extern char **environ;
 char *last;
@@ -29,8 +30,7 @@ char** wbt_argv;
 int wating_to_exit = 0;
 int wbt_debug_on = 0;
 
-void initProcTitle()
-{
+void initProcTitle() {
     size_t size = 0;
     int i;
     for (i = 0; environ[i]; ++i) {
@@ -50,11 +50,10 @@ void initProcTitle()
     }   
     for (i = 0; environ[i]; ++i) {
         last += strlen(environ[i]) + 1;
-    }   
+    }
 }
  
-void setProcTitle(const char *title)
-{
+void setProcTitle(const char *title) {
     wbt_argv[1] = 0;
     char *p = wbt_argv[0];
     memset(p, 0x00, last - p); 
@@ -63,7 +62,7 @@ void setProcTitle(const char *title)
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_add("received singal: %d\n", signo);
-    
+
     switch( signo ) {
         case SIGCHLD:
             /* 仅父进程：子进程退出，从列表中移除 */
@@ -84,7 +83,9 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 
 void wbt_worker_process() {
     /* 设置进程标题 */
-    setProcTitle("Webit: worker process");
+    if( !wbt_debug_on ) {
+        setProcTitle("Webit: worker process");
+    }
 
     /* 设置需要监听的信号(后台模式) */
     struct sigaction act;
@@ -145,8 +146,10 @@ void wbt_worker_process() {
 
 void wbt_master_process() {
     /* 设置进程标题 */
-    setProcTitle("Webit: master process (default)");
-    
+    if( !wbt_debug_on ) {
+        setProcTitle("Webit: master process (default)");
+    }
+
     /* 设置需要监听的信号(后台模式) */
     struct sigaction act;
     sigset_t set;
@@ -186,6 +189,8 @@ void wbt_master_process() {
 }
 
 void wbt_exit(int exit_code) {
+    wating_to_exit = 1;
+
     /* 卸载所有模块 */
     wbt_module_exit();
 
@@ -198,6 +203,8 @@ int main(int argc, char** argv) {
     /* 保存传入参数 */
     wbt_argc = argc;
     wbt_argv = argv;
+    
+    setup_sigsegv();
 
     /* 初始化所有组件 */
     if( wbt_module_init() != WBT_OK ) {
@@ -234,9 +241,10 @@ int main(int argc, char** argv) {
             perror("error daemon");  
             return 1;
         }
+        wbt_master_process();
+    } else {
+        wbt_worker_process();
     }
-    
-    wbt_master_process();
 
     return 0;
 }
