@@ -19,6 +19,18 @@ wbt_rbtree_t wbt_config_rbtree;
 int wbt_conf_line = 1;
 int wbt_conf_charactor = 0;
 
+wbt_str_t wbt_conf_options[] = {
+    wbt_null_string,            // 未知选项
+    wbt_string("listen"),       // 监听端口
+    wbt_string("user"),         // 低权限用户
+    wbt_string("run_mode"),     // 运行模式
+    wbt_string("server_admin"), // 管理员联系方式
+    wbt_string("root"),         // 网站根目录
+    wbt_string("default"),      // 访问目录时的默认文件
+    wbt_string("process"),      // 工作进程数量
+    wbt_null_string
+};
+
 wbt_status wbt_conf_init() {
     wbt_rbtree_init(&wbt_config_rbtree);
     

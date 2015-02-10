@@ -84,7 +84,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 void wbt_worker_process() {
     /* 设置进程标题 */
     if( !wbt_debug_on ) {
-        setProcTitle("Webit: worker process");
+        //setProcTitle("Webit: worker process");
     }
 
     /* 设置需要监听的信号(后台模式) */
@@ -121,7 +121,8 @@ void wbt_worker_process() {
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
     /* 降低 worker 进程的权限 */
-    if (geteuid() == 0) {
+    const char * user = wbt_conf_get("user");
+    if ( user != NULL && geteuid() == 0 ) {
         if (setgid(33) == -1) {
             wbt_log_debug("setgid(%d) failed", 33)
             return;
@@ -147,7 +148,7 @@ void wbt_worker_process() {
 void wbt_master_process() {
     /* 设置进程标题 */
     if( !wbt_debug_on ) {
-        setProcTitle("Webit: master process (default)");
+        //setProcTitle("Webit: master process (default)");
     }
 
     /* 设置需要监听的信号(后台模式) */
