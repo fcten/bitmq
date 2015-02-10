@@ -25,16 +25,21 @@ wbt_mem_t wbt_send_buf;
 
 wbt_status wbt_http_init() {
     /* 初始化 sendbuf 与 file_path */
+    // TODO 根据读取的数据长度分配内存
     wbt_malloc(&wbt_send_buf, 10240);
     wbt_malloc(&wbt_file_path, 512);
     wbt_malloc(&wbt_default_file, 256);
     
     wbt_mem_t * default_file = wbt_conf_get_v("default");
-    wbt_memcpy(&wbt_default_file, default_file, default_file->len);
-    if( default_file->len >= 255 ) {
-        *((u_char *)wbt_default_file.ptr + 255) = '\0';
+    if( default_file == NULL ) {
+        *((u_char *)wbt_default_file.ptr) = '\0';
     } else {
-        *((u_char *)wbt_default_file.ptr + default_file->len) = '\0';
+        wbt_memcpy(&wbt_default_file, default_file, default_file->len);
+        if( default_file->len >= 255 ) {
+            *((u_char *)wbt_default_file.ptr + 255) = '\0';
+        } else {
+            *((u_char *)wbt_default_file.ptr + default_file->len) = '\0';
+        }
     }
     
     return WBT_OK;
