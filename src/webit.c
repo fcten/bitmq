@@ -28,7 +28,6 @@ int wbt_argc;
 char** wbt_argv;
 
 int wating_to_exit = 0;
-int wbt_debug_on = 0;
 
 void initProcTitle() {
     size_t size = 0;
@@ -83,7 +82,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 
 void wbt_worker_process() {
     /* 设置进程标题 */
-    if( !wbt_debug_on ) {
+    if( !wbt_conf.run_mode ) {
         //setProcTitle("Webit: worker process");
     }
 
@@ -106,21 +105,9 @@ void wbt_worker_process() {
     sigaction(SIGINT, &act, NULL); /* 退出信号 */
     sigaction(SIGTERM, &act, NULL); /* 退出信号 */
     
-    /* 限制可以访问的目录
-     * 这个操作会导致 daemon() 不能正常运行
-     * 所以检测 root 目录是否存在应该添加到 http 模块的初始化方法中
-     */
-    const char * wwwroot = wbt_conf_get("root");
-    if( chroot( wwwroot ) != 0 ) {
-        wbt_log_add("%s not exists.\n", wwwroot);
-        return;
-    } else {
-        wbt_log_add("Root path: %s\n", wwwroot);
-    }
-    
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
-    /* 降低 worker 进程的权限 */
+    /* 降低 worker 进程的权限 
     const char * user = wbt_conf_get("user");
     if ( user != NULL && geteuid() == 0 ) {
         if (setgid(33) == -1) {
@@ -137,7 +124,7 @@ void wbt_worker_process() {
             wbt_log_debug("setuid(%d) failed", 33);
             return;
         }
-    }
+    } */
 
     /* 进入事件循环 */
     wbt_event_dispatch();
@@ -147,7 +134,7 @@ void wbt_worker_process() {
 
 void wbt_master_process() {
     /* 设置进程标题 */
-    if( !wbt_debug_on ) {
+    if( !wbt_conf.run_mode ) {
         //setProcTitle("Webit: master process (default)");
     }
 
@@ -175,7 +162,7 @@ void wbt_master_process() {
 
     while(!wating_to_exit) {
         /* 创建子进程直至指定数量 */
-        wbt_proc_create(wbt_worker_process, 2);
+        wbt_proc_create(wbt_worker_process, wbt_conf.process);
         
         sigsuspend(&set);
     }
@@ -226,27 +213,34 @@ int main(int argc, char** argv) {
         return;
     }
     tzset();
-    
-    /* 判断是否进入 debug 模式 */
-    wbt_str_t * run_mode = (wbt_str_t *)wbt_conf_get_v("run_mode");
-    wbt_str_t debug_on = wbt_string("debug");
-    if( run_mode != NULL && wbt_strcmp2( run_mode, &debug_on ) == 0 ) {
-        wbt_debug_on = 1;
-    }
 
     initProcTitle();
 
-    if( !wbt_debug_on ) {
+    if( !wbt_conf.run_mode ) {
         /* 转入后台运行 */
         if( daemon(1,0) < 0 ) {
             perror("error daemon");  
             return 1;
         }
+    }
+
+    /* 限制可以访问的目录
+     * 这个操作会导致 daemon() 不能正常运行
+     */
+    const char * wwwroot = wbt_stdstr(&wbt_conf.root);
+    if( chroot( wwwroot ) != 0 ) {
+        wbt_log_add("%s not exists.\n", wwwroot);
+        return;
+    } else {
+        wbt_log_add("Root path: %s\n", wwwroot);
+    }
+
+    if( !wbt_conf.run_mode ) {
         wbt_master_process();
     } else {
         wbt_worker_process();
     }
-
+    
     return 0;
 }
 

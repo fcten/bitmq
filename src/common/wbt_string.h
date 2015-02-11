@@ -25,6 +25,9 @@ typedef struct {
 #define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
 #define wbt_null_string     { 0, NULL }
 
+#define wbt_str_set(stri, text)  (stri)->len = sizeof(text) - 1; (stri)->str = (u_char *) text
+#define wbt_str_set_null(stri)   (stri)->len = 0; (stri)->str = NULL
+
 const char * wbt_stdstr(wbt_str_t * str);
 
 wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);

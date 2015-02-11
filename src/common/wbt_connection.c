@@ -43,18 +43,12 @@ wbt_status wbt_conn_init() {
         return WBT_ERROR;
     }
     
-    /* bind & listen */
-    int port = 80;
-    const char * listen_port = wbt_conf_get("listen");
-    if( listen_port != NULL ) {
-        port = atoi(listen_port);
-    }
-    
+    /* bind & listen */    
     struct sockaddr_in sin;
     bzero(&sin, sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(port);
+    sin.sin_port = htons(wbt_conf.listen_port);
 
     if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
         wbt_log_add("bind failed\n");

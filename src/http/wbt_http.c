@@ -20,7 +20,6 @@ wbt_module_t wbt_module_http = {
 };
 
 wbt_mem_t wbt_file_path;
-wbt_mem_t wbt_default_file; 
 wbt_mem_t wbt_send_buf;
 
 wbt_status wbt_http_init() {
@@ -28,19 +27,6 @@ wbt_status wbt_http_init() {
     // TODO 根据读取的数据长度分配内存
     wbt_malloc(&wbt_send_buf, 10240);
     wbt_malloc(&wbt_file_path, 512);
-    wbt_malloc(&wbt_default_file, 256);
-    
-    wbt_mem_t * default_file = wbt_conf_get_v("default");
-    if( default_file == NULL ) {
-        *((u_char *)wbt_default_file.ptr) = '\0';
-    } else {
-        wbt_memcpy(&wbt_default_file, default_file, default_file->len);
-        if( default_file->len >= 255 ) {
-            *((u_char *)wbt_default_file.ptr + 255) = '\0';
-        } else {
-            *((u_char *)wbt_default_file.ptr + default_file->len) = '\0';
-        }
-    }
     
     return WBT_OK;
 }
@@ -58,7 +44,7 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
         if( *(http->uri.str + http->uri.len - 1) == '/' ) {
             full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
                 http->uri.len, http->uri.str,
-                wbt_default_file.len, wbt_default_file.ptr);
+                wbt_conf.index.len, wbt_conf.index.str);
         } else {
             full_path = wbt_sprintf(&wbt_file_path, "%.*s",
                 http->uri.len, http->uri.str);
@@ -442,7 +428,7 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
     if( *(http->uri.str + http->uri.len - 1) == '/' ) {
         full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
             http->uri.len, http->uri.str,
-            wbt_default_file.len, wbt_default_file.ptr);
+            wbt_conf.index.len, wbt_conf.index.str);
     } else {
         full_path = wbt_sprintf(&wbt_file_path, "%.*s",
             http->uri.len, http->uri.str);

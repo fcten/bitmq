@@ -21,20 +21,57 @@ int wbt_conf_charactor = 0;
 
 wbt_str_t wbt_conf_options[] = {
     wbt_null_string,            // 未知选项
-    wbt_string("listen"),       // 监听端口
     wbt_string("user"),         // 低权限用户
-    wbt_string("run_mode"),     // 运行模式
     wbt_string("server_admin"), // 管理员联系方式
     wbt_string("root"),         // 网站根目录
     wbt_string("default"),      // 访问目录时的默认文件
-    wbt_string("process"),      // 工作进程数量
     wbt_null_string
 };
+
+wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_init() {
     wbt_rbtree_init(&wbt_config_rbtree);
     
-    return wbt_conf_reload();
+    if( wbt_conf_reload() != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    
+    /* 初始化 wbt_conf */
+    const char * value;
+    wbt_mem_t * m_value;
+    
+    wbt_conf.listen_port = 80;
+    if( ( value = wbt_conf_get("listen") ) != NULL ) {
+        wbt_conf.listen_port = atoi(value);
+    }
+    
+    wbt_conf.process = 1;
+    if( ( value = wbt_conf_get("process") ) != NULL ) {
+        wbt_conf.process = atoi(value);
+    }
+    
+    wbt_conf.run_mode = 0;
+    if( ( value = wbt_conf_get("run_mode") ) != NULL ) {
+        wbt_conf.run_mode = atoi(value);
+    }
+
+    wbt_str_set_null(&wbt_conf.root); 
+    if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
+        wbt_conf.root.len = m_value->len;
+        wbt_conf.root.str = m_value->ptr;
+    } else {
+        wbt_log_add("root option must be defined in config file\n");
+        return WBT_ERROR;
+    }
+    
+    wbt_str_set_null(&wbt_conf.index);
+    if( ( m_value = wbt_conf_get_v("default") ) != NULL ) {
+        wbt_conf.index.len = m_value->len;
+        wbt_conf.index.str = m_value->ptr;
+    }
+    
+    return WBT_OK;
 }
 
 static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
