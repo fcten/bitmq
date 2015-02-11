@@ -19,15 +19,6 @@ wbt_rbtree_t wbt_config_rbtree;
 int wbt_conf_line = 1;
 int wbt_conf_charactor = 0;
 
-wbt_str_t wbt_conf_options[] = {
-    wbt_null_string,            // 未知选项
-    wbt_string("user"),         // 低权限用户
-    wbt_string("server_admin"), // 管理员联系方式
-    wbt_string("root"),         // 网站根目录
-    wbt_string("default"),      // 访问目录时的默认文件
-    wbt_null_string
-};
-
 wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_init() {
@@ -70,7 +61,19 @@ wbt_status wbt_conf_init() {
         wbt_conf.index.len = m_value->len;
         wbt_conf.index.str = m_value->ptr;
     }
-    
+
+    wbt_str_set_null(&wbt_conf.admin);
+    if( ( m_value = wbt_conf_get_v("server_admin") ) != NULL ) {
+        wbt_conf.admin.len = m_value->len;
+        wbt_conf.admin.str = m_value->ptr;
+    }
+
+    wbt_str_set_null(&wbt_conf.user);
+    if( ( m_value = wbt_conf_get_v("user") ) != NULL ) {
+        wbt_conf.user.len = m_value->len;
+        wbt_conf.user.str = m_value->ptr;
+    }
+
     return WBT_OK;
 }
 
