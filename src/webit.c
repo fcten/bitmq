@@ -99,7 +99,7 @@ void wbt_worker_process() {
     sigaddset(&set, SIGTERM);
 
     if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
-        wbt_log_add("sigprocmask() failed");
+        wbt_log_add("sigprocmask() failed\n");
     }
 
     sigaction(SIGINT, &act, NULL); /* 退出信号 */
@@ -151,7 +151,7 @@ void wbt_master_process() {
     sigaddset(&set, SIGTERM);
 
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
-        wbt_log_add("sigprocmask() failed");
+        wbt_log_add("sigprocmask() failed\n");
     }
 
     sigemptyset(&set);
@@ -160,7 +160,21 @@ void wbt_master_process() {
     sigaction(SIGTERM, &act, NULL); /* 命令 Webit 退出 */
     /* 自定义的 reload 信号 */
 
+    time_t prev_time;
+    int count = 0;
     while(!wating_to_exit) {
+        /* 防止 worker process 出错导致 fork 炸弹 */
+        wbt_time_update();
+        if( cur_mtime - prev_time <= 1000 ) {
+            if( ( count ++ ) > 9 ) {
+                wbt_log_add("try to fork child too fast\n");
+                sleep(5); // 触发限制后，每 5s 尝试一次
+            }
+        } else {
+            count = 0;
+        }
+        prev_time = cur_mtime;
+        
         /* 创建子进程直至指定数量 */
         wbt_proc_create(wbt_worker_process, wbt_conf.process);
         

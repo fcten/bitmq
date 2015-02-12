@@ -35,22 +35,35 @@ wbt_status wbt_conf_init() {
     wbt_conf.listen_port = 80;
     if( ( value = wbt_conf_get("listen") ) != NULL ) {
         wbt_conf.listen_port = atoi(value);
+        if( wbt_conf.listen_port < 0 || wbt_conf.listen_port > 65535  ) {
+            wbt_log_add("listen port out of range ( expect 0 - 65535 )\n");
+            return WBT_ERROR;
+        }
     }
     
     wbt_conf.process = 1;
     if( ( value = wbt_conf_get("process") ) != NULL ) {
         wbt_conf.process = atoi(value);
+        if( wbt_conf.process < 1 || wbt_conf.process > 128 ) {
+            wbt_log_add("worker process number out of range ( expect 1 - 128 )\n");
+            return WBT_ERROR;
+        }
     }
     
     wbt_conf.run_mode = 0;
     if( ( value = wbt_conf_get("run_mode") ) != NULL ) {
         wbt_conf.run_mode = atoi(value);
+        if( wbt_conf.process < 0 || wbt_conf.process > 1 ) {
+            wbt_log_add("run_mode out of range ( expect 0 - 1 )\n");
+            return WBT_ERROR;
+        }
     }
 
     wbt_str_set_null(&wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
         wbt_conf.root.len = m_value->len;
         wbt_conf.root.str = m_value->ptr;
+        // TODO 检查 root 是否存在
     } else {
         wbt_log_add("root option must be defined in config file\n");
         return WBT_ERROR;
