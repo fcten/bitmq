@@ -60,12 +60,21 @@ void setProcTitle(const char *title) {
 }
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
-    wbt_log_add("received singal: %d\n", signo);
+    wbt_log_debug("received singal: %d", signo);
+
+    pid_t pid;
+    int   stat;
 
     switch( signo ) {
         case SIGCHLD:
-            /* 仅父进程：子进程退出，从列表中移除 */
-            wbt_proc_remove(info->si_pid);
+            /* 仅父进程：子进程退出，从列表中移除
+             * 如果同时有大量进程退出，SIGCHLD 信号可能会丢失，
+             * 所以不能使只根据 info 中的 pid 判断
+             */
+            while((pid = waitpid(-1, &stat, WNOHANG)) > 0){
+               wbt_proc_remove(pid);
+            }
+
             break;
         case SIGTERM:
             /* 父进程：停止所有子进程并退出 */
