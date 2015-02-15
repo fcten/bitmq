@@ -177,7 +177,10 @@ void wbt_master_process() {
         if( cur_mtime - prev_time <= 1000 ) {
             if( ( count ++ ) > 9 ) {
                 wbt_log_add("try to fork child too fast\n");
-                sleep(5); // 触发限制后，每 5s 尝试一次
+                /* 触发限制后，每 5s 尝试一次 
+                 * 由于阻塞了相关信号，这会导致信号处理出现延迟
+                 */
+                sleep(5);
             }
         } else {
             count = 0;
