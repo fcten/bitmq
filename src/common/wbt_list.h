@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 typedef struct wbt_list_s {  
-    struct list_s *next, *prev;  
+    struct wbt_list_s *next, *prev;  
 } wbt_list_t;
 
 /* 用于通过 wbt_list_t 指针获得完整结构体的指针
