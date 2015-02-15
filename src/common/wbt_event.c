@@ -12,6 +12,7 @@
 #include "wbt_connection.h"
 #include "wbt_module.h"
 #include "wbt_time.h"
+#include "wbt_config.h"
 
 wbt_module_t wbt_module_event = {
     wbt_string("event"),
@@ -258,6 +259,14 @@ wbt_status wbt_event_dispatch() {;
     listen_ev.events = EPOLLIN | EPOLLET;
     listen_ev.fd = listen_fd;
     listen_ev.time_out = 0;
+    
+    if( wbt_conf.process == 1 ) {
+        wbt_log_debug("add listen event");
+        if(wbt_event_add(&listen_ev) == NULL) {
+            return WBT_ERROR;
+        }
+        is_accept_add = 1;
+    }
     
     while (!wating_to_exit) {
         /* 把监听socket加入epoll中 */
