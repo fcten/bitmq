@@ -19,6 +19,18 @@ inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
     }
 }
 
+inline wbt_status wbt_calloc(wbt_mem_t *p, size_t len) {
+    p->ptr = calloc(len);
+    if(p->ptr != NULL) {
+        p->len = len;
+        p->next = NULL;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
+}
+
 inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {
     void *tmp = realloc(p->ptr, len);
     if(tmp != NULL) {

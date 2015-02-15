@@ -24,6 +24,7 @@ typedef struct wbt_mem_s {
 } wbt_mem_t;
 
 inline wbt_status wbt_malloc(wbt_mem_t * p, size_t len);
+inline wbt_status wbt_calloc(wbt_mem_t * p, size_t len);
 inline void wbt_free(wbt_mem_t * p);
 inline void wbt_memset(wbt_mem_t * p, int ch);
 inline wbt_status wbt_realloc(wbt_mem_t * p, size_t len);
