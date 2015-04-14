@@ -24,6 +24,12 @@ extern "C" {
 #include "../webit.h"
 #include "../http/wbt_http.h"
 
+/* 视情况，可能需要管理 conn 
+typedef struct wbt_conn_s {
+
+} wbt_conn_t;
+*/
+
 wbt_status wbt_conn_init();
 wbt_status wbt_conn_close(wbt_event_t *ev);
 wbt_status wbt_conn_cleanup();

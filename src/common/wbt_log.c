@@ -73,7 +73,9 @@ wbt_status wbt_log_add(const char *fmt, ...) {
     s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
     va_end(args);
 
-    /* TODO 先写入缓存，定时写入磁盘 */
+    /* 操作系统本身会对写入操作进行缓存
+     * 需要考虑的是是否需要将日志强制刷入磁盘
+     */
     write(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
     write(wbt_log_file_fd, s.str, s.len);
     
