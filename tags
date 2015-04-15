@@ -1,0 +1,579 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ALLCONFS	nbproject/Makefile-impl.mk	/^ALLCONFS=Debug Release $/;"	m	line:34
+AS	nbproject/Makefile-Debug.mk	/^AS=as$/;"	m	line:21
+AS	nbproject/Makefile-Release.mk	/^AS=as$/;"	m	line:21
+ASFLAGS	nbproject/Makefile-Debug.mk	/^ASFLAGS=$/;"	m	line:68
+ASFLAGS	nbproject/Makefile-Release.mk	/^ASFLAGS=$/;"	m	line:68
+BUILD_SUBPROJECTS	nbproject/Makefile-impl.mk	/^BUILD_SUBPROJECTS=${BUILD_SUBPROJECTS_${SUBPROJECTS}}$/;"	m	line:20
+BUILD_SUBPROJECTS_	nbproject/Makefile-impl.mk	/^BUILD_SUBPROJECTS_=.build-subprojects$/;"	m	line:18
+BUILD_SUBPROJECTS_NO	nbproject/Makefile-impl.mk	/^BUILD_SUBPROJECTS_NO=$/;"	m	line:19
+CC	nbproject/Makefile-Debug.mk	/^CC=gcc$/;"	m	line:17
+CC	nbproject/Makefile-Release.mk	/^CC=gcc$/;"	m	line:17
+CCADMIN	Makefile	/^CCADMIN=CCadmin$/;"	m	line:50
+CCADMIN	nbproject/Makefile-Debug.mk	/^CCADMIN=CCadmin$/;"	m	line:15
+CCADMIN	nbproject/Makefile-Release.mk	/^CCADMIN=CCadmin$/;"	m	line:15
+CCC	nbproject/Makefile-Debug.mk	/^CCC=g++$/;"	m	line:18
+CCC	nbproject/Makefile-Release.mk	/^CCC=g++$/;"	m	line:18
+CCFLAGS	nbproject/Makefile-Debug.mk	/^CCFLAGS=$/;"	m	line:61
+CCFLAGS	nbproject/Makefile-Release.mk	/^CCFLAGS=$/;"	m	line:61
+CFLAGS	nbproject/Makefile-Debug.mk	/^CFLAGS=-ldl$/;"	m	line:58
+CFLAGS	nbproject/Makefile-Release.mk	/^CFLAGS=-ldl$/;"	m	line:58
+CLEAN_SUBPROJECTS	nbproject/Makefile-impl.mk	/^CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}$/;"	m	line:23
+CLEAN_SUBPROJECTS_	nbproject/Makefile-impl.mk	/^CLEAN_SUBPROJECTS_=.clean-subprojects$/;"	m	line:21
+CLEAN_SUBPROJECTS_NO	nbproject/Makefile-impl.mk	/^CLEAN_SUBPROJECTS_NO=$/;"	m	line:22
+CND_ARTIFACT_DIR_Debug	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_DIR_Debug=dist\/Debug\/GNU-Linux-x86$/;"	m	line:11
+CND_ARTIFACT_DIR_Release	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_DIR_Release=dist\/Release\/GNU-Linux-x86$/;"	m	line:19
+CND_ARTIFACT_NAME_Debug	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_NAME_Debug=webit$/;"	m	line:12
+CND_ARTIFACT_NAME_Release	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_NAME_Release=webit$/;"	m	line:20
+CND_ARTIFACT_PATH_Debug	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_PATH_Debug=dist\/Debug\/GNU-Linux-x86\/webit$/;"	m	line:13
+CND_ARTIFACT_PATH_Release	nbproject/Makefile-variables.mk	/^CND_ARTIFACT_PATH_Release=dist\/Release\/GNU-Linux-x86\/webit$/;"	m	line:21
+CND_BASEDIR	nbproject/Makefile-variables.mk	/^CND_BASEDIR=`pwd`$/;"	m	line:6
+CND_BUILDDIR	nbproject/Makefile-Debug.mk	/^CND_BUILDDIR=build$/;"	m	line:28
+CND_BUILDDIR	nbproject/Makefile-Release.mk	/^CND_BUILDDIR=build$/;"	m	line:28
+CND_BUILDDIR	nbproject/Makefile-variables.mk	/^CND_BUILDDIR=build$/;"	m	line:7
+CND_CONF	nbproject/Makefile-Debug.mk	/^CND_CONF=Debug$/;"	m	line:26
+CND_CONF	nbproject/Makefile-Release.mk	/^CND_CONF=Release$/;"	m	line:26
+CND_DISTDIR	nbproject/Makefile-Debug.mk	/^CND_DISTDIR=dist$/;"	m	line:27
+CND_DISTDIR	nbproject/Makefile-Release.mk	/^CND_DISTDIR=dist$/;"	m	line:27
+CND_DISTDIR	nbproject/Makefile-variables.mk	/^CND_DISTDIR=dist$/;"	m	line:8
+CND_DLIB_EXT	nbproject/Makefile-Debug.mk	/^CND_DLIB_EXT=so$/;"	m	line:25
+CND_DLIB_EXT	nbproject/Makefile-Release.mk	/^CND_DLIB_EXT=so$/;"	m	line:25
+CND_PACKAGE_DIR_Debug	nbproject/Makefile-variables.mk	/^CND_PACKAGE_DIR_Debug=dist\/Debug\/GNU-Linux-x86\/package$/;"	m	line:14
+CND_PACKAGE_DIR_Release	nbproject/Makefile-variables.mk	/^CND_PACKAGE_DIR_Release=dist\/Release\/GNU-Linux-x86\/package$/;"	m	line:22
+CND_PACKAGE_NAME_Debug	nbproject/Makefile-variables.mk	/^CND_PACKAGE_NAME_Debug=webit.tar$/;"	m	line:15
+CND_PACKAGE_NAME_Release	nbproject/Makefile-variables.mk	/^CND_PACKAGE_NAME_Release=webit.tar$/;"	m	line:23
+CND_PACKAGE_PATH_Debug	nbproject/Makefile-variables.mk	/^CND_PACKAGE_PATH_Debug=dist\/Debug\/GNU-Linux-x86\/package\/webit.tar$/;"	m	line:16
+CND_PACKAGE_PATH_Release	nbproject/Makefile-variables.mk	/^CND_PACKAGE_PATH_Release=dist\/Release\/GNU-Linux-x86\/package\/webit.tar$/;"	m	line:24
+CND_PLATFORM	nbproject/Makefile-Debug.mk	/^CND_PLATFORM=GNU-Linux-x86$/;"	m	line:24
+CND_PLATFORM	nbproject/Makefile-Release.mk	/^CND_PLATFORM=GNU-Linux-x86$/;"	m	line:24
+CND_PLATFORM_Debug	nbproject/Makefile-variables.mk	/^CND_PLATFORM_Debug=GNU-Linux-x86$/;"	m	line:10
+CND_PLATFORM_Release	nbproject/Makefile-variables.mk	/^CND_PLATFORM_Release=GNU-Linux-x86$/;"	m	line:18
+CONF	nbproject/Makefile-impl.mk	/^CONF=${DEFAULTCONF}$/;"	m	line:31
+CP	Makefile	/^CP=cp$/;"	m	line:49
+CP	nbproject/Makefile-Debug.mk	/^CP=cp$/;"	m	line:12
+CP	nbproject/Makefile-Release.mk	/^CP=cp$/;"	m	line:12
+CR	src/webit.h	25;"	d	line:25
+CRLF	src/webit.h	27;"	d	line:27
+CXX	nbproject/Makefile-Debug.mk	/^CXX=g++$/;"	m	line:19
+CXX	nbproject/Makefile-Release.mk	/^CXX=g++$/;"	m	line:19
+CXXFLAGS	nbproject/Makefile-Debug.mk	/^CXXFLAGS=$/;"	m	line:62
+CXXFLAGS	nbproject/Makefile-Release.mk	/^CXXFLAGS=$/;"	m	line:62
+DEFAULTCONF	nbproject/Makefile-impl.mk	/^DEFAULTCONF=Debug$/;"	m	line:30
+FC	nbproject/Makefile-Debug.mk	/^FC=gfortran$/;"	m	line:20
+FC	nbproject/Makefile-Release.mk	/^FC=gfortran$/;"	m	line:20
+FFLAGS	nbproject/Makefile-Debug.mk	/^FFLAGS=$/;"	m	line:65
+FFLAGS	nbproject/Makefile-Release.mk	/^FFLAGS=$/;"	m	line:65
+GREP	nbproject/Makefile-Debug.mk	/^GREP=grep$/;"	m	line:13
+GREP	nbproject/Makefile-Release.mk	/^GREP=grep$/;"	m	line:13
+HEADER_ACCEPT	src/http/wbt_http.h	/^    HEADER_ACCEPT,$/;"	e	line:45	enum:__anon2
+HEADER_ACCEPT_CHARSET	src/http/wbt_http.h	/^    HEADER_ACCEPT_CHARSET,$/;"	e	line:46	enum:__anon2
+HEADER_ACCEPT_ENCODING	src/http/wbt_http.h	/^    HEADER_ACCEPT_ENCODING,$/;"	e	line:47	enum:__anon2
+HEADER_ACCEPT_LANGUAGE	src/http/wbt_http.h	/^    HEADER_ACCEPT_LANGUAGE,$/;"	e	line:48	enum:__anon2
+HEADER_ACCEPT_RANGES	src/http/wbt_http.h	/^    HEADER_ACCEPT_RANGES,$/;"	e	line:64	enum:__anon2
+HEADER_AGE	src/http/wbt_http.h	/^    HEADER_AGE,$/;"	e	line:65	enum:__anon2
+HEADER_ALLOW	src/http/wbt_http.h	/^    HEADER_ALLOW,$/;"	e	line:73	enum:__anon2
+HEADER_AUTHORIZATION	src/http/wbt_http.h	/^    HEADER_AUTHORIZATION,$/;"	e	line:49	enum:__anon2
+HEADER_CACHE_CONTROL	src/http/wbt_http.h	/^    HEADER_CACHE_CONTROL,$/;"	e	line:36	enum:__anon2
+HEADER_CONNECTION	src/http/wbt_http.h	/^    HEADER_CONNECTION,$/;"	e	line:37	enum:__anon2
+HEADER_CONTENT_ENCODING	src/http/wbt_http.h	/^    HEADER_CONTENT_ENCODING,$/;"	e	line:74	enum:__anon2
+HEADER_CONTENT_LANGUAGE	src/http/wbt_http.h	/^    HEADER_CONTENT_LANGUAGE,$/;"	e	line:75	enum:__anon2
+HEADER_CONTENT_LENGTH	src/http/wbt_http.h	/^    HEADER_CONTENT_LENGTH,$/;"	e	line:76	enum:__anon2
+HEADER_CONTENT_LOCATION	src/http/wbt_http.h	/^    HEADER_CONTENT_LOCATION,$/;"	e	line:77	enum:__anon2
+HEADER_CONTENT_MD5	src/http/wbt_http.h	/^    HEADER_CONTENT_MD5,$/;"	e	line:78	enum:__anon2
+HEADER_CONTENT_RANGE	src/http/wbt_http.h	/^    HEADER_CONTENT_RANGE,$/;"	e	line:79	enum:__anon2
+HEADER_CONTENT_TYPE	src/http/wbt_http.h	/^    HEADER_CONTENT_TYPE,$/;"	e	line:80	enum:__anon2
+HEADER_COOKIE	src/http/wbt_http.h	/^    HEADER_COOKIE,$/;"	e	line:83	enum:__anon2
+HEADER_DATE	src/http/wbt_http.h	/^    HEADER_DATE,$/;"	e	line:38	enum:__anon2
+HEADER_ETAG	src/http/wbt_http.h	/^    HEADER_ETAG,$/;"	e	line:66	enum:__anon2
+HEADER_EXPECT	src/http/wbt_http.h	/^    HEADER_EXPECT,$/;"	e	line:50	enum:__anon2
+HEADER_EXPIRES	src/http/wbt_http.h	/^    HEADER_EXPIRES,$/;"	e	line:81	enum:__anon2
+HEADER_FROM	src/http/wbt_http.h	/^    HEADER_FROM,$/;"	e	line:51	enum:__anon2
+HEADER_HOST	src/http/wbt_http.h	/^    HEADER_HOST,$/;"	e	line:52	enum:__anon2
+HEADER_IF_MATCH	src/http/wbt_http.h	/^    HEADER_IF_MATCH,$/;"	e	line:53	enum:__anon2
+HEADER_IF_MODIFIED_SINCE	src/http/wbt_http.h	/^    HEADER_IF_MODIFIED_SINCE,$/;"	e	line:54	enum:__anon2
+HEADER_IF_NONE_MATCH	src/http/wbt_http.h	/^    HEADER_IF_NONE_MATCH,$/;"	e	line:55	enum:__anon2
+HEADER_IF_RANGE	src/http/wbt_http.h	/^    HEADER_IF_RANGE,$/;"	e	line:56	enum:__anon2
+HEADER_IF_UNMODIFIED_SINCE	src/http/wbt_http.h	/^    HEADER_IF_UNMODIFIED_SINCE,$/;"	e	line:57	enum:__anon2
+HEADER_LAST_MODIFIED	src/http/wbt_http.h	/^    HEADER_LAST_MODIFIED,$/;"	e	line:82	enum:__anon2
+HEADER_LENGTH	src/http/wbt_http.h	/^    HEADER_LENGTH$/;"	e	line:85	enum:__anon2
+HEADER_LOCATION	src/http/wbt_http.h	/^    HEADER_LOCATION,$/;"	e	line:67	enum:__anon2
+HEADER_MAX_FORWARDS	src/http/wbt_http.h	/^    HEADER_MAX_FORWARDS,$/;"	e	line:58	enum:__anon2
+HEADER_PRAGMA	src/http/wbt_http.h	/^    HEADER_PRAGMA,$/;"	e	line:39	enum:__anon2
+HEADER_PROXY_AUTENTICATE	src/http/wbt_http.h	/^    HEADER_PROXY_AUTENTICATE,$/;"	e	line:68	enum:__anon2
+HEADER_PROXY_AUTHORIZATION	src/http/wbt_http.h	/^    HEADER_PROXY_AUTHORIZATION,$/;"	e	line:59	enum:__anon2
+HEADER_RANGE	src/http/wbt_http.h	/^    HEADER_RANGE,$/;"	e	line:60	enum:__anon2
+HEADER_REFERER	src/http/wbt_http.h	/^    HEADER_REFERER,$/;"	e	line:61	enum:__anon2
+HEADER_RETRY_AFTER	src/http/wbt_http.h	/^    HEADER_RETRY_AFTER,$/;"	e	line:69	enum:__anon2
+HEADER_SERVER	src/http/wbt_http.h	/^    HEADER_SERVER,$/;"	e	line:70	enum:__anon2
+HEADER_SET_COOKIE	src/http/wbt_http.h	/^    HEADER_SET_COOKIE,$/;"	e	line:84	enum:__anon2
+HEADER_TE	src/http/wbt_http.h	/^    HEADER_TE,$/;"	e	line:62	enum:__anon2
+HEADER_TRAILER	src/http/wbt_http.h	/^    HEADER_TRAILER,$/;"	e	line:40	enum:__anon2
+HEADER_TRANSFER_ENCODING	src/http/wbt_http.h	/^    HEADER_TRANSFER_ENCODING,$/;"	e	line:41	enum:__anon2
+HEADER_UNKNOWN	src/http/wbt_http.h	/^    HEADER_UNKNOWN,$/;"	e	line:35	enum:__anon2
+HEADER_UPGRADE	src/http/wbt_http.h	/^    HEADER_UPGRADE,$/;"	e	line:42	enum:__anon2
+HEADER_USER_AGENT	src/http/wbt_http.h	/^    HEADER_USER_AGENT,$/;"	e	line:63	enum:__anon2
+HEADER_VARY	src/http/wbt_http.h	/^    HEADER_VARY,$/;"	e	line:71	enum:__anon2
+HEADER_VIA	src/http/wbt_http.h	/^    HEADER_VIA,$/;"	e	line:43	enum:__anon2
+HEADER_WARNING	src/http/wbt_http.h	/^    HEADER_WARNING,$/;"	e	line:44	enum:__anon2
+HEADER_WWW_AUTHENTICATE	src/http/wbt_http.h	/^    HEADER_WWW_AUTHENTICATE,$/;"	e	line:72	enum:__anon2
+HTTP_HEADERS	src/http/wbt_http_consts.c	/^wbt_str_t HTTP_HEADERS[] = {$/;"	v	line:33
+LDLIBSOPTIONS	nbproject/Makefile-Debug.mk	/^LDLIBSOPTIONS=$/;"	m	line:71
+LDLIBSOPTIONS	nbproject/Makefile-Release.mk	/^LDLIBSOPTIONS=$/;"	m	line:71
+LF	src/webit.h	26;"	d	line:26
+METHOD_CONNECT	src/http/wbt_http.h	/^    METHOD_CONNECT,$/;"	e	line:29	enum:__anon1
+METHOD_DELETE	src/http/wbt_http.h	/^    METHOD_DELETE, $/;"	e	line:27	enum:__anon1
+METHOD_GET	src/http/wbt_http.h	/^    METHOD_GET,$/;"	e	line:23	enum:__anon1
+METHOD_HEAD	src/http/wbt_http.h	/^    METHOD_HEAD,$/;"	e	line:25	enum:__anon1
+METHOD_LENGTH	src/http/wbt_http.h	/^    METHOD_LENGTH$/;"	e	line:31	enum:__anon1
+METHOD_OPTIONS	src/http/wbt_http.h	/^    METHOD_OPTIONS,$/;"	e	line:30	enum:__anon1
+METHOD_POST	src/http/wbt_http.h	/^    METHOD_POST,$/;"	e	line:24	enum:__anon1
+METHOD_PUT	src/http/wbt_http.h	/^    METHOD_PUT, $/;"	e	line:26	enum:__anon1
+METHOD_TRACE	src/http/wbt_http.h	/^    METHOD_TRACE,$/;"	e	line:28	enum:__anon1
+METHOD_UNKNOWN	src/http/wbt_http.h	/^    METHOD_UNKNOWN,$/;"	e	line:22	enum:__anon1
+MKDIR	Makefile	/^MKDIR=mkdir$/;"	m	line:48
+MKDIR	nbproject/Makefile-Debug.mk	/^MKDIR=mkdir$/;"	m	line:11
+MKDIR	nbproject/Makefile-Release.mk	/^MKDIR=mkdir$/;"	m	line:11
+NM	nbproject/Makefile-Debug.mk	/^NM=nm$/;"	m	line:14
+NM	nbproject/Makefile-Release.mk	/^NM=nm$/;"	m	line:14
+NO_CPP_DEMANGLE	src/os/linux/wbt_sigsegv.c	22;"	d	line:22	file:
+OBJECTDIR	nbproject/Makefile-Debug.mk	/^OBJECTDIR=${CND_BUILDDIR}\/${CND_CONF}\/${CND_PLATFORM}$/;"	m	line:34
+OBJECTDIR	nbproject/Makefile-Release.mk	/^OBJECTDIR=${CND_BUILDDIR}\/${CND_CONF}\/${CND_PLATFORM}$/;"	m	line:34
+OBJECTFILES	nbproject/Makefile-Debug.mk	/^OBJECTFILES= \\$/;"	m	line:37
+OBJECTFILES	nbproject/Makefile-Release.mk	/^OBJECTFILES= \\$/;"	m	line:37
+PROJECTNAME	nbproject/Makefile-impl.mk	/^PROJECTNAME=webit$/;"	m	line:27
+RANLIB	nbproject/Makefile-Debug.mk	/^RANLIB=ranlib$/;"	m	line:16
+RANLIB	nbproject/Makefile-Release.mk	/^RANLIB=ranlib$/;"	m	line:16
+REGFORMAT	src/os/linux/wbt_sigsegv.c	30;"	d	line:30	file:
+REGFORMAT	src/os/linux/wbt_sigsegv.c	33;"	d	line:33	file:
+REGFORMAT	src/os/linux/wbt_sigsegv.c	36;"	d	line:36	file:
+REQUEST_METHOD	src/http/wbt_http_consts.c	/^wbt_str_t REQUEST_METHOD[] = {$/;"	v	line:20
+SIGSEGV_NO_AUTO_INIT	src/os/linux/wbt_sigsegv.c	2;"	d	line:2	file:
+SIGSEGV_STACK_GENERIC	src/os/linux/wbt_sigsegv.c	35;"	d	line:35	file:
+SIGSEGV_STACK_IA64	src/os/linux/wbt_sigsegv.c	29;"	d	line:29	file:
+SIGSEGV_STACK_X86	src/os/linux/wbt_sigsegv.c	32;"	d	line:32	file:
+STATUS_100	src/http/wbt_http.h	/^    STATUS_100,  \/\/ Continue$/;"	e	line:90	enum:__anon3
+STATUS_101	src/http/wbt_http.h	/^    STATUS_101,  \/\/ Switching Protocols$/;"	e	line:91	enum:__anon3
+STATUS_102	src/http/wbt_http.h	/^    STATUS_102,  \/\/ Processing$/;"	e	line:92	enum:__anon3
+STATUS_200	src/http/wbt_http.h	/^    STATUS_200,  \/\/ OK$/;"	e	line:93	enum:__anon3
+STATUS_201	src/http/wbt_http.h	/^    STATUS_201,  \/\/ Created$/;"	e	line:94	enum:__anon3
+STATUS_202	src/http/wbt_http.h	/^    STATUS_202,  \/\/ Accepted$/;"	e	line:95	enum:__anon3
+STATUS_203	src/http/wbt_http.h	/^    STATUS_203,  \/\/ Non_Authoritative Information$/;"	e	line:96	enum:__anon3
+STATUS_204	src/http/wbt_http.h	/^    STATUS_204,  \/\/ No Content$/;"	e	line:97	enum:__anon3
+STATUS_205	src/http/wbt_http.h	/^    STATUS_205,  \/\/ Reset Content$/;"	e	line:98	enum:__anon3
+STATUS_206	src/http/wbt_http.h	/^    STATUS_206,  \/\/ Partial Content$/;"	e	line:99	enum:__anon3
+STATUS_207	src/http/wbt_http.h	/^    STATUS_207,  \/\/ Multi-Status$/;"	e	line:100	enum:__anon3
+STATUS_300	src/http/wbt_http.h	/^    STATUS_300,  \/\/ Multiple Choices$/;"	e	line:101	enum:__anon3
+STATUS_301	src/http/wbt_http.h	/^    STATUS_301,  \/\/ Moved Permanently$/;"	e	line:102	enum:__anon3
+STATUS_302	src/http/wbt_http.h	/^    STATUS_302,  \/\/ Found$/;"	e	line:103	enum:__anon3
+STATUS_302_1	src/http/wbt_http.h	/^    STATUS_302_1,\/\/ Moved Temporarily$/;"	e	line:104	enum:__anon3
+STATUS_303	src/http/wbt_http.h	/^    STATUS_303,  \/\/ See Other$/;"	e	line:105	enum:__anon3
+STATUS_304	src/http/wbt_http.h	/^    STATUS_304,  \/\/ Not Modified$/;"	e	line:106	enum:__anon3
+STATUS_305	src/http/wbt_http.h	/^    STATUS_305,  \/\/ Use Proxy$/;"	e	line:107	enum:__anon3
+STATUS_307	src/http/wbt_http.h	/^    STATUS_307,  \/\/ Temporary Redirect$/;"	e	line:108	enum:__anon3
+STATUS_400	src/http/wbt_http.h	/^    STATUS_400,  \/\/ Bad Request$/;"	e	line:109	enum:__anon3
+STATUS_401	src/http/wbt_http.h	/^    STATUS_401,  \/\/ Unauthorized$/;"	e	line:110	enum:__anon3
+STATUS_402	src/http/wbt_http.h	/^    STATUS_402,  \/\/ Payment Required$/;"	e	line:111	enum:__anon3
+STATUS_403	src/http/wbt_http.h	/^    STATUS_403,  \/\/ Forbidden$/;"	e	line:112	enum:__anon3
+STATUS_404	src/http/wbt_http.h	/^    STATUS_404,  \/\/ Not Found$/;"	e	line:113	enum:__anon3
+STATUS_405	src/http/wbt_http.h	/^    STATUS_405,  \/\/ Method Not Allowed$/;"	e	line:114	enum:__anon3
+STATUS_406	src/http/wbt_http.h	/^    STATUS_406,  \/\/ Not Acceptable$/;"	e	line:115	enum:__anon3
+STATUS_407	src/http/wbt_http.h	/^    STATUS_407,  \/\/ Proxy Authentication Required$/;"	e	line:116	enum:__anon3
+STATUS_408	src/http/wbt_http.h	/^    STATUS_408,  \/\/ Request Time_out$/;"	e	line:117	enum:__anon3
+STATUS_409	src/http/wbt_http.h	/^    STATUS_409,  \/\/ Conflict$/;"	e	line:118	enum:__anon3
+STATUS_410	src/http/wbt_http.h	/^    STATUS_410,  \/\/ Gone$/;"	e	line:119	enum:__anon3
+STATUS_411	src/http/wbt_http.h	/^    STATUS_411,  \/\/ Length Required$/;"	e	line:120	enum:__anon3
+STATUS_412	src/http/wbt_http.h	/^    STATUS_412,  \/\/ Precondition Failed$/;"	e	line:121	enum:__anon3
+STATUS_413	src/http/wbt_http.h	/^    STATUS_413,  \/\/ Request Entity Too Large$/;"	e	line:122	enum:__anon3
+STATUS_414	src/http/wbt_http.h	/^    STATUS_414,  \/\/ Request_URI Too Large$/;"	e	line:123	enum:__anon3
+STATUS_415	src/http/wbt_http.h	/^    STATUS_415,  \/\/ Unsupported Media Type$/;"	e	line:124	enum:__anon3
+STATUS_416	src/http/wbt_http.h	/^    STATUS_416,  \/\/ Requested range not satisfiable$/;"	e	line:125	enum:__anon3
+STATUS_417	src/http/wbt_http.h	/^    STATUS_417,  \/\/ Expectation Failed$/;"	e	line:126	enum:__anon3
+STATUS_422	src/http/wbt_http.h	/^    STATUS_422,  \/\/ Unprocessable Entity$/;"	e	line:127	enum:__anon3
+STATUS_423	src/http/wbt_http.h	/^    STATUS_423,  \/\/ Locked$/;"	e	line:128	enum:__anon3
+STATUS_424	src/http/wbt_http.h	/^    STATUS_424,  \/\/ Failed Dependency$/;"	e	line:129	enum:__anon3
+STATUS_426	src/http/wbt_http.h	/^    STATUS_426,  \/\/ Upgrade Required$/;"	e	line:130	enum:__anon3
+STATUS_500	src/http/wbt_http.h	/^    STATUS_500,  \/\/ Internal Server Error$/;"	e	line:131	enum:__anon3
+STATUS_501	src/http/wbt_http.h	/^    STATUS_501,  \/\/ Not Implemented$/;"	e	line:132	enum:__anon3
+STATUS_502	src/http/wbt_http.h	/^    STATUS_502,  \/\/ Bad Gateway$/;"	e	line:133	enum:__anon3
+STATUS_503	src/http/wbt_http.h	/^    STATUS_503,  \/\/ Service Unavailable$/;"	e	line:134	enum:__anon3
+STATUS_504	src/http/wbt_http.h	/^    STATUS_504,  \/\/ Gateway Time_out$/;"	e	line:135	enum:__anon3
+STATUS_505	src/http/wbt_http.h	/^    STATUS_505,  \/\/ HTTP Version not supported$/;"	e	line:136	enum:__anon3
+STATUS_506	src/http/wbt_http.h	/^    STATUS_506,  \/\/ Variant Also Negotiates$/;"	e	line:137	enum:__anon3
+STATUS_507	src/http/wbt_http.h	/^    STATUS_507,  \/\/ Insufficient Storage$/;"	e	line:138	enum:__anon3
+STATUS_510	src/http/wbt_http.h	/^    STATUS_510,  \/\/ Not Extended$/;"	e	line:139	enum:__anon3
+STATUS_CODE	src/http/wbt_http_consts.c	/^wbt_str_t STATUS_CODE[] = {$/;"	v	line:87
+STATUS_LENGTH	src/http/wbt_http.h	/^    STATUS_LENGTH$/;"	e	line:140	enum:__anon3
+STATUS_UNKNOWN	src/http/wbt_http.h	/^    STATUS_UNKNOWN,  \/\/ Unknown$/;"	e	line:89	enum:__anon3
+SUBPROJECTS	nbproject/Makefile-impl.mk	/^SUBPROJECTS=${SUB_${SUB}}$/;"	m	line:17
+SUB_no	nbproject/Makefile-impl.mk	/^SUB_no=NO$/;"	m	line:16
+WBT_CONN_BACKLOG	src/webit.h	22;"	d	line:22
+WBT_CONN_TIMEOUT	src/webit.h	23;"	d	line:23
+WBT_DEBUG	src/webit.h	18;"	d	line:18
+WBT_ERROR	src/webit.h	/^    WBT_ERROR$/;"	e	line:33	enum:__anon4
+WBT_EVENT_LIST_SIZE	src/webit.h	21;"	d	line:21
+WBT_HTTP_IF_MODIFIED_SINCE	src/http/wbt_http.h	169;"	d	line:169
+WBT_HTTP_KEEP_ALIVE	src/http/wbt_http.h	168;"	d	line:168
+WBT_LOG_DEBUG	src/common/wbt_log.h	/^    WBT_LOG_DEBUG$/;"	e	line:29	enum:__anon9
+WBT_LOG_ERROR	src/common/wbt_log.h	/^    WBT_LOG_ERROR,$/;"	e	line:28	enum:__anon9
+WBT_LOG_OK	src/common/wbt_log.h	/^    WBT_LOG_OK,$/;"	e	line:26	enum:__anon9
+WBT_LOG_WARNNING	src/common/wbt_log.h	/^    WBT_LOG_WARNNING,$/;"	e	line:27	enum:__anon9
+WBT_MAX_EVENTS	src/webit.h	20;"	d	line:20
+WBT_MAX_OPEN_FILES	src/common/wbt_file.c	23;"	d	line:23	file:
+WBT_MAX_PROCESS	src/os/linux/wbt_process.h	20;"	d	line:20
+WBT_OK	src/webit.h	/^    WBT_OK,$/;"	e	line:32	enum:__anon4
+WBT_RBT_COLOR_BLACK	src/common/wbt_rbtree.h	/^    WBT_RBT_COLOR_BLACK = 1 $/;"	e	line:22	enum:__anon6
+WBT_RBT_COLOR_RED	src/common/wbt_rbtree.h	/^    WBT_RBT_COLOR_RED = 0, $/;"	e	line:21	enum:__anon6
+WBT_USE_ACCEPT4	src/webit.h	29;"	d	line:29
+_GNU_SOURCE	src/os/linux/wbt_sigsegv.c	4;"	d	line:4	file:
+__WBT_CONFIG_H__	src/common/wbt_config.h	9;"	d	line:9
+__WBT_CONNECTION_H__	src/common/wbt_connection.h	9;"	d	line:9
+__WBT_EVENT_H__	src/common/wbt_event.h	9;"	d	line:9
+__WBT_FILE_H__	src/common/wbt_file.h	9;"	d	line:9
+__WBT_HEAP_H__	src/common/wbt_heap.h	9;"	d	line:9
+__WBT_HTTP_H__	src/http/wbt_http.h	9;"	d	line:9
+__WBT_LIST_H__	src/common/wbt_list.h	9;"	d	line:9
+__WBT_LOG_H__	src/common/wbt_log.h	9;"	d	line:9
+__WBT_MEMORY_H__	src/common/wbt_memory.h	9;"	d	line:9
+__WBT_MODULE_H__	src/common/wbt_module.h	9;"	d	line:9
+__WBT_PROCESS_H__	src/os/linux/wbt_process.h	9;"	d	line:9
+__WBT_RBTREE_H__	src/common/wbt_rbtree.h	9;"	d	line:9
+__WBT_STRING_H__	src/common/wbt_string.h	9;"	d	line:9
+__WBT_TIME_H__	src/common/wbt_time.h	9;"	d	line:9
+__WEBIT_H__	src/webit.h	9;"	d	line:9
+__anon5::len	src/common/wbt_string.h	/^    size_t  len;$/;"	m	line:21	struct:__anon5	access:public
+__anon5::str	src/common/wbt_string.h	/^    u_char *str;$/;"	m	line:22	struct:__anon5	access:public
+__anon7::ev	src/common/wbt_heap.h	/^    wbt_event_t *ev;        \/* 指向事件的指针，事件存储于事件队列中 *\/$/;"	m	line:24	struct:__anon7	access:public
+__anon7::modified	src/common/wbt_heap.h	/^    unsigned int modified;  \/* 添加或修改事件时事件的版本号快照 *\/$/;"	m	line:25	struct:__anon7	access:public
+__anon7::time_out	src/common/wbt_heap.h	/^    time_t time_out;        \/* 超时时间，距离1970年的毫秒数 *\/$/;"	m	line:23	struct:__anon7	access:public
+__anon8::heap	src/common/wbt_heap.h	/^    wbt_mem_t heap;$/;"	m	line:29	struct:__anon8	access:public
+__anon8::max	src/common/wbt_heap.h	/^    size_t max;     \/* 最大元素个数 *\/$/;"	m	line:31	struct:__anon8	access:public
+__anon8::size	src/common/wbt_heap.h	/^    size_t size;    \/* 已有元素个数 *\/$/;"	m	line:30	struct:__anon8	access:public
+__sigsegv_h__	src/os/linux/wbt_sigsegv.h	8;"	d	line:8
+__wbt_list_add	src/common/wbt_list.c	/^static inline void __wbt_list_add(wbt_list_t *new, wbt_list_t *prev, wbt_list_t *next) {$/;"	f	line:13	file:	signature:(wbt_list_t *new, wbt_list_t *prev, wbt_list_t *next)
+__wbt_list_del	src/common/wbt_list.c	/^static inline void __wbt_list_del(wbt_list_t *prev, wbt_list_t *next) {$/;"	f	line:20	file:	signature:(wbt_list_t *prev, wbt_list_t *next)
+admin	src/common/wbt_config.h	/^    wbt_str_t admin;    \/\/ 管理员联系方式$/;"	m	line:26	struct:wbt_conf_s	access:public
+available	src/common/wbt_event.h	/^    wbt_mem_t available;                        \/* 栈，保存可用的内存块 *\/$/;"	m	line:40	struct:wbt_event_pool_s	access:public
+bit_flag	src/http/wbt_http.h	/^    unsigned int bit_flag;$/;"	m	line:165	struct:wbt_http_s	access:public
+body	src/http/wbt_http.h	/^    wbt_str_t body;$/;"	m	line:157	struct:wbt_http_s	access:public
+buff	src/http/wbt_http.h	/^    wbt_mem_t buff;$/;"	m	line:152	struct:wbt_http_s	access:public
+callback	src/common/wbt_event.h	/^    wbt_status (*callback)(struct wbt_event_s *);   \/* 超时回调函数 *\/$/;"	m	line:30	struct:wbt_event_s	access:public
+ch_ff	format.sh	/^function ch_ff()$/;"	f	line:2
+color	src/common/wbt_rbtree.h	/^    wbt_rbtree_color color;$/;"	m	line:29	struct:wbt_rbtree_node_s	access:public
+cur_mtime	src/common/wbt_time.c	/^time_t cur_mtime;$/;"	v	line:20
+data	src/common/wbt_event.h	/^    wbt_http_t data;                                \/* 事件数据缓存 *\/$/;"	m	line:35	struct:wbt_event_s	access:public
+epoll_fd	src/common/wbt_event.c	/^int epoll_fd;$/;"	v	line:23
+ev	src/common/wbt_heap.h	/^    wbt_event_t *ev;        \/* 指向事件的指针，事件存储于事件队列中 *\/$/;"	m	line:24	struct:__anon7	access:public
+events	src/common/wbt_event.h	/^    unsigned int events;                            \/* 事件类型 *\/$/;"	m	line:33	struct:wbt_event_s	access:public
+exit	src/common/wbt_module.h	/^    wbt_status  (*exit)();                      \/* 模块卸载方法 *\/$/;"	m	line:25	struct:wbt_module_s	access:public
+fd	src/common/wbt_event.h	/^    int fd;                                         \/* 事件句柄 *\/$/;"	m	line:29	struct:wbt_event_s	access:public
+fd	src/common/wbt_file.h	/^    int fd;                 \/* 文件句柄 *\/$/;"	m	line:29	struct:wbt_file_s	access:public
+file	src/http/wbt_http.h	/^    wbt_file_t file;$/;"	m	line:160	struct:wbt_http_s	access:public
+header_cache_control	src/http/wbt_http_consts.c	/^wbt_str_t header_cache_control = wbt_string("max-age=3600");$/;"	v	line:17
+header_connection_close	src/http/wbt_http_consts.c	/^wbt_str_t header_connection_close = wbt_string("close");$/;"	v	line:16
+header_connection_keep_alive	src/http/wbt_http_consts.c	/^wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");$/;"	v	line:15
+header_content_type_text_html	src/http/wbt_http_consts.c	/^wbt_str_t header_content_type_text_html = wbt_string("text\/html");$/;"	v	line:18
+header_server	src/http/wbt_http_consts.c	/^wbt_str_t header_server = wbt_string("Webit");$/;"	v	line:14
+headers	src/http/wbt_http.h	/^    wbt_http_header_t * headers;$/;"	m	line:156	struct:wbt_http_s	access:public
+heap	src/common/wbt_heap.h	/^    wbt_mem_t heap;$/;"	m	line:29	struct:__anon8	access:public
+http_ver_1_0	src/http/wbt_http_consts.c	/^wbt_str_t http_ver_1_0 = wbt_string("HTTP\/1.0");$/;"	v	line:11
+http_ver_1_1	src/http/wbt_http_consts.c	/^wbt_str_t http_ver_1_1 = wbt_string("HTTP\/1.1");$/;"	v	line:12
+index	src/common/wbt_config.h	/^    wbt_str_t index;    \/\/ 访问目录时的默认文件$/;"	m	line:28	struct:wbt_conf_s	access:public
+init	src/common/wbt_module.h	/^    wbt_status  (*init)();                      \/* 模块初始化方法 *\/$/;"	m	line:24	struct:wbt_module_s	access:public
+init	src/os/linux/wbt_sigsegv.c	/^static void __attribute((constructor)) init(void)$/;"	f	line:168	signature:(void)
+initProcTitle	src/webit.c	/^void initProcTitle() {$/;"	f	line:32
+key	src/common/wbt_rbtree.h	/^    wbt_mem_t key;$/;"	m	line:30	struct:wbt_rbtree_node_s	access:public
+key	src/http/wbt_http.h	/^    wbt_http_line_t key;$/;"	m	line:144	struct:wbt_http_header_s	access:public
+last	src/webit.c	/^char *last;$/;"	v	line:25
+last_modified	src/common/wbt_file.h	/^    time_t last_modified;   \/* 最近修改时间 *\/$/;"	m	line:34	struct:wbt_file_s	access:public
+last_use_mtime	src/common/wbt_file.h	/^    time_t last_use_mtime;  \/* 最近使用时间 *\/$/;"	m	line:33	struct:wbt_file_s	access:public
+left	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * left;$/;"	m	line:26	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+len	src/common/wbt_memory.h	/^    size_t  len;            \/* 内存块的大小 *\/$/;"	m	line:21	struct:wbt_mem_s	access:public
+len	src/common/wbt_string.h	/^    size_t  len;$/;"	m	line:21	struct:__anon5	access:public
+list_del	src/common/wbt_list.c	/^static inline void list_del(wbt_list_t *entry) {$/;"	f	line:33	file:	signature:(wbt_list_t *entry)
+listen_fd	src/common/wbt_connection.c	/^int listen_fd;$/;"	v	line:29
+listen_port	src/common/wbt_config.h	/^    int listen_port;    \/\/ 监听端口$/;"	m	line:22	struct:wbt_conf_s	access:public
+main	src/webit.c	/^int main(int argc, char** argv) {$/;"	f	line:216	signature:(int argc, char** argv)
+max	src/common/wbt_event.h	/^    size_t max;                                 \/* 当前可以容纳的事件数 *\/$/;"	m	line:41	struct:wbt_event_pool_s	access:public
+max	src/common/wbt_heap.h	/^    size_t max;     \/* 最大元素个数 *\/$/;"	m	line:31	struct:__anon8	access:public
+max	src/common/wbt_rbtree.h	/^    size_t max;$/;"	m	line:37	struct:wbt_rbtree_s	access:public
+method	src/http/wbt_http.h	/^    wbt_str_t method;$/;"	m	line:153	struct:wbt_http_s	access:public
+modified	src/common/wbt_event.h	/^    unsigned int modified;                          \/* 事件版本 *\/$/;"	m	line:34	struct:wbt_event_s	access:public
+modified	src/common/wbt_heap.h	/^    unsigned int modified;  \/* 添加或修改事件时事件的版本号快照 *\/$/;"	m	line:25	struct:__anon7	access:public
+name	src/common/wbt_module.h	/^    wbt_str_t   name;$/;"	m	line:23	struct:wbt_module_s	access:public
+name	src/http/wbt_http.h	/^    wbt_str_t name;$/;"	m	line:145	struct:wbt_http_header_s	access:public
+next	src/common/wbt_list.h	/^    struct wbt_list_s *next, *prev;  $/;"	m	line:16	struct:wbt_list_s	typeref:struct:wbt_list_s::wbt_list_s	access:public
+next	src/common/wbt_memory.h	/^    struct wbt_mem_s *next; \/* 指向下一个内存块 *\/$/;"	m	line:23	struct:wbt_mem_s	typeref:struct:wbt_mem_s::wbt_mem_s	access:public
+next	src/http/wbt_http.h	/^    struct wbt_http_header_s * next;$/;"	m	line:147	struct:wbt_http_header_s	typeref:struct:wbt_http_header_s::wbt_http_header_s	access:public
+offset	src/common/wbt_file.h	/^    off_t offset;           \/* 已发送数据偏移量 *\/$/;"	m	line:32	struct:wbt_file_s	access:public
+on_conn	src/common/wbt_module.h	/^    wbt_status  (*on_conn)( wbt_http_t * );$/;"	m	line:26	struct:wbt_module_s	access:public
+on_recv	src/common/wbt_module.h	/^    wbt_status  (*on_recv)( wbt_http_t * );$/;"	m	line:27	struct:wbt_module_s	access:public
+on_send	src/common/wbt_module.h	/^    wbt_status  (*on_send)( wbt_http_t * );$/;"	m	line:28	struct:wbt_module_s	access:public
+parent	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * parent;$/;"	m	line:28	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+pid	src/os/linux/wbt_process.h	/^    pid_t pid;$/;"	m	line:23	struct:wbt_proc_s	access:public
+pool	src/common/wbt_event.h	/^    wbt_mem_t pool;                             \/* 一次性申请的大内存块 *\/$/;"	m	line:39	struct:wbt_event_pool_s	access:public
+prev	src/common/wbt_list.h	/^    struct wbt_list_s *next, *prev;  $/;"	m	line:16	struct:wbt_list_s	typeref:struct:wbt_list_s::	access:public
+process	src/common/wbt_config.h	/^    int process;        \/\/ 工作进程数量$/;"	m	line:24	struct:wbt_conf_s	access:public
+ptr	src/common/wbt_memory.h	/^    void   *ptr;            \/* 指向内存块的指针 *\/$/;"	m	line:22	struct:wbt_mem_s	access:public
+refer	src/common/wbt_file.h	/^    int refer;              \/* 文件引用计数 *\/$/;"	m	line:30	struct:wbt_file_s	access:public
+resp_body	src/http/wbt_http.h	/^    wbt_str_t resp_body;$/;"	m	line:162	struct:wbt_http_s	access:public
+resp_headers	src/http/wbt_http.h	/^    wbt_http_header_t * resp_headers;$/;"	m	line:161	struct:wbt_http_s	access:public
+resp_offset	src/http/wbt_http.h	/^    unsigned int resp_offset;$/;"	m	line:164	struct:wbt_http_s	access:public
+response	src/http/wbt_http.h	/^    wbt_mem_t response;$/;"	m	line:163	struct:wbt_http_s	access:public
+right	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * right;$/;"	m	line:27	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+root	src/common/wbt_config.h	/^    wbt_str_t root;     \/\/ 网站根目录$/;"	m	line:27	struct:wbt_conf_s	access:public
+root	src/common/wbt_rbtree.h	/^    wbt_rbtree_node_t * root;$/;"	m	line:35	struct:wbt_rbtree_s	access:public
+run_mode	src/common/wbt_config.h	/^    int run_mode;       \/\/ 1 - deamon, 2 - debug$/;"	m	line:23	struct:wbt_conf_s	access:public
+setProcTitle	src/webit.c	/^void setProcTitle(const char *title) {$/;"	f	line:55	signature:(const char *title)
+setSigsegvLogFilepath	src/os/linux/wbt_sigsegv.c	/^void  setSigsegvLogFilepath(const char *filepath)$/;"	f	line:61	signature:(const char *filepath)
+setup_sigsegv	src/os/linux/wbt_sigsegv.c	/^int setup_sigsegv() $/;"	f	line:138
+sh	nbproject/Makefile-variables.mk	/^ROOT:sh = test -f nbproject\/private\/Makefile-variables.mk || \\$/;"	m	line:29
+signal_segv	src/os/linux/wbt_sigsegv.c	/^static void signal_segv(int signum, siginfo_t* info, void*ptr) $/;"	f	line:66	file:	signature:(int signum, siginfo_t* info, void*ptr)
+sigsegv_log	src/os/linux/wbt_sigsegv.c	/^static FILE *sigsegv_log = NULL;$/;"	v	line:39	file:
+sigsegv_log_close	src/os/linux/wbt_sigsegv.c	/^static void sigsegv_log_close()$/;"	f	line:55	file:
+sigsegv_log_file	src/os/linux/wbt_sigsegv.c	/^static char sigsegv_log_file[128]=".\/webit_sigsegv.log";$/;"	v	line:40	file:
+sigsegv_log_open	src/os/linux/wbt_sigsegv.c	/^static int sigsegv_log_open(const char *filepath)$/;"	f	line:43	file:	signature:(const char *filepath)
+size	src/common/wbt_file.h	/^    size_t size;            \/* 文件大小 *\/$/;"	m	line:31	struct:wbt_file_s	access:public
+size	src/common/wbt_heap.h	/^    size_t size;    \/* 已有元素个数 *\/$/;"	m	line:30	struct:__anon8	access:public
+size	src/common/wbt_rbtree.h	/^    size_t size;$/;"	m	line:36	struct:wbt_rbtree_s	access:public
+status	src/http/wbt_http.h	/^    wbt_http_status_t status;$/;"	m	line:159	struct:wbt_http_s	access:public
+str	src/common/wbt_string.h	/^    u_char *str;$/;"	m	line:22	struct:__anon5	access:public
+time_out	src/common/wbt_event.h	/^    time_t time_out;                                \/* 事件超时时间 *\/$/;"	m	line:32	struct:wbt_event_s	access:public
+time_out	src/common/wbt_heap.h	/^    time_t time_out;        \/* 超时时间，距离1970年的毫秒数 *\/$/;"	m	line:23	struct:__anon7	access:public
+timeout_events	src/common/wbt_event.c	/^wbt_heap_t timeout_events;$/;"	v	line:32
+tmp	src/common/wbt_file.c	/^wbt_file_t tmp;$/;"	v	line:21
+top	src/common/wbt_event.h	/^    unsigned int top;                           \/* 当前栈顶的位置 *\/$/;"	m	line:42	struct:wbt_event_pool_s	access:public
+trigger	src/common/wbt_event.h	/^    wbt_status (*trigger)(struct wbt_event_s *);    \/* 触发回调函数 *\/$/;"	m	line:31	struct:wbt_event_s	access:public
+uri	src/http/wbt_http.h	/^    wbt_str_t uri;$/;"	m	line:154	struct:wbt_http_s	access:public
+user	src/common/wbt_config.h	/^    wbt_str_t user;     \/\/ 低权限用户$/;"	m	line:25	struct:wbt_conf_s	access:public
+value	src/common/wbt_rbtree.h	/^    wbt_mem_t value;$/;"	m	line:31	struct:wbt_rbtree_node_s	access:public
+value	src/http/wbt_http.h	/^    wbt_str_t value;$/;"	m	line:146	struct:wbt_http_header_s	access:public
+version	src/http/wbt_http.h	/^    wbt_str_t version;$/;"	m	line:155	struct:wbt_http_s	access:public
+wating_to_exit	src/webit.c	/^int wating_to_exit = 0;$/;"	v	line:30
+wbt_argc	src/webit.c	/^int wbt_argc;$/;"	v	line:27
+wbt_argv	src/webit.c	/^char** wbt_argv;$/;"	v	line:28
+wbt_calloc	src/common/wbt_memory.c	/^inline wbt_status wbt_calloc(wbt_mem_t *p, size_t len, size_t size) {$/;"	f	line:22	signature:(wbt_mem_t *p, size_t len, size_t size)
+wbt_conf	src/common/wbt_config.c	/^wbt_conf_t wbt_conf;$/;"	v	line:22
+wbt_conf_charactor	src/common/wbt_config.c	/^int wbt_conf_charactor = 0;$/;"	v	line:20
+wbt_conf_get	src/common/wbt_config.c	/^const char * wbt_conf_get( const char * name ) {$/;"	f	line:224	signature:( const char * name )
+wbt_conf_get_v	src/common/wbt_config.c	/^wbt_mem_t * wbt_conf_get_v( const char * name ) {$/;"	f	line:233	signature:( const char * name )
+wbt_conf_init	src/common/wbt_config.c	/^wbt_status wbt_conf_init() {$/;"	f	line:24
+wbt_conf_line	src/common/wbt_config.c	/^int wbt_conf_line = 1;$/;"	v	line:19
+wbt_conf_parse	src/common/wbt_config.c	/^static wbt_status wbt_conf_parse(wbt_mem_t * conf) {$/;"	f	line:93	file:	signature:(wbt_mem_t * conf)
+wbt_conf_reload	src/common/wbt_config.c	/^wbt_status wbt_conf_reload() {$/;"	f	line:183
+wbt_conf_s	src/common/wbt_config.h	/^typedef struct wbt_conf_s {$/;"	s	line:21
+wbt_conf_s::admin	src/common/wbt_config.h	/^    wbt_str_t admin;    \/\/ 管理员联系方式$/;"	m	line:26	struct:wbt_conf_s	access:public
+wbt_conf_s::index	src/common/wbt_config.h	/^    wbt_str_t index;    \/\/ 访问目录时的默认文件$/;"	m	line:28	struct:wbt_conf_s	access:public
+wbt_conf_s::listen_port	src/common/wbt_config.h	/^    int listen_port;    \/\/ 监听端口$/;"	m	line:22	struct:wbt_conf_s	access:public
+wbt_conf_s::process	src/common/wbt_config.h	/^    int process;        \/\/ 工作进程数量$/;"	m	line:24	struct:wbt_conf_s	access:public
+wbt_conf_s::root	src/common/wbt_config.h	/^    wbt_str_t root;     \/\/ 网站根目录$/;"	m	line:27	struct:wbt_conf_s	access:public
+wbt_conf_s::run_mode	src/common/wbt_config.h	/^    int run_mode;       \/\/ 1 - deamon, 2 - debug$/;"	m	line:23	struct:wbt_conf_s	access:public
+wbt_conf_s::user	src/common/wbt_config.h	/^    wbt_str_t user;     \/\/ 低权限用户$/;"	m	line:25	struct:wbt_conf_s	access:public
+wbt_conf_t	src/common/wbt_config.h	/^} wbt_conf_t;$/;"	t	line:29	typeref:struct:wbt_conf_s
+wbt_config_file_content	src/common/wbt_config.c	/^wbt_mem_t wbt_config_file_content;$/;"	v	line:15
+wbt_config_rbtree	src/common/wbt_config.c	/^wbt_rbtree_t wbt_config_rbtree;$/;"	v	line:17
+wbt_conn_cleanup	src/common/wbt_connection.c	/^wbt_status wbt_conn_cleanup() {$/;"	f	line:68
+wbt_conn_close	src/common/wbt_connection.c	/^wbt_status wbt_conn_close(wbt_event_t *ev) {$/;"	f	line:74	signature:(wbt_event_t *ev)
+wbt_conn_init	src/common/wbt_connection.c	/^wbt_status wbt_conn_init() {$/;"	f	line:31
+wbt_event_add	src/common/wbt_event.c	/^wbt_event_t * wbt_event_add(wbt_event_t *ev) {$/;"	f	line:82	signature:(wbt_event_t *ev)
+wbt_event_del	src/common/wbt_event.c	/^wbt_status wbt_event_del(wbt_event_t *ev) {$/;"	f	line:168	signature:(wbt_event_t *ev)
+wbt_event_dispatch	src/common/wbt_event.c	/^wbt_status wbt_event_dispatch() {;$/;"	f	line:240
+wbt_event_exit	src/common/wbt_event.c	/^wbt_status wbt_event_exit() {$/;"	f	line:64
+wbt_event_init	src/common/wbt_event.c	/^wbt_status wbt_event_init() {$/;"	f	line:35
+wbt_event_mod	src/common/wbt_event.c	/^wbt_status wbt_event_mod(wbt_event_t *ev) {$/;"	f	line:202	signature:(wbt_event_t *ev)
+wbt_event_pool_s	src/common/wbt_event.h	/^typedef struct wbt_event_pool_s {$/;"	s	line:38
+wbt_event_pool_s::available	src/common/wbt_event.h	/^    wbt_mem_t available;                        \/* 栈，保存可用的内存块 *\/$/;"	m	line:40	struct:wbt_event_pool_s	access:public
+wbt_event_pool_s::max	src/common/wbt_event.h	/^    size_t max;                                 \/* 当前可以容纳的事件数 *\/$/;"	m	line:41	struct:wbt_event_pool_s	access:public
+wbt_event_pool_s::pool	src/common/wbt_event.h	/^    wbt_mem_t pool;                             \/* 一次性申请的大内存块 *\/$/;"	m	line:39	struct:wbt_event_pool_s	access:public
+wbt_event_pool_s::top	src/common/wbt_event.h	/^    unsigned int top;                           \/* 当前栈顶的位置 *\/$/;"	m	line:42	struct:wbt_event_pool_s	access:public
+wbt_event_pool_t	src/common/wbt_event.h	/^} wbt_event_pool_t; $/;"	t	line:43	typeref:struct:wbt_event_pool_s
+wbt_event_s	src/common/wbt_event.h	/^typedef struct wbt_event_s {$/;"	s	line:28
+wbt_event_s::callback	src/common/wbt_event.h	/^    wbt_status (*callback)(struct wbt_event_s *);   \/* 超时回调函数 *\/$/;"	m	line:30	struct:wbt_event_s	access:public
+wbt_event_s::data	src/common/wbt_event.h	/^    wbt_http_t data;                                \/* 事件数据缓存 *\/$/;"	m	line:35	struct:wbt_event_s	access:public
+wbt_event_s::events	src/common/wbt_event.h	/^    unsigned int events;                            \/* 事件类型 *\/$/;"	m	line:33	struct:wbt_event_s	access:public
+wbt_event_s::fd	src/common/wbt_event.h	/^    int fd;                                         \/* 事件句柄 *\/$/;"	m	line:29	struct:wbt_event_s	access:public
+wbt_event_s::modified	src/common/wbt_event.h	/^    unsigned int modified;                          \/* 事件版本 *\/$/;"	m	line:34	struct:wbt_event_s	access:public
+wbt_event_s::time_out	src/common/wbt_event.h	/^    time_t time_out;                                \/* 事件超时时间 *\/$/;"	m	line:32	struct:wbt_event_s	access:public
+wbt_event_s::trigger	src/common/wbt_event.h	/^    wbt_status (*trigger)(struct wbt_event_s *);    \/* 触发回调函数 *\/$/;"	m	line:31	struct:wbt_event_s	access:public
+wbt_event_t	src/common/wbt_event.h	/^} wbt_event_t;$/;"	t	line:36	typeref:struct:wbt_event_s
+wbt_events	src/common/wbt_event.c	/^wbt_event_pool_t wbt_events;$/;"	v	line:29
+wbt_exit	src/webit.c	/^void wbt_exit(int exit_code) {$/;"	f	line:205	signature:(int exit_code)
+wbt_file_cleanup	src/common/wbt_file.c	/^wbt_status wbt_file_cleanup(wbt_event_t *ev) {$/;"	f	line:46	signature:(wbt_event_t *ev)
+wbt_file_cleanup_recursive	src/common/wbt_file.c	/^void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {$/;"	f	line:31	signature:(wbt_rbtree_node_t *node)
+wbt_file_close	src/common/wbt_file.c	/^wbt_status wbt_file_close( wbt_str_t * file_path ) {$/;"	f	line:158	signature:( wbt_str_t * file_path )
+wbt_file_init	src/common/wbt_file.c	/^wbt_status wbt_file_init() {$/;"	f	line:63
+wbt_file_open	src/common/wbt_file.c	/^wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {    $/;"	f	line:85	signature:( wbt_str_t * file_path )
+wbt_file_path	src/http/wbt_http.c	/^wbt_mem_t wbt_file_path;$/;"	v	line:22
+wbt_file_rbtree	src/common/wbt_file.c	/^wbt_rbtree_t wbt_file_rbtree;$/;"	v	line:25
+wbt_file_s	src/common/wbt_file.h	/^typedef struct wbt_file_s {$/;"	s	line:28
+wbt_file_s::fd	src/common/wbt_file.h	/^    int fd;                 \/* 文件句柄 *\/$/;"	m	line:29	struct:wbt_file_s	access:public
+wbt_file_s::last_modified	src/common/wbt_file.h	/^    time_t last_modified;   \/* 最近修改时间 *\/$/;"	m	line:34	struct:wbt_file_s	access:public
+wbt_file_s::last_use_mtime	src/common/wbt_file.h	/^    time_t last_use_mtime;  \/* 最近使用时间 *\/$/;"	m	line:33	struct:wbt_file_s	access:public
+wbt_file_s::offset	src/common/wbt_file.h	/^    off_t offset;           \/* 已发送数据偏移量 *\/$/;"	m	line:32	struct:wbt_file_s	access:public
+wbt_file_s::refer	src/common/wbt_file.h	/^    int refer;              \/* 文件引用计数 *\/$/;"	m	line:30	struct:wbt_file_s	access:public
+wbt_file_s::size	src/common/wbt_file.h	/^    size_t size;            \/* 文件大小 *\/$/;"	m	line:31	struct:wbt_file_s	access:public
+wbt_file_t	src/common/wbt_file.h	/^} wbt_file_t;$/;"	t	line:35	typeref:struct:wbt_file_s
+wbt_free	src/common/wbt_memory.c	/^inline void wbt_free(wbt_mem_t *p) {$/;"	f	line:46	signature:(wbt_mem_t *p)
+wbt_heap_delete	src/common/wbt_heap.c	/^wbt_status wbt_heap_delete(wbt_heap_t * p) {$/;"	f	line:74	signature:(wbt_heap_t * p)
+wbt_heap_destroy	src/common/wbt_heap.c	/^wbt_status wbt_heap_destroy(wbt_heap_t * p) {$/;"	f	line:117	signature:(wbt_heap_t * p)
+wbt_heap_get	src/common/wbt_heap.c	/^wbt_heap_node_t * wbt_heap_get(wbt_heap_t * p) {$/;"	f	line:61	signature:(wbt_heap_t * p)
+wbt_heap_insert	src/common/wbt_heap.c	/^wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {$/;"	f	line:28	signature:(wbt_heap_t * p, wbt_heap_node_t * node)
+wbt_heap_new	src/common/wbt_heap.c	/^wbt_status wbt_heap_new(wbt_heap_t * p, size_t max_size) {    $/;"	f	line:13	signature:(wbt_heap_t * p, size_t max_size)
+wbt_heap_node_t	src/common/wbt_heap.h	/^} wbt_heap_node_t;$/;"	t	line:26	typeref:struct:__anon7
+wbt_heap_t	src/common/wbt_heap.h	/^} wbt_heap_t;$/;"	t	line:32	typeref:struct:__anon8
+wbt_http_check_body_end	src/http/wbt_http.c	/^wbt_status wbt_http_check_body_end( wbt_http_t* http ) {$/;"	f	line:315	signature:( wbt_http_t* http )
+wbt_http_check_header_end	src/http/wbt_http.c	/^wbt_status wbt_http_check_header_end( wbt_http_t* http ) {$/;"	f	line:94	signature:( wbt_http_t* http )
+wbt_http_destroy	src/http/wbt_http.c	/^wbt_status wbt_http_destroy( wbt_http_t* http ) {$/;"	f	line:35	signature:( wbt_http_t* http )
+wbt_http_error_page	src/http/wbt_http_consts.c	/^wbt_str_t wbt_http_error_page[] = {$/;"	v	line:142
+wbt_http_generate_response_header	src/http/wbt_http.c	/^wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {$/;"	f	line:349	signature:( wbt_http_t * http )
+wbt_http_header_s	src/http/wbt_http.h	/^typedef struct wbt_http_header_s {$/;"	s	line:143
+wbt_http_header_s::key	src/http/wbt_http.h	/^    wbt_http_line_t key;$/;"	m	line:144	struct:wbt_http_header_s	access:public
+wbt_http_header_s::name	src/http/wbt_http.h	/^    wbt_str_t name;$/;"	m	line:145	struct:wbt_http_header_s	access:public
+wbt_http_header_s::next	src/http/wbt_http.h	/^    struct wbt_http_header_s * next;$/;"	m	line:147	struct:wbt_http_header_s	typeref:struct:wbt_http_header_s::wbt_http_header_s	access:public
+wbt_http_header_s::value	src/http/wbt_http.h	/^    wbt_str_t value;$/;"	m	line:146	struct:wbt_http_header_s	access:public
+wbt_http_header_t	src/http/wbt_http.h	/^} wbt_http_header_t;$/;"	t	line:148	typeref:struct:wbt_http_header_s
+wbt_http_init	src/http/wbt_http.c	/^wbt_status wbt_http_init() {$/;"	f	line:25
+wbt_http_line_t	src/http/wbt_http.h	/^} wbt_http_line_t;$/;"	t	line:86	typeref:enum:__anon2
+wbt_http_method_t	src/http/wbt_http.h	/^} wbt_http_method_t;$/;"	t	line:32	typeref:enum:__anon1
+wbt_http_parse	src/http/wbt_http.c	/^wbt_status wbt_http_parse( wbt_http_t * http ) {$/;"	f	line:397	signature:( wbt_http_t * http )
+wbt_http_parse_request_header	src/http/wbt_http.c	/^wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {$/;"	f	line:108	signature:( wbt_http_t* http )
+wbt_http_process	src/http/wbt_http.c	/^wbt_status wbt_http_process(wbt_http_t *http) {$/;"	f	line:468	signature:(wbt_http_t *http)
+wbt_http_s	src/http/wbt_http.h	/^typedef struct wbt_http_s {$/;"	s	line:150
+wbt_http_s::bit_flag	src/http/wbt_http.h	/^    unsigned int bit_flag;$/;"	m	line:165	struct:wbt_http_s	access:public
+wbt_http_s::body	src/http/wbt_http.h	/^    wbt_str_t body;$/;"	m	line:157	struct:wbt_http_s	access:public
+wbt_http_s::buff	src/http/wbt_http.h	/^    wbt_mem_t buff;$/;"	m	line:152	struct:wbt_http_s	access:public
+wbt_http_s::file	src/http/wbt_http.h	/^    wbt_file_t file;$/;"	m	line:160	struct:wbt_http_s	access:public
+wbt_http_s::headers	src/http/wbt_http.h	/^    wbt_http_header_t * headers;$/;"	m	line:156	struct:wbt_http_s	access:public
+wbt_http_s::method	src/http/wbt_http.h	/^    wbt_str_t method;$/;"	m	line:153	struct:wbt_http_s	access:public
+wbt_http_s::resp_body	src/http/wbt_http.h	/^    wbt_str_t resp_body;$/;"	m	line:162	struct:wbt_http_s	access:public
+wbt_http_s::resp_headers	src/http/wbt_http.h	/^    wbt_http_header_t * resp_headers;$/;"	m	line:161	struct:wbt_http_s	access:public
+wbt_http_s::resp_offset	src/http/wbt_http.h	/^    unsigned int resp_offset;$/;"	m	line:164	struct:wbt_http_s	access:public
+wbt_http_s::response	src/http/wbt_http.h	/^    wbt_mem_t response;$/;"	m	line:163	struct:wbt_http_s	access:public
+wbt_http_s::status	src/http/wbt_http.h	/^    wbt_http_status_t status;$/;"	m	line:159	struct:wbt_http_s	access:public
+wbt_http_s::uri	src/http/wbt_http.h	/^    wbt_str_t uri;$/;"	m	line:154	struct:wbt_http_s	access:public
+wbt_http_s::version	src/http/wbt_http.h	/^    wbt_str_t version;$/;"	m	line:155	struct:wbt_http_s	access:public
+wbt_http_set_header	src/http/wbt_http.c	/^wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t * value ) {$/;"	f	line:327	signature:( wbt_http_t* http, wbt_http_line_t key, wbt_str_t * value )
+wbt_http_status_t	src/http/wbt_http.h	/^} wbt_http_status_t;$/;"	t	line:141	typeref:enum:__anon3
+wbt_http_t	src/http/wbt_http.h	/^} wbt_http_t;$/;"	t	line:166	typeref:struct:wbt_http_s
+wbt_list_add	src/common/wbt_list.c	/^static inline void wbt_list_add(wbt_list_t *new, wbt_list_t *head) {$/;"	f	line:25	file:	signature:(wbt_list_t *new, wbt_list_t *head)
+wbt_list_add_tail	src/common/wbt_list.c	/^static inline void wbt_list_add_tail(wbt_list_t *new, wbt_list_t *head) {$/;"	f	line:29	file:	signature:(wbt_list_t *new, wbt_list_t *head)
+wbt_list_entry	src/common/wbt_list.h	21;"	d	line:21
+wbt_list_init	src/common/wbt_list.h	26;"	d	line:26
+wbt_list_s	src/common/wbt_list.h	/^typedef struct wbt_list_s {  $/;"	s	line:15
+wbt_list_s::next	src/common/wbt_list.h	/^    struct wbt_list_s *next, *prev;  $/;"	m	line:16	struct:wbt_list_s	typeref:struct:wbt_list_s::wbt_list_s	access:public
+wbt_list_s::prev	src/common/wbt_list.h	/^    struct wbt_list_s *next, *prev;  $/;"	m	line:16	struct:wbt_list_s	typeref:struct:wbt_list_s::	access:public
+wbt_list_t	src/common/wbt_list.h	/^} wbt_list_t;$/;"	t	line:17	typeref:struct:wbt_list_s
+wbt_lock_accept	src/common/wbt_file.c	/^int wbt_lock_accept;$/;"	v	line:29
+wbt_lock_create	src/common/wbt_file.c	/^int wbt_lock_create( const char *name ) {$/;"	f	line:219	signature:( const char *name )
+wbt_lock_fd	src/common/wbt_file.c	/^wbt_status wbt_lock_fd(int fd) {$/;"	f	line:191	signature:(int fd)
+wbt_log_add	src/common/wbt_log.c	/^wbt_status wbt_log_add(const char *fmt, ...) {$/;"	f	line:66	signature:(const char *fmt, ...)
+wbt_log_buf	src/common/wbt_log.c	/^wbt_mem_t wbt_log_buf;$/;"	v	line:18
+wbt_log_debug	src/common/wbt_log.h	37;"	d	line:37
+wbt_log_debug	src/common/wbt_log.h	45;"	d	line:45
+wbt_log_file	src/common/wbt_log.c	/^char * wbt_log_file = ".\/webit.log";$/;"	v	line:17
+wbt_log_file_fd	src/common/wbt_log.c	/^int wbt_log_file_fd;$/;"	v	line:16
+wbt_log_init	src/common/wbt_log.c	/^wbt_status wbt_log_init() {$/;"	f	line:20
+wbt_log_level_t	src/common/wbt_log.h	/^} wbt_log_level_t;$/;"	t	line:30	typeref:enum:__anon9
+wbt_log_write	src/common/wbt_log.c	/^wbt_status wbt_log_write(wbt_str_t p) {$/;"	f	line:30	signature:(wbt_str_t p)
+wbt_malloc	src/common/wbt_memory.c	/^inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {$/;"	f	line:10	signature:(wbt_mem_t *p, size_t len)
+wbt_master_process	src/webit.c	/^void wbt_master_process() {$/;"	f	line:144
+wbt_mem_s	src/common/wbt_memory.h	/^typedef struct wbt_mem_s {$/;"	s	line:20
+wbt_mem_s::len	src/common/wbt_memory.h	/^    size_t  len;            \/* 内存块的大小 *\/$/;"	m	line:21	struct:wbt_mem_s	access:public
+wbt_mem_s::next	src/common/wbt_memory.h	/^    struct wbt_mem_s *next; \/* 指向下一个内存块 *\/$/;"	m	line:23	struct:wbt_mem_s	typeref:struct:wbt_mem_s::wbt_mem_s	access:public
+wbt_mem_s::ptr	src/common/wbt_memory.h	/^    void   *ptr;            \/* 指向内存块的指针 *\/$/;"	m	line:22	struct:wbt_mem_s	access:public
+wbt_mem_t	src/common/wbt_memory.h	/^} wbt_mem_t;$/;"	t	line:24	typeref:struct:wbt_mem_s
+wbt_memcpy	src/common/wbt_memory.c	/^inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len) {$/;"	f	line:58	signature:(wbt_mem_t *dest, wbt_mem_t *src, size_t len)
+wbt_memset	src/common/wbt_memory.c	/^inline void wbt_memset(wbt_mem_t *p, int ch) {$/;"	f	line:54	signature:(wbt_mem_t *p, int ch)
+wbt_module_conf	src/common/wbt_config.c	/^wbt_module_t wbt_module_conf = {$/;"	v	line:10
+wbt_module_conn	src/common/wbt_connection.c	/^wbt_module_t wbt_module_conn = {$/;"	v	line:23
+wbt_module_event	src/common/wbt_event.c	/^wbt_module_t wbt_module_event = {$/;"	v	line:17
+wbt_module_exit	src/common/wbt_module.c	/^wbt_status wbt_module_exit() {$/;"	f	line:44
+wbt_module_file	src/common/wbt_file.c	/^wbt_module_t wbt_module_file = {$/;"	v	line:16
+wbt_module_http	src/http/wbt_http.c	/^wbt_module_t wbt_module_http = {$/;"	v	line:16
+wbt_module_init	src/common/wbt_module.c	/^wbt_status wbt_module_init() {$/;"	f	line:30
+wbt_module_log	src/common/wbt_log.c	/^wbt_module_t wbt_module_log = {$/;"	v	line:11
+wbt_module_s	src/common/wbt_module.h	/^typedef struct wbt_module_s {$/;"	s	line:22
+wbt_module_s::exit	src/common/wbt_module.h	/^    wbt_status  (*exit)();                      \/* 模块卸载方法 *\/$/;"	m	line:25	struct:wbt_module_s	access:public
+wbt_module_s::init	src/common/wbt_module.h	/^    wbt_status  (*init)();                      \/* 模块初始化方法 *\/$/;"	m	line:24	struct:wbt_module_s	access:public
+wbt_module_s::name	src/common/wbt_module.h	/^    wbt_str_t   name;$/;"	m	line:23	struct:wbt_module_s	access:public
+wbt_module_s::on_conn	src/common/wbt_module.h	/^    wbt_status  (*on_conn)( wbt_http_t * );$/;"	m	line:26	struct:wbt_module_s	access:public
+wbt_module_s::on_recv	src/common/wbt_module.h	/^    wbt_status  (*on_recv)( wbt_http_t * );$/;"	m	line:27	struct:wbt_module_s	access:public
+wbt_module_s::on_send	src/common/wbt_module.h	/^    wbt_status  (*on_send)( wbt_http_t * );$/;"	m	line:28	struct:wbt_module_s	access:public
+wbt_module_t	src/common/wbt_module.h	/^} wbt_module_t;$/;"	t	line:29	typeref:struct:wbt_module_s
+wbt_module_time	src/common/wbt_time.c	/^wbt_module_t wbt_module_time = {$/;"	v	line:14
+wbt_modules	src/common/wbt_module.c	/^wbt_module_t * wbt_modules[] = {$/;"	v	line:19
+wbt_null_string	src/common/wbt_string.h	26;"	d	line:26
+wbt_on_close	src/common/wbt_connection.c	/^wbt_status wbt_on_close(wbt_event_t *ev) {$/;"	f	line:273	signature:(wbt_event_t *ev)
+wbt_on_connect	src/common/wbt_connection.c	/^wbt_status wbt_on_connect(wbt_event_t *ev) {$/;"	f	line:84	signature:(wbt_event_t *ev)
+wbt_on_recv	src/common/wbt_connection.c	/^wbt_status wbt_on_recv(wbt_event_t *ev) {$/;"	f	line:124	signature:(wbt_event_t *ev)
+wbt_on_send	src/common/wbt_connection.c	/^wbt_status wbt_on_send(wbt_event_t *ev) {$/;"	f	line:205	signature:(wbt_event_t *ev)
+wbt_proc_child_num	src/os/linux/wbt_process.c	/^int wbt_proc_child_num = -1;$/;"	v	line:10
+wbt_proc_create	src/os/linux/wbt_process.c	/^wbt_status wbt_proc_create( void (*proc)(), int num ) {$/;"	f	line:51	signature:( void (*proc)(), int num )
+wbt_proc_fork	src/os/linux/wbt_process.c	/^wbt_status wbt_proc_fork( void (*proc)() ) {$/;"	f	line:31	signature:( void (*proc)() )
+wbt_proc_pop	src/os/linux/wbt_process.c	/^pid_t wbt_proc_pop() {$/;"	f	line:23
+wbt_proc_push	src/os/linux/wbt_process.c	/^wbt_status wbt_proc_push(pid_t pid) {$/;"	f	line:13	signature:(pid_t pid)
+wbt_proc_remove	src/os/linux/wbt_process.c	/^wbt_status wbt_proc_remove(pid_t pid) {$/;"	f	line:61	signature:(pid_t pid)
+wbt_proc_s	src/os/linux/wbt_process.h	/^typedef struct wbt_proc_s {$/;"	s	line:22
+wbt_proc_s::pid	src/os/linux/wbt_process.h	/^    pid_t pid;$/;"	m	line:23	struct:wbt_proc_s	access:public
+wbt_proc_stack	src/os/linux/wbt_process.c	/^wbt_proc_t wbt_proc_stack[WBT_MAX_PROCESS];$/;"	v	line:11
+wbt_proc_t	src/os/linux/wbt_process.h	/^} wbt_proc_t;$/;"	t	line:24	typeref:struct:wbt_proc_s
+wbt_rbtree_color	src/common/wbt_rbtree.h	/^} wbt_rbtree_color;$/;"	t	line:23	typeref:enum:__anon6
+wbt_rbtree_delete	src/common/wbt_rbtree.c	/^void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {$/;"	f	line:288	signature:(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node)
+wbt_rbtree_delete_fixup	src/common/wbt_rbtree.c	/^static void wbt_rbtree_delete_fixup(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) { $/;"	f	line:223	file:	signature:(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node)
+wbt_rbtree_get	src/common/wbt_rbtree.c	/^wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {$/;"	f	line:351	signature:(wbt_rbtree_t *rbt, wbt_str_t *key)
+wbt_rbtree_init	src/common/wbt_rbtree.c	/^void wbt_rbtree_init(wbt_rbtree_t *rbt) {$/;"	f	line:155	signature:(wbt_rbtree_t *rbt)
+wbt_rbtree_insert	src/common/wbt_rbtree.c	/^wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {$/;"	f	line:161	signature:(wbt_rbtree_t *rbt, wbt_str_t *key)
+wbt_rbtree_insert_fixup	src/common/wbt_rbtree.c	/^void wbt_rbtree_insert_fixup(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {$/;"	f	line:102	signature:(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node)
+wbt_rbtree_left_rotate	src/common/wbt_rbtree.c	/^static inline void wbt_rbtree_left_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {$/;"	f	line:32	file:	signature:(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node)
+wbt_rbtree_node_nil	src/common/wbt_rbtree.c	/^wbt_rbtree_node_t *wbt_rbtree_node_nil = &wbt_rbtree_node_nil_s;$/;"	v	line:30
+wbt_rbtree_node_nil_s	src/common/wbt_rbtree.c	/^wbt_rbtree_node_t wbt_rbtree_node_nil_s = {$/;"	v	line:22
+wbt_rbtree_node_s	src/common/wbt_rbtree.h	/^typedef struct wbt_rbtree_node_s {$/;"	s	line:25
+wbt_rbtree_node_s::color	src/common/wbt_rbtree.h	/^    wbt_rbtree_color color;$/;"	m	line:29	struct:wbt_rbtree_node_s	access:public
+wbt_rbtree_node_s::key	src/common/wbt_rbtree.h	/^    wbt_mem_t key;$/;"	m	line:30	struct:wbt_rbtree_node_s	access:public
+wbt_rbtree_node_s::left	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * left;$/;"	m	line:26	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+wbt_rbtree_node_s::parent	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * parent;$/;"	m	line:28	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+wbt_rbtree_node_s::right	src/common/wbt_rbtree.h	/^    struct wbt_rbtree_node_s * right;$/;"	m	line:27	struct:wbt_rbtree_node_s	typeref:struct:wbt_rbtree_node_s::wbt_rbtree_node_s	access:public
+wbt_rbtree_node_s::value	src/common/wbt_rbtree.h	/^    wbt_mem_t value;$/;"	m	line:31	struct:wbt_rbtree_node_s	access:public
+wbt_rbtree_node_t	src/common/wbt_rbtree.h	/^} wbt_rbtree_node_t;$/;"	t	line:32	typeref:struct:wbt_rbtree_node_s
+wbt_rbtree_print	src/common/wbt_rbtree.c	/^void wbt_rbtree_print(wbt_rbtree_node_t *node) {$/;"	f	line:375	signature:(wbt_rbtree_node_t *node)
+wbt_rbtree_right_rotate	src/common/wbt_rbtree.c	/^static inline void wbt_rbtree_right_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {$/;"	f	line:56	file:	signature:(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node)
+wbt_rbtree_s	src/common/wbt_rbtree.h	/^typedef struct wbt_rbtree_s {$/;"	s	line:34
+wbt_rbtree_s::max	src/common/wbt_rbtree.h	/^    size_t max;$/;"	m	line:37	struct:wbt_rbtree_s	access:public
+wbt_rbtree_s::root	src/common/wbt_rbtree.h	/^    wbt_rbtree_node_t * root;$/;"	m	line:35	struct:wbt_rbtree_s	access:public
+wbt_rbtree_s::size	src/common/wbt_rbtree.h	/^    size_t size;$/;"	m	line:36	struct:wbt_rbtree_s	access:public
+wbt_rbtree_successor	src/common/wbt_rbtree.c	/^static wbt_rbtree_node_t * wbt_rbtree_successor( wbt_rbtree_t * rbt, wbt_rbtree_node_t * node ) {$/;"	f	line:81	file:	signature:( wbt_rbtree_t * rbt, wbt_rbtree_node_t * node )
+wbt_rbtree_t	src/common/wbt_rbtree.h	/^} wbt_rbtree_t;$/;"	t	line:38	typeref:struct:wbt_rbtree_s
+wbt_realloc	src/common/wbt_memory.c	/^inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {$/;"	f	line:34	signature:(wbt_mem_t *p, size_t len)
+wbt_send_buf	src/http/wbt_http.c	/^wbt_mem_t wbt_send_buf;$/;"	v	line:23
+wbt_setnonblocking	src/common/wbt_connection.c	/^wbt_status wbt_setnonblocking(int sock) {$/;"	f	line:278	signature:(int sock)
+wbt_signal	src/webit.c	/^void wbt_signal(int signo, siginfo_t *info, void *context) {$/;"	f	line:62	signature:(int signo, siginfo_t *info, void *context)
+wbt_sprintf	src/common/wbt_string.c	/^wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...) {$/;"	f	line:22	signature:(wbt_mem_t *buf, const char *fmt, ...)
+wbt_status	src/webit.h	/^} wbt_status;$/;"	t	line:34	typeref:enum:__anon4
+wbt_stdstr	src/common/wbt_string.c	/^const char * wbt_stdstr(wbt_str_t * str) {$/;"	f	line:12	signature:(wbt_str_t * str)
+wbt_stdstr_tmp	src/common/wbt_string.c	/^wbt_mem_t wbt_stdstr_tmp;$/;"	v	line:10
+wbt_str_set	src/common/wbt_string.h	28;"	d	line:28
+wbt_str_set_null	src/common/wbt_string.h	29;"	d	line:29
+wbt_str_t	src/common/wbt_string.h	/^} wbt_str_t;$/;"	t	line:23	typeref:struct:__anon5
+wbt_strcat	src/common/wbt_string.c	/^void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {$/;"	f	line:113	signature:( wbt_str_t * dest, wbt_str_t * src, int max_len )
+wbt_strcmp	src/common/wbt_string.c	/^int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {$/;"	f	line:69	signature:( wbt_str_t *str1, wbt_str_t *str2, int len )
+wbt_strcmp2	src/common/wbt_string.c	/^int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {$/;"	f	line:85	signature:( wbt_str_t *str1, wbt_str_t *str2)
+wbt_string	src/common/wbt_string.h	25;"	d	line:25
+wbt_strpos	src/common/wbt_string.c	/^int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {$/;"	f	line:40	signature:( wbt_str_t *str1, wbt_str_t *str2 )
+wbt_time_init	src/common/wbt_time.c	/^wbt_status wbt_time_init() {$/;"	f	line:32
+wbt_time_str_expire	src/common/wbt_time.c	/^wbt_str_t wbt_time_str_expire;$/;"	v	line:24
+wbt_time_str_http	src/common/wbt_time.c	/^wbt_str_t wbt_time_str_http;$/;"	v	line:23
+wbt_time_str_log	src/common/wbt_time.c	/^wbt_str_t wbt_time_str_log;$/;"	v	line:22
+wbt_time_str_tmp	src/common/wbt_time.c	/^wbt_str_t wbt_time_str_tmp;$/;"	v	line:25
+wbt_time_struct_expire	src/common/wbt_time.c	/^wbt_mem_t wbt_time_struct_expire;$/;"	v	line:29
+wbt_time_struct_http	src/common/wbt_time.c	/^wbt_mem_t wbt_time_struct_http;$/;"	v	line:28
+wbt_time_struct_log	src/common/wbt_time.c	/^wbt_mem_t wbt_time_struct_log;$/;"	v	line:27
+wbt_time_struct_tmp	src/common/wbt_time.c	/^wbt_mem_t wbt_time_struct_tmp;$/;"	v	line:30
+wbt_time_to_str	src/common/wbt_time.c	/^wbt_str_t * wbt_time_to_str( time_t time ) {$/;"	f	line:75	signature:( time_t time )
+wbt_time_update	src/common/wbt_time.c	/^wbt_status wbt_time_update() {$/;"	f	line:55
+wbt_trylock_fd	src/common/wbt_file.c	/^wbt_status wbt_trylock_fd(int fd) {$/;"	f	line:177	signature:(int fd)
+wbt_unlock_fd	src/common/wbt_file.c	/^wbt_status wbt_unlock_fd(int fd) {$/;"	f	line:205	signature:(int fd)
+wbt_worker_process	src/webit.c	/^void wbt_worker_process() {$/;"	f	line:92

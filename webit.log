@@ -1,0 +1,8 @@
+[04/15/15 23:59:44] Root path: /var/www/html/webit/
+[04/15/15 23:59:44] Webit startup (pid: 23888)
+[04/16/15 00:05:02] bind failed
+[04/16/15 00:05:50] bind failed
+[04/15/15 23:59:44] Webit exit (pid: 23887)
+[04/16/15 00:03:17] Webit exit (pid: 23888)
+[04/16/15 00:06:30] Root path: htdocs/
+[04/16/15 00:06:30] Webit startup (pid: 24131)
