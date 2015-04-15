@@ -29,8 +29,8 @@ wbt_module_t * wbt_modules[] = {
 
 wbt_status wbt_module_init() {
     /* 初始化模块 */
-    int i;
-    for( i = 0 ; wbt_modules[i] ; i++ ) {
+    int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = 0 ; i < size ; i++ ) {
         if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
             /* fatal */
             wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
@@ -43,8 +43,8 @@ wbt_status wbt_module_init() {
 }
 wbt_status wbt_module_exit() {
     /* 卸载所有模块 */
-    int i;
-    for( i = 0 ; wbt_modules[i] ; i++ ) {
+    int i, size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = size - 1 ; i >= 0 ; i-- ) {
         if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
             /* fatal */
             wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
