@@ -51,6 +51,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
 	${OBJECTDIR}/src/os/linux/wbt_sigsegv.o \
+	${OBJECTDIR}/src/os/linux/wbt_terminal.o \
 	${OBJECTDIR}/src/webit.o
 
 
@@ -157,6 +158,11 @@ ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o: src/os/linux/wbt_sigsegv.c
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
 	${RM} $@.d
 	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o src/os/linux/wbt_sigsegv.c
+
+${OBJECTDIR}/src/os/linux/wbt_terminal.o: src/os/linux/wbt_terminal.c 
+	${MKDIR} -p ${OBJECTDIR}/src/os/linux
+	${RM} $@.d
+	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_terminal.o src/os/linux/wbt_terminal.c
 
 ${OBJECTDIR}/src/webit.o: src/webit.c 
 	${MKDIR} -p ${OBJECTDIR}/src
