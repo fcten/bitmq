@@ -213,15 +213,28 @@ void wbt_exit(int exit_code) {
     exit(exit_code);
 }
 
+extern wbt_mem_t wbt_log_buf;
+
 int main(int argc, char** argv) {
     /* 保存传入参数 */
     wbt_argc = argc;
     wbt_argv = argv;
     
+    /* 初始化日至输出缓冲 */
+    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        
+        return 1;
+    }
+    
+    /* 更新终端尺寸 */
+    wbt_term_update_size();
+
+    wbt_log_print( "\nWebit startup ...\n" );
+    
     setup_sigsegv();
 
     /* 初始化所有组件 */
     if( wbt_module_init() != WBT_OK ) {
+        wbt_log_print( "\n\nWebit startup failed.\n\n" );
         return 1;
     }
 
@@ -243,11 +256,15 @@ int main(int argc, char** argv) {
     initProcTitle();
 
     if( !wbt_conf.run_mode ) {
+        wbt_log_print( "\n\nWebit is now running in the background.\n\n" );
+
         /* 转入后台运行 */
         if( daemon(1,0) < 0 ) {
             perror("error daemon");  
             return 1;
         }
+    } else {
+        wbt_log_print( "\n\nWebit is now running.\n\n" );
     }
 
     /* 限制可以访问的目录

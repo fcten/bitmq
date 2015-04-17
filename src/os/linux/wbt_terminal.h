@@ -12,14 +12,17 @@
 extern "C" {
 #endif
 
-#include<sys/types.h>
-#include<sys/ioctl.h>
-#include<unistd.h>
-#include<termios.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <termios.h>
 
 #include "../../webit.h"
 
-void wbt_term_get_size();
+void wbt_term_update_size();
+int wbt_term_get_height();
+int wbt_term_get_width();
 
 #ifdef	__cplusplus
 }

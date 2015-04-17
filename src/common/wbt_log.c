@@ -7,6 +7,7 @@
 
 #include "wbt_log.h"
 #include "wbt_module.h"
+#include "../os/linux/wbt_terminal.h"
 
 wbt_module_t wbt_module_log = {
     wbt_string("log"),
@@ -19,8 +20,7 @@ wbt_mem_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
     wbt_log_file_fd = open(wbt_log_file, O_WRONLY | O_APPEND | O_CREAT);
-
-    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        
+    if( wbt_log_file_fd <=0 ) {
         return WBT_ERROR;
     }
     
@@ -78,6 +78,23 @@ wbt_status wbt_log_add(const char *fmt, ...) {
      */
     write(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
     write(wbt_log_file_fd, s.str, s.len);
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_log_print(const char *fmt, ...) {
+    wbt_str_t s;
+    va_list   args;
+
+    if( (s.str = wbt_log_buf.ptr) == NULL ) {
+        return WBT_ERROR;
+    }
+
+    va_start(args, fmt);
+    s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
+    va_end(args);
+
+    fprintf(stdout, "%-20.*s", s.len, s.str);
     
     return WBT_OK;
 }

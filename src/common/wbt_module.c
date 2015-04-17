@@ -31,12 +31,13 @@ wbt_status wbt_module_init() {
     /* 初始化模块 */
     int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
     for( i = 0 ; i < size ; i++ ) {
+        wbt_log_print( "\nInitialize module %-10.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
             /* fatal */
-            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rInitialize module %-10.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
             return WBT_ERROR;
         } else {
-            wbt_log_debug( "module %.*s loaded", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rInitialize module %-10.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         }
     }
     return WBT_OK;
@@ -47,9 +48,9 @@ wbt_status wbt_module_exit() {
     for( i = size - 1 ; i >= 0 ; i-- ) {
         if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
             /* fatal */
-            wbt_log_debug( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         } else {
-            wbt_log_debug( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         }
     }
     return WBT_OK;

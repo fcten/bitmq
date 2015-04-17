@@ -9,9 +9,8 @@
 
 int wbt_terminal_width = 80;
 int wbt_terminal_height = 25;
-
-/*获得终端宽度*/  
-void wbt_term_get_size() {
+  
+void wbt_term_update_size() {
     struct winsize wbuf;
     char *tp;
     if( isatty(STDOUT_FILENO) ) {  
@@ -31,4 +30,12 @@ void wbt_term_get_size() {
                 wbt_terminal_height = atoi( tp );
         }
     }
- }  
+ }
+
+int wbt_term_get_height() {
+    return wbt_terminal_height;
+}
+
+int wbt_term_get_width() {
+    return wbt_terminal_width;
+}
