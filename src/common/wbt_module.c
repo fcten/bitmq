@@ -46,11 +46,12 @@ wbt_status wbt_module_exit() {
     /* 卸载所有模块 */
     int i, size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
     for( i = size - 1 ; i >= 0 ; i-- ) {
+        wbt_log_print( "\nFinalize module %-12.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
             /* fatal */
-            wbt_log_print( "module %.*s occured errors", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rFinalize module %-12.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         } else {
-            wbt_log_print( "module %.*s exit", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rFinalize module %-12.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         }
     }
     return WBT_OK;

@@ -12,7 +12,11 @@
 extern "C" {
 #endif
 
-#include "stdio.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../../webit.h"
 
 wbt_status wbt_init_proc_title();
 void wbt_set_proc_title(const char *title);

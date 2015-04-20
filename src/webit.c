@@ -20,6 +20,7 @@
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
 #include "os/linux/wbt_sigsegv.h"
+#include "os/linux/wbt_setproctitle.h"
 
 int wbt_argc;
 char** wbt_argv;
@@ -59,7 +60,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 void wbt_worker_process() {
     /* 设置进程标题 */
     if( !wbt_conf.run_mode ) {
-        //setProcTitle("Webit: worker process");
+        wbt_set_proc_title("Webit: worker process");
     }
 
     /* 设置需要监听的信号(后台模式) */
@@ -111,7 +112,7 @@ void wbt_worker_process() {
 void wbt_master_process() {
     /* 设置进程标题 */
     if( !wbt_conf.run_mode ) {
-        //setProcTitle("Webit: master process (default)");
+        wbt_set_proc_title("Webit: master process (default)");
     }
 
     /* 设置需要监听的信号(后台模式) */
@@ -176,6 +177,7 @@ void wbt_exit(int exit_code) {
     wbt_module_exit();
 
     wbt_log_add("Webit exit (pid: %d)\n", getpid());
+    wbt_log_print("\n\nWebit exit (pid: %d)\n", getpid());
     
     exit(exit_code);
 }
@@ -220,7 +222,7 @@ int main(int argc, char** argv) {
     }
     tzset();
 
-    initProcTitle();
+    wbt_init_proc_title();
 
     if( !wbt_conf.run_mode ) {
         wbt_log_print( "\n\nWebit is now running in the background.\n\n" );

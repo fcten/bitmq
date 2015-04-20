@@ -54,11 +54,9 @@ wbt_status wbt_init_proc_title() {
 void wbt_set_proc_title(const char *title) {
     wbt_argv[1] = 0;
     char * p;
-    p = memcpy((u_char *) wbt_argv[0], (u_char *) "Webit: ",
-	                    wbt_argv_last - wbt_argv[0]);
-    p = memcpy(p, (u_char *) title, wbt_argv_last - (char *) p);
 
-    if (wbt_argv_last - (char *) p) {
-        memset(p, '\0', wbt_argv_last - (char *) p);
-    }
+    memcpy((u_char *) wbt_argv[0], (u_char *) title,
+        wbt_argv_last - wbt_argv[0]);
+
+    *wbt_argv_last = '\0';
 }
