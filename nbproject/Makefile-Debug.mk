@@ -50,6 +50,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
+	${OBJECTDIR}/src/os/linux/wbt_setproctitle.o \
 	${OBJECTDIR}/src/os/linux/wbt_sigsegv.o \
 	${OBJECTDIR}/src/os/linux/wbt_terminal.o \
 	${OBJECTDIR}/src/webit.o
@@ -153,6 +154,11 @@ ${OBJECTDIR}/src/os/linux/wbt_process.o: src/os/linux/wbt_process.c
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
 	${RM} $@.d
 	$(COMPILE.c) -g -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_process.o src/os/linux/wbt_process.c
+
+${OBJECTDIR}/src/os/linux/wbt_setproctitle.o: src/os/linux/wbt_setproctitle.c 
+	${MKDIR} -p ${OBJECTDIR}/src/os/linux
+	${RM} $@.d
+	$(COMPILE.c) -g -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o src/os/linux/wbt_setproctitle.c
 
 ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o: src/os/linux/wbt_sigsegv.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux

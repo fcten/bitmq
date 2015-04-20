@@ -110,7 +110,7 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
 }
 
 /* 连接字符串 */
-void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
+inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     /* 防止缓冲区溢出 */
     int src_len = src->len;
     if( dest->len + src->len > max_len ) src_len = max_len - dest->len;
@@ -120,4 +120,8 @@ void inline wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     mdest.len = src_len;
     wbt_memcpy( &mdest, (wbt_mem_t *)src, src_len );
     dest->len += src_len;
+}
+
+inline unsigned int wbt_strlen(char *s) {
+    return strlen(s);
 }

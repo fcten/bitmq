@@ -21,43 +21,10 @@
 #include "common/wbt_config.h"
 #include "os/linux/wbt_sigsegv.h"
 
-extern char **environ;
-char *last;
-
 int wbt_argc;
 char** wbt_argv;
 
 int wating_to_exit = 0;
-
-void initProcTitle() {
-    size_t size = 0;
-    int i;
-    for (i = 0; environ[i]; ++i) {
-        size += strlen(environ[i])+1; 
-    }   
- 
-    char *raw = malloc(size*sizeof(char));
-    for (i = 0; environ[i]; ++i) {
-        memcpy(raw, environ[i], strlen(environ[i]) + 1); 
-        environ[i] = raw;
-        raw += strlen(environ[i]) + 1;
-    }   
- 
-    last = wbt_argv[0];
-    for (i = 0; i < wbt_argc; ++i) {
-        last += strlen(wbt_argv[i]) + 1;   
-    }   
-    for (i = 0; environ[i]; ++i) {
-        last += strlen(environ[i]) + 1;
-    }
-}
- 
-void setProcTitle(const char *title) {
-    wbt_argv[1] = 0;
-    char *p = wbt_argv[0];
-    memset(p, 0x00, last - p); 
-    strncpy(p, title, last - p); 
-}
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_debug("received singal: %d", signo);
