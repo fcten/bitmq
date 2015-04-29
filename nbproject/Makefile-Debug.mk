@@ -49,6 +49,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_time.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
+	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
 	${OBJECTDIR}/src/os/linux/wbt_setproctitle.o \
 	${OBJECTDIR}/src/os/linux/wbt_sigsegv.o \
@@ -149,6 +150,11 @@ ${OBJECTDIR}/src/http/wbt_http_consts.o: src/http/wbt_http_consts.c
 	${MKDIR} -p ${OBJECTDIR}/src/http
 	${RM} $@.d
 	$(COMPILE.c) -g -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/http/wbt_http_consts.o src/http/wbt_http_consts.c
+
+${OBJECTDIR}/src/os/linux/wbt_os_util.o: src/os/linux/wbt_os_util.c 
+	${MKDIR} -p ${OBJECTDIR}/src/os/linux
+	${RM} $@.d
+	$(COMPILE.c) -g -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_os_util.o src/os/linux/wbt_os_util.c
 
 ${OBJECTDIR}/src/os/linux/wbt_process.o: src/os/linux/wbt_process.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux

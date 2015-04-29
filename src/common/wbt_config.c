@@ -6,11 +6,21 @@
  */
 
 #include "wbt_config.h"
+#include "wbt_module.h"
+#include "wbt_file.h"
+#include "wbt_log.h"
+#include "wbt_rbtree.h"
+#include "../os/linux/wbt_setproctitle.h"
 
 wbt_module_t wbt_module_conf = {
     wbt_string("config"),
     wbt_conf_init
 };
+
+/* 默认的配置文件位置 */
+wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
+/* 供 setproctitle 显示使用，如果路径过长则会被截断 */
+wbt_mem_t wbt_config_file_path;
 
 wbt_mem_t wbt_config_file_content;
 
@@ -23,6 +33,10 @@ wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_init() {
     wbt_rbtree_init(&wbt_config_rbtree);
+    
+    if( wbt_malloc(&wbt_config_file_path, 256) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     
     if( wbt_conf_reload() != WBT_OK ) {
         return WBT_ERROR;
@@ -184,8 +198,6 @@ wbt_status wbt_conf_reload() {
     /* TODO 清理已保存的配置信息 */
 
     /* 尝试读取配置文件 */
-    wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
-    
     wbt_file_t wbt_config_file;
     wbt_config_file.fd = open(wbt_config_file_name.str, O_RDONLY);
     
@@ -195,6 +207,14 @@ wbt_status wbt_conf_reload() {
 
         return WBT_ERROR;
     }
+    
+    int len = wbt_get_file_path_by_fd(wbt_config_file.fd, &wbt_config_file_path);
+    if( len <= 0 ) {
+        return WBT_ERROR;
+    }
+    char *tmp[1024];
+    snprintf(tmp, sizeof(tmp), "Webit: master process (%.*s)", len, wbt_config_file_path.ptr );
+    wbt_set_proc_title(tmp);
     
     struct stat statbuff;  
     if(stat(wbt_config_file_name.str, &statbuff) < 0){

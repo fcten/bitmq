@@ -110,11 +110,6 @@ void wbt_worker_process() {
 }
 
 void wbt_master_process() {
-    /* 设置进程标题 */
-    if( !wbt_conf.run_mode ) {
-        wbt_set_proc_title("Webit: master process (default)");
-    }
-
     /* 设置需要监听的信号(后台模式) */
     struct sigaction act;
     sigset_t set;

@@ -12,11 +12,8 @@
 extern "C" {
 #endif
 
+#include "../webit.h"
 #include "wbt_string.h"
-#include "wbt_module.h"
-#include "wbt_file.h"
-#include "wbt_log.h"
-#include "wbt_rbtree.h"
 
 typedef struct wbt_conf_s {
     int listen_port;    // 监听端口
