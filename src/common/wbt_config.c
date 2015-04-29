@@ -212,7 +212,7 @@ wbt_status wbt_conf_reload() {
     if( len <= 0 ) {
         return WBT_ERROR;
     }
-    char *tmp[1024];
+    char tmp[1024];
     snprintf(tmp, sizeof(tmp), "Webit: master process (%.*s)", len, wbt_config_file_path.ptr );
     wbt_set_proc_title(tmp);
     

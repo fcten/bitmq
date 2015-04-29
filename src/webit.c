@@ -196,6 +196,8 @@ int main(int argc, char** argv) {
     
     setup_sigsegv();
 
+    wbt_init_proc_title();
+    
     /* 初始化所有组件 */
     if( wbt_module_init() != WBT_OK ) {
         wbt_log_print( "\n\nWebit startup failed.\n\n" );
@@ -216,8 +218,6 @@ int main(int argc, char** argv) {
         return;
     }
     tzset();
-
-    wbt_init_proc_title();
 
     if( !wbt_conf.run_mode ) {
         wbt_log_print( "\n\nWebit is now running in the background.\n\n" );
