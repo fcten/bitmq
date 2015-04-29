@@ -60,7 +60,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 void wbt_worker_process() {
     /* 设置进程标题 */
     if( !wbt_conf.run_mode ) {
-        wbt_set_proc_title("Webit: worker process");
+        wbt_set_proc_title("webit: worker process");
     }
 
     /* 设置需要监听的信号(后台模式) */
