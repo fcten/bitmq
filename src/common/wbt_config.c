@@ -34,7 +34,7 @@ wbt_conf_t wbt_conf;
 wbt_status wbt_conf_init() {
     wbt_rbtree_init(&wbt_config_rbtree);
     
-    if( wbt_malloc(&wbt_config_file_path, 256) != WBT_OK ) {
+    if( wbt_malloc(&wbt_config_file_path, 64) != WBT_OK ) {
         return WBT_ERROR;
     }
     
