@@ -17,6 +17,8 @@ extern "C" {
 
 #define WBT_DEBUG
 
+#define WBT_VERSION         "0.1.0"
+
 #define WBT_MAX_EVENTS      512
 #define WBT_EVENT_LIST_SIZE 1024
 #define WBT_CONN_BACKLOG    511

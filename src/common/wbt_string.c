@@ -122,6 +122,6 @@ inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     dest->len += src_len;
 }
 
-inline unsigned int wbt_strlen(char *s) {
+inline unsigned int wbt_strlen(const char *s) {
     return strlen(s);
 }

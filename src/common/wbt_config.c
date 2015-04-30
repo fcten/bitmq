@@ -104,6 +104,14 @@ wbt_status wbt_conf_init() {
     return WBT_OK;
 }
 
+wbt_status wbt_conf_set_file( const char * file ) {
+    wbt_config_file_name.str = (char *)file; /* 这个类型转换只是为了避免编译器报
+                                              * 错，不允许通过该指针进行写操作 */
+    wbt_config_file_name.len = wbt_strlen(file);
+    
+    return WBT_OK;
+}
+
 static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
     int status = 0;
     u_char *p, ch;
@@ -204,35 +212,35 @@ wbt_status wbt_conf_reload() {
     if( wbt_config_file.fd <= 0 ) {
         /* 找不到配置文件 */
         wbt_log_add("Can't find config file: %.*s\n", wbt_config_file_name.len, wbt_config_file_name.str);
-
         return WBT_ERROR;
     }
-    
+
     int len = wbt_get_file_path_by_fd(wbt_config_file.fd, &wbt_config_file_path);
     if( len <= 0 ) {
         return WBT_ERROR;
     }
-    char tmp[1024];
-    snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.ptr );
-    wbt_set_proc_title(tmp);
     
     struct stat statbuff;  
     if(stat(wbt_config_file_name.str, &statbuff) < 0){
-        wbt_config_file.size = 0;  
-    }else{  
-        wbt_config_file.size = statbuff.st_size;  
+        return WBT_ERROR;
     }
+    wbt_config_file.size = statbuff.st_size;
 
     wbt_malloc(&wbt_config_file_content, wbt_config_file.size);
     read(wbt_config_file.fd, wbt_config_file_content.ptr, wbt_config_file_content.len);
     
     /* 关闭配置文件 */
     close(wbt_config_file.fd);
-    
+
     /* 解析配置文件 */
     if( wbt_conf_parse(&wbt_config_file_content) == WBT_OK ) {
         wbt_free(&wbt_config_file_content);
-        wbt_rbtree_print(wbt_config_rbtree.root);
+        //wbt_rbtree_print(wbt_config_rbtree.root);
+
+        char tmp[1024];
+        snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.ptr );
+        wbt_set_proc_title(tmp);
+
         return WBT_OK;
     } else {
         wbt_free(&wbt_config_file_content);

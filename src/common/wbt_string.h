@@ -37,7 +37,7 @@ int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2);
 
 inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
-inline unsigned int wbt_strlen(char *s);
+inline unsigned int wbt_strlen(const char *s);
 
 #ifdef	__cplusplus
 }

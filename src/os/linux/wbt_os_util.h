@@ -18,6 +18,7 @@ extern "C" {
 #include "../../common/wbt_string.h"
 
 int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf);
+inline int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
 
 #ifdef	__cplusplus
 }

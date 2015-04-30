@@ -94,7 +94,7 @@ wbt_status wbt_log_print(const char *fmt, ...) {
     s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
     va_end(args);
 
-    fprintf(stdout, "%-20.*s", s.len, s.str);
+    fprintf(stdout, "%.*s", s.len, s.str);
     
     return WBT_OK;
 }

@@ -21,6 +21,7 @@
 #include "common/wbt_config.h"
 #include "os/linux/wbt_sigsegv.h"
 #include "os/linux/wbt_setproctitle.h"
+#include "os/linux/wbt_os_util.h"
 
 int wbt_argc;
 char** wbt_argv;
@@ -183,7 +184,7 @@ int main(int argc, char** argv) {
     /* 保存传入参数 */
     wbt_argc = argc;
     wbt_argv = argv;
-    
+
     /* 初始化日至输出缓冲 */
     if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        
         return 1;
@@ -191,16 +192,50 @@ int main(int argc, char** argv) {
     
     /* 更新终端尺寸 */
     wbt_term_update_size();
-
-    wbt_log_print( "\nWebit startup ...\n" );
+    
+    /* 解析传入参数 */
+    int ch;
+    opterr = 0;
+    while( ( ch = wbt_getopt(argc,argv,"c:hs:tv") ) != -1 ) {
+        switch(ch) {
+            case 'v':
+                wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
+                return 0;
+            case 'h':
+                  wbt_log_print(
+                      "\nOptions:\n"
+                      "  -h               : this help\n"
+                      "  -v               : show version and exit\n"
+                      "  -s [stop|reload] : send signal to a master process\n"
+                      "  -t [config-file] : test configuration and exit\n"
+                      "  -c [config-file] : use the specified configuration\n\n");
+                return 0;
+            case 'c':
+                if( wbt_conf_set_file(optarg) != WBT_OK ) {
+                    return 1;
+                }
+                break;
+            case '?':
+                if( optopt == 'c' || optopt == 's' || optopt == 't' ) {
+                    wbt_log_print("option: -%c required parameters\n",optopt);
+                } else {
+                    wbt_log_print("invalid option: -%c\n",optopt);
+                }
+                return 1;
+            default:
+                wbt_log_print("option: -%c not yet implemented\n",ch);
+                return 1;
+        }
+    }
     
     setup_sigsegv();
 
     wbt_init_proc_title();
     
     /* 初始化所有组件 */
+    wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
     if( wbt_module_init() != WBT_OK ) {
-        wbt_log_print( "\n\nWebit startup failed.\n\n" );
+        wbt_log_print( "\n\n" );
         return 1;
     }
 
@@ -220,7 +255,7 @@ int main(int argc, char** argv) {
     tzset();
 
     if( !wbt_conf.run_mode ) {
-        wbt_log_print( "\n\nWebit is now running in the background.\n\n" );
+        wbt_log_print( "\n\nwebit is now running in the background.\n\n" );
 
         /* 转入后台运行 */
         if( daemon(1,0) < 0 ) {
@@ -228,7 +263,7 @@ int main(int argc, char** argv) {
             return 1;
         }
     } else {
-        wbt_log_print( "\n\nWebit is now running.\n\n" );
+        wbt_log_print( "\n\nwebit is now running.\n\n" );
     }
 
     /* 限制可以访问的目录

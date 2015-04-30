@@ -27,6 +27,8 @@ typedef struct wbt_conf_s {
 
 extern wbt_conf_t wbt_conf;
 
+wbt_status wbt_conf_set_file( const char * file );
+
 wbt_status wbt_conf_init();
 wbt_status wbt_conf_reload();
 
