@@ -58,7 +58,7 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=-ldl
+CFLAGS=
 
 # CC Compiler Flags
 CCFLAGS=
@@ -79,107 +79,107 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -ldl
 
 ${OBJECTDIR}/src/common/wbt_config.o: src/common/wbt_config.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_config.o src/common/wbt_config.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_config.o src/common/wbt_config.c
 
 ${OBJECTDIR}/src/common/wbt_connection.o: src/common/wbt_connection.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_connection.o src/common/wbt_connection.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_connection.o src/common/wbt_connection.c
 
 ${OBJECTDIR}/src/common/wbt_event.o: src/common/wbt_event.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_event.o src/common/wbt_event.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_event.o src/common/wbt_event.c
 
 ${OBJECTDIR}/src/common/wbt_file.o: src/common/wbt_file.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_file.o src/common/wbt_file.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_file.o src/common/wbt_file.c
 
 ${OBJECTDIR}/src/common/wbt_heap.o: src/common/wbt_heap.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_heap.o src/common/wbt_heap.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_heap.o src/common/wbt_heap.c
 
 ${OBJECTDIR}/src/common/wbt_list.o: src/common/wbt_list.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_list.o src/common/wbt_list.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_list.o src/common/wbt_list.c
 
 ${OBJECTDIR}/src/common/wbt_log.o: src/common/wbt_log.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_log.o src/common/wbt_log.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_log.o src/common/wbt_log.c
 
 ${OBJECTDIR}/src/common/wbt_memory.o: src/common/wbt_memory.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_memory.o src/common/wbt_memory.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_memory.o src/common/wbt_memory.c
 
 ${OBJECTDIR}/src/common/wbt_module.o: src/common/wbt_module.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_module.o src/common/wbt_module.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_module.o src/common/wbt_module.c
 
 ${OBJECTDIR}/src/common/wbt_rbtree.o: src/common/wbt_rbtree.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_rbtree.o src/common/wbt_rbtree.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_rbtree.o src/common/wbt_rbtree.c
 
 ${OBJECTDIR}/src/common/wbt_string.o: src/common/wbt_string.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_string.o src/common/wbt_string.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_string.o src/common/wbt_string.c
 
 ${OBJECTDIR}/src/common/wbt_time.o: src/common/wbt_time.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/common/wbt_time.o src/common/wbt_time.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_time.o src/common/wbt_time.c
 
 ${OBJECTDIR}/src/http/wbt_http.o: src/http/wbt_http.c 
 	${MKDIR} -p ${OBJECTDIR}/src/http
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/http/wbt_http.o src/http/wbt_http.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/http/wbt_http.o src/http/wbt_http.c
 
 ${OBJECTDIR}/src/http/wbt_http_consts.o: src/http/wbt_http_consts.c 
 	${MKDIR} -p ${OBJECTDIR}/src/http
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/http/wbt_http_consts.o src/http/wbt_http_consts.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/http/wbt_http_consts.o src/http/wbt_http_consts.c
 
 ${OBJECTDIR}/src/os/linux/wbt_os_util.o: src/os/linux/wbt_os_util.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_os_util.o src/os/linux/wbt_os_util.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_os_util.o src/os/linux/wbt_os_util.c
 
 ${OBJECTDIR}/src/os/linux/wbt_process.o: src/os/linux/wbt_process.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_process.o src/os/linux/wbt_process.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_process.o src/os/linux/wbt_process.c
 
 ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o: src/os/linux/wbt_setproctitle.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o src/os/linux/wbt_setproctitle.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o src/os/linux/wbt_setproctitle.c
 
 ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o: src/os/linux/wbt_sigsegv.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o src/os/linux/wbt_sigsegv.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o src/os/linux/wbt_sigsegv.c
 
 ${OBJECTDIR}/src/os/linux/wbt_terminal.o: src/os/linux/wbt_terminal.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/os/linux/wbt_terminal.o src/os/linux/wbt_terminal.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_terminal.o src/os/linux/wbt_terminal.c
 
 ${OBJECTDIR}/src/webit.o: src/webit.c 
 	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -Isrc -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/webit.o src/webit.c
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/webit.o src/webit.c
 
 # Subprojects
 .build-subprojects:

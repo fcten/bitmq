@@ -19,7 +19,7 @@ char * wbt_log_file = "./webit.log";
 wbt_mem_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
-    wbt_log_file_fd = open(wbt_log_file, O_WRONLY | O_APPEND | O_CREAT);
+    wbt_log_file_fd = open(wbt_log_file, O_WRONLY | O_APPEND | O_CREAT, 0777);
     if( wbt_log_file_fd <=0 ) {
         return WBT_ERROR;
     }
