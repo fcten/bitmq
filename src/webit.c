@@ -244,6 +244,9 @@ int main(int argc, char** argv) {
     rlim.rlim_cur = 65535;
     rlim.rlim_max = 65535;
     setrlimit(RLIMIT_NOFILE, &rlim);
+    
+    /* 屏蔽 umask */
+    umask(0);
 
     /* 接下来的 chroot 会导致程序无法访问 /etc/timezone
      * TODO 读取 /etc/timezone 的内容并保存
@@ -268,14 +271,16 @@ int main(int argc, char** argv) {
 
     /* 限制可以访问的目录
      * 这个操作会导致 daemon() 不能正常运行
+     * 只有 root 用户才能执行该操作，为了使非 root 用户也能运行 webit，必须放弃使用 chroot
      */
-    const char * wwwroot = wbt_stdstr(&wbt_conf.root);
+    //const char * wwwroot = wbt_stdstr(&wbt_conf.root);
+    /*
     if( chroot( wwwroot ) != 0 ) {
         wbt_log_add("%s not exists.\n", wwwroot);
         return;
     } else {
         wbt_log_add("Root path: %s\n", wwwroot);
-    }
+    }*/
 
     if( !wbt_conf.run_mode ) {
         wbt_master_process();

@@ -424,21 +424,25 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
 
     /* 打开所请求的文件 */
     // 判断 URI 是否以 / 开头
-    if( *(http->uri.str) != '/' ) {
+    // 判断 URI 中是否包含 ..
+    wbt_str_t tmp_str = wbt_string("..");
+    if( *(http->uri.str) != '/'  || wbt_strpos( &http->uri, &tmp_str ) != -1 ) {
         // 合法的 HTTP 请求中 URI 应当以 / 开头
         // 也可以以 http:// 或 https:// 开头，但暂时不支持
         http->status = STATUS_400;
         return WBT_ERROR;
     }
 
-    // 判断 URI 是否以 / 结束
+    // 根据 URI 是否以 / 结束选择合适的补全方式
     wbt_str_t full_path;
     if( *(http->uri.str + http->uri.len - 1) == '/' ) {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
+            wbt_conf.root.len, wbt_conf.root.str,
             http->uri.len, http->uri.str,
             wbt_conf.index.len, wbt_conf.index.str);
     } else {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+            wbt_conf.root.len, wbt_conf.root.str,
             http->uri.len, http->uri.str);
     }
 

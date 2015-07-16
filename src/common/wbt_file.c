@@ -217,5 +217,5 @@ wbt_status wbt_unlock_fd(int fd) {
 }
 
 int wbt_lock_create( const char *name ) {
-    return open( name, O_RDWR | O_CREAT, 644 );
+    return open( name, O_RDWR | O_CREAT, S_IRWXU );
 }
