@@ -81,6 +81,13 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
     /* 释放接收到的请求数据 */
     wbt_free( &http->buff );
     
+    /* 释放读入内存的文件内容 */
+    if( http->file.ptr ) {
+        tmp.ptr = http->file.ptr;
+        tmp.len = 1;
+        wbt_free( &tmp );
+    }
+    
     /* 初始化结构体
      * 由于 keep-alive 请求会重用这段内存，必须重新初始化
      */
@@ -458,13 +465,19 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
             /* 路径过长 */
             http->status = STATUS_414;
         }
+    } else {
+        http->status = STATUS_200;
+        http->file.fd = tmp->fd;
+        http->file.size = tmp->size;
+        http->file.last_modified = tmp->last_modified;
+        http->file.offset = 0;
+    }
+    
+    /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
+    if( wbt_module_on_filter(http) != WBT_OK ) {
+        http->status = 500;
         return WBT_ERROR;
     }
-    http->status = STATUS_200;
-    http->file.fd = tmp->fd;
-    http->file.size = tmp->size;
-    http->file.last_modified = tmp->last_modified;
-    http->file.offset = 0;
     
     return WBT_OK;
 }

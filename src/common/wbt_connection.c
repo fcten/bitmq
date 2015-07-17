@@ -178,7 +178,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         wbt_status ret = wbt_http_parse(&ev->data);
 
         if( ev->data.status > STATUS_UNKNOWN ) {
-            /* 需要返回错误响应 */
+            /* 需要返回响应 */
             wbt_http_process(&ev->data);
             /* 等待socket可写 */
             ev->trigger = wbt_on_send;
@@ -213,7 +213,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     /* 如果存在 response，发送 response */
     if( http->response.len - http->resp_offset > 0 ) {
         n = http->response.len - http->resp_offset; 
-        nwrite = write(fd, http->response.ptr + http->resp_offset, n); 
+        nwrite = write(fd, http->response.ptr + http->resp_offset, n);
 
         if (nwrite == -1 && errno != EAGAIN) {
             wbt_conn_close(ev);
@@ -229,12 +229,22 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
     }
     
-    if( http->status == STATUS_200 &&
-        http->file.fd > 0 && http->file.size > http->file.offset  ) {
-        // 在非阻塞模式下，对于大文件，每次只能发送一部分
+    if( http->status == STATUS_200 && http->file.size > http->file.offset  ) {
+        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
         // 需要在未发送完成前继续监听可写事件
         n = http->file.size - http->file.offset;
-        nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
+
+        if( http->file.ptr != NULL ) {
+            // 需要发送的数据已经在内存中
+            nwrite = write(fd, http->file.ptr + http->file.offset, n);
+            http->file.offset += nwrite;
+        } else if( http->file.fd > 0  ) {
+            // 需要发送的数据不在内存中，但是指定了需要发送的文件
+            nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
+        } else {
+            // 不应该出现这种情况
+            n = nwrite = 0;
+        }
 
         if (nwrite == -1 && errno != EAGAIN) { 
             wbt_conn_close(ev);
