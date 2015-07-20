@@ -465,19 +465,14 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
             /* 路径过长 */
             http->status = STATUS_414;
         }
-    } else {
-        http->status = STATUS_200;
-        http->file.fd = tmp->fd;
-        http->file.size = tmp->size;
-        http->file.last_modified = tmp->last_modified;
-        http->file.offset = 0;
-    }
-    
-    /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
-    if( wbt_module_on_filter(http) != WBT_OK ) {
-        http->status = 500;
         return WBT_ERROR;
     }
+
+    http->status = STATUS_200;
+    http->file.fd = tmp->fd;
+    http->file.size = tmp->size;
+    http->file.last_modified = tmp->last_modified;
+    http->file.offset = 0;
     
     return WBT_OK;
 }

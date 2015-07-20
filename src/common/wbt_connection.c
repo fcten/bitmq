@@ -176,6 +176,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         /* 去除多余的缓冲区 */
         wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
         wbt_status ret = wbt_http_parse(&ev->data);
+        
+        /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
+        if( wbt_module_on_recv(ev) != WBT_OK ) {
+            ev->data.status = 500;
+        }
 
         if( ev->data.status > STATUS_UNKNOWN ) {
             /* 需要返回响应 */

@@ -33,7 +33,8 @@ inline wbt_status wbt_calloc(wbt_mem_t *p, size_t len, size_t size) {
 
 inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {
     void *tmp = realloc(p->ptr, len);
-    if(tmp != NULL) {
+    /* bugfix: len == 0 时相当于执行 free，此时 tmp == NULL */
+    if(tmp != NULL || len == 0) {
         p->ptr = tmp;
         p->len = len;
         

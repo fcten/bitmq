@@ -60,11 +60,47 @@ wbt_status wbt_module_exit() {
     return WBT_OK;
 }
 
-wbt_status wbt_module_on_filter(wbt_http_t *http) {
+wbt_status wbt_module_on_conn(wbt_event_t *ev) {
     /* filter模块 */
     int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
     for( i = 0 ; i < size ; i++ ) {
-        if( wbt_modules[i]->on_filter && wbt_modules[i]->on_filter(http) != WBT_OK ) {
+        if( wbt_modules[i]->on_conn && wbt_modules[i]->on_conn(ev) != WBT_OK ) {
+            /* fatal */
+            return WBT_ERROR;
+        }
+    }
+    return WBT_OK;
+}
+
+wbt_status wbt_module_on_recv(wbt_event_t *ev) {
+    /* filter模块 */
+    int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = 0 ; i < size ; i++ ) {
+        if( wbt_modules[i]->on_recv && wbt_modules[i]->on_recv(ev) != WBT_OK ) {
+            /* fatal */
+            return WBT_ERROR;
+        }
+    }
+    return WBT_OK;
+}
+
+wbt_status wbt_module_on_send(wbt_event_t *ev) {
+    /* filter模块 */
+    int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = 0 ; i < size ; i++ ) {
+        if( wbt_modules[i]->on_send && wbt_modules[i]->on_send(ev) != WBT_OK ) {
+            /* fatal */
+            return WBT_ERROR;
+        }
+    }
+    return WBT_OK;
+}
+
+wbt_status wbt_module_on_close(wbt_event_t *ev) {
+    /* filter模块 */
+    int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = 0 ; i < size ; i++ ) {
+        if( wbt_modules[i]->on_close && wbt_modules[i]->on_close(ev) != WBT_OK ) {
             /* fatal */
             return WBT_ERROR;
         }
