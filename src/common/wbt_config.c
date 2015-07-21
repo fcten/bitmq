@@ -238,7 +238,7 @@ wbt_status wbt_conf_reload() {
         //wbt_rbtree_print(wbt_config_rbtree.root);
 
         char tmp[1024];
-        snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.ptr );
+        snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, (char *)wbt_config_file_path.ptr );
         wbt_set_proc_title(tmp);
 
         return WBT_OK;

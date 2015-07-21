@@ -72,13 +72,17 @@ wbt_status wbt_conn_cleanup() {
 }
 
 wbt_status wbt_conn_close(wbt_event_t *ev) {
-    wbt_log_debug("connection %d close.",ev->fd)
+    wbt_log_debug("connection %d close.",ev->fd);
+    
+    if( wbt_module_on_close(ev) != WBT_OK ) {
+        // 似乎并不能做什么
+    }
 
     close(ev->fd);
     ev->fd = -1;        /* close 之后 fd 会自动从 epoll 中删除 */
     wbt_event_del(ev);
 
-    return wbt_on_close(ev);
+    return WBT_OK;
 }
 
 wbt_status wbt_on_connect(wbt_event_t *ev) {
@@ -285,9 +289,11 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     return WBT_OK;
 }
 
+/*
 wbt_status wbt_on_close(wbt_event_t *ev) {
     return WBT_OK;
 }
+*/
 
 /* 将句柄设置为非阻塞 */
 wbt_status wbt_setnonblocking(int sock) {

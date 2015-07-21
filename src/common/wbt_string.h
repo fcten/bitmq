@@ -18,7 +18,7 @@ extern "C" {
 #include "wbt_memory.h"
 
 typedef struct {
-    size_t  len;
+    int  len;
     u_char *str;
 } wbt_str_t;
 

@@ -33,8 +33,8 @@ typedef struct wbt_rbtree_node_s {
 
 typedef struct wbt_rbtree_s {
     wbt_rbtree_node_t * root;
-    size_t size;
-    size_t max;
+    unsigned int size;
+    unsigned int max;
 } wbt_rbtree_t;
 
 void wbt_rbtree_init(wbt_rbtree_t *rbt);

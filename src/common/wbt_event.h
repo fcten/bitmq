@@ -38,7 +38,7 @@ typedef struct wbt_event_s {
 typedef struct wbt_event_pool_s {
     wbt_mem_t pool;                             /* 一次性申请的大内存块 */
     wbt_mem_t available;                        /* 栈，保存可用的内存块 */
-    size_t max;                                 /* 当前可以容纳的事件数 */
+    unsigned int max;                                 /* 当前可以容纳的事件数 */
     unsigned int top;                           /* 当前栈顶的位置 */
 } wbt_event_pool_t; 
 

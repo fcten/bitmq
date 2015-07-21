@@ -32,6 +32,21 @@ wbt_status wbt_module_helloworld_conn(wbt_event_t *ev) {
 
 wbt_status wbt_module_helloworld_close(wbt_event_t *ev) {
     /* 根据 fd 将客户端设置为离线 */
+    wbt_str_t fd;
+    fd.str = (u_char *)&ev->fd;
+    fd.len = sizeof(ev->fd);
+
+    wbt_rbtree_node_t *node_fd =  wbt_rbtree_get(&wbt_online_fd_rbtree, &fd);
+    if( node_fd != NULL ) {
+        wbt_online_t *p = (wbt_online_t *)node_fd->value.ptr;
+        p->status = 0;
+        p->offline = cur_mtime;
+        
+        node_fd->value.ptr = NULL;
+        node_fd->value.len = 0;
+        wbt_rbtree_delete(&wbt_online_fd_rbtree, node_fd);
+    }
+
     return WBT_OK;
 }
 
@@ -79,6 +94,13 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
         wbt_memset(&client, 0);
 
         node = wbt_rbtree_insert(&wbt_online_id_rbtree, &http->body);
+        node->value = client;
+
+        wbt_str_t fd;
+        fd.str = (u_char *)&ev->fd;
+        fd.len = sizeof(ev->fd);
+
+        node = wbt_rbtree_insert(&wbt_online_fd_rbtree, &fd);
         node->value = client;
     }
     

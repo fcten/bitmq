@@ -89,7 +89,7 @@ static void signal_segv(int signum, siginfo_t* info, void*ptr)
 	fprintf(sigsegv_log, "info.si_code  = %d (%s)\n", info->si_code, si_codes[info->si_code]); 
 	fprintf(sigsegv_log, "info.si_addr  = %p\n", info->si_addr);  
 	for(i = 0; i <NGREG; i++)    
-		fprintf(sigsegv_log, "reg[%02d]       = 0x" REGFORMAT "\n", i, ucontext->uc_mcontext.gregs[i]);
+		fprintf(sigsegv_log, "reg[%02zd]       = 0x" REGFORMAT "\n", i, ucontext->uc_mcontext.gregs[i]);
 #if defined(SIGSEGV_STACK_X86) || defined(SIGSEGV_STACK_IA64)
 #if defined(SIGSEGV_STACK_IA64)  
 	ip = (void*)ucontext->uc_mcontext.gregs[REG_RIP];  

@@ -18,7 +18,7 @@ extern "C" {
 #include "../webit.h"
 
 typedef struct wbt_mem_s {
-    size_t  len;            /* 内存块的大小 */
+    unsigned int  len;            /* 内存块的大小 */
     void   *ptr;            /* 指向内存块的指针 */
     struct wbt_mem_s *next; /* 指向下一个内存块 */
 } wbt_mem_t;

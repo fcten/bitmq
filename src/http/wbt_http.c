@@ -523,7 +523,7 @@ wbt_status wbt_http_process(wbt_http_t *http) {
     wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
     
     wbt_http_generate_response_header( http );
-    wbt_log_debug("%.*s", http->response.len, http->response.ptr);
+    wbt_log_debug("%.*s", http->response.len, (char *)http->response.ptr);
     
     return WBT_OK;
 }

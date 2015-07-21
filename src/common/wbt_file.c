@@ -36,7 +36,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         
         wbt_file_t * tmp_file = (wbt_file_t *)node->value.ptr;
         if( tmp_file->refer == 0 && cur_mtime - tmp_file->last_use_mtime > 10000 ) {
-            wbt_log_debug("closed fd:%d %.*s", tmp_file->fd, node->key.len, node->key.ptr);
+            wbt_log_debug("closed fd:%d %.*s", tmp_file->fd, node->key.len, (char *)node->key.ptr);
             close(tmp_file->fd);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
         }
@@ -131,7 +131,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         tmp_file->size = tmp.size;
                         tmp_file->last_modified = tmp.last_modified;
 
-                        wbt_log_debug("open file: %d %d", tmp.fd, tmp.size);
+                        wbt_log_debug("open file: %d %zd", tmp.fd, tmp.size);
                     } else {
                         tmp.size = 0;
                         if( errno == EACCES ) {

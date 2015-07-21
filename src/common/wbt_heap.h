@@ -27,8 +27,8 @@ typedef struct {
 
 typedef struct {
     wbt_mem_t heap;
-    size_t size;    /* 已有元素个数 */
-    size_t max;     /* 最大元素个数 */
+    unsigned int size;    /* 已有元素个数 */
+    unsigned int max;     /* 最大元素个数 */
 } wbt_heap_t;
 
 /* 建立一个空堆 */
