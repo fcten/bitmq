@@ -31,6 +31,7 @@ wbt_status wbt_module_helloworld_conn(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_close(wbt_event_t *ev) {
+    /* 根据 fd 将客户端设置为离线 */
     return WBT_OK;
 }
 
@@ -46,7 +47,7 @@ wbt_status wbt_module_helloworld_recv(wbt_event_t *ev) {
     wbt_str_t login = wbt_string("/login/");
     wbt_str_t show = wbt_string("/show/");
     if( wbt_strcmp( &http->uri, &api, api.len ) == 0 ) {
-         return WBT_OK;
+        return WBT_OK;
     } else if( wbt_strcmp2( &http->uri, &login ) == 0 ) {
         return wbt_module_helloworld_login(ev);
     } else if( wbt_strcmp2( &http->uri, &show ) == 0 ) {
@@ -82,7 +83,11 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
     }
     
     wbt_online_t *p = (wbt_online_t *)node->value.ptr;
-    
+ 
+    if ( p->status == 1 && p->ev != ev ) {
+        wbt_conn_close(p->ev);
+    }
+
     if( p->status == 0 ) {
         p->ev = ev;
         wbt_mem_t tmp;
@@ -91,10 +96,9 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
         wbt_memcpy( &tmp, (wbt_mem_t *)&http->body, http->body.len );
         p->online = cur_mtime;
         p->status = 1;
-    } else if ( p->status == 1 && p->ev != ev ) {
-        wbt_conn_close(p->ev);
-        p->ev = ev;
     }
+    
+    http->status = STATUS_200;
     
     return WBT_OK;
 }

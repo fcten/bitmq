@@ -488,8 +488,8 @@ wbt_status wbt_http_process(wbt_http_t *http) {
     }
     wbt_str_t send_buf;
     if( http->status == STATUS_200 ) {
-        wbt_str_t * last_modified = wbt_time_to_str( http->file.last_modified );
-        if( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) {
+        if( http->file.fd > 0 && ( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) ) {
+            wbt_str_t * last_modified = wbt_time_to_str( http->file.last_modified );
             wbt_http_header_t * header = http->headers;
             while( header != NULL ) {
                 if( header->key == HEADER_IF_MODIFIED_SINCE &&
@@ -508,10 +508,11 @@ wbt_status wbt_http_process(wbt_http_t *http) {
             send_buf = wbt_sprintf(&wbt_send_buf, "%d", 0);
         }
         
-        wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
-        wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
-        
-        wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
+        if( http->file.fd > 0 ) {
+            wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
+            wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
+            wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
+        }
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
         
