@@ -404,7 +404,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
 wbt_status wbt_http_parse( wbt_http_t * http ) {
     //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
     /* 检查是否已解析过 */
-    if( http->status > 0 ) {
+    if( http->status > STATUS_UNKNOWN ) {
         return WBT_ERROR;
     }
 
@@ -437,7 +437,7 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
         // 合法的 HTTP 请求中 URI 应当以 / 开头
         // 也可以以 http:// 或 https:// 开头，但暂时不支持
         http->status = STATUS_400;
-        return WBT_ERROR;
+        return WBT_OK;
     }
 
     // 根据 URI 是否以 / 结束选择合适的补全方式
@@ -465,7 +465,7 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
             /* 路径过长 */
             http->status = STATUS_414;
         }
-        return WBT_ERROR;
+        return WBT_OK;
     }
 
     http->status = STATUS_200;

@@ -186,7 +186,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             ev->data.status = 500;
         }
 
-        if( ev->data.status > STATUS_UNKNOWN ) {
+        if( ev->data.status > STATUS_UNKNOWN && ev->data.status < STATUS_LENGTH ) {
             /* 需要返回响应 */
             wbt_http_process(&ev->data);
             /* 等待socket可写 */
