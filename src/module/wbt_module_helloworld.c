@@ -87,38 +87,49 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    wbt_rbtree_node_t *node =  wbt_rbtree_get(&wbt_online_id_rbtree, &http->body);
-    if( node == NULL ) {
-        wbt_mem_t client;
+    wbt_str_t fd;
+    fd.str = (u_char *)&ev->fd;
+    fd.len = sizeof(ev->fd);
+
+    wbt_rbtree_node_t *node_fd =  wbt_rbtree_get(&wbt_online_fd_rbtree, &fd);
+    if( node_fd != NULL ) {
+        // 该连接已经登录过了
+        http->status = STATUS_405;
+        return WBT_OK;
+    }
+    
+    wbt_mem_t client;
+    
+    // 记录登录 ID
+    wbt_rbtree_node_t *node_id =  wbt_rbtree_get(&wbt_online_id_rbtree, &http->body);
+    if( node_id == NULL ) {
         wbt_malloc(&client, sizeof(wbt_online_t));
         wbt_memset(&client, 0);
 
-        node = wbt_rbtree_insert(&wbt_online_id_rbtree, &http->body);
-        node->value = client;
-
-        wbt_str_t fd;
-        fd.str = (u_char *)&ev->fd;
-        fd.len = sizeof(ev->fd);
-
-        node = wbt_rbtree_insert(&wbt_online_fd_rbtree, &fd);
-        node->value = client;
+        node_id = wbt_rbtree_insert(&wbt_online_id_rbtree, &http->body);
+        node_id->value = client;
+    } else {
+        client = node_id->value;
     }
     
-    wbt_online_t *p = (wbt_online_t *)node->value.ptr;
+    // 该连接第一次登录，记录该连接
+    node_fd = wbt_rbtree_insert(&wbt_online_fd_rbtree, &fd);
+    node_fd->value = client;
+    
+    wbt_online_t *p = (wbt_online_t *)client.ptr;
  
-    if ( p->status == 1 && p->ev != ev ) {
+    if ( p->status == 1 ) {
+        // 踢掉另一个登录的同 ID 客户端
         wbt_conn_close(p->ev);
     }
 
-    if( p->status == 0 ) {
-        p->ev = ev;
-        wbt_mem_t tmp;
-        tmp.ptr = p->id;
-        tmp.len = 32;
-        wbt_memcpy( &tmp, (wbt_mem_t *)&http->body, http->body.len );
-        p->online = cur_mtime;
-        p->status = 1;
-    }
+    p->ev = ev;
+    wbt_mem_t tmp;
+    tmp.ptr = p->id;
+    tmp.len = 32;
+    wbt_memcpy( &tmp, (wbt_mem_t *)&http->body, http->body.len );
+    p->online = cur_mtime;
+    p->status = 1;
     
     http->status = STATUS_200;
     

@@ -170,7 +170,8 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
 
     tmp_node = (wbt_rbtree_node_t *)buf.ptr;
     wbt_malloc(&tmp_node->key, key->len+1);
-    wbt_sprintf(&tmp_node->key, "%.*s", key->len, key->str);
+    wbt_memcpy(&tmp_node->key, (wbt_mem_t *)key, key->len);
+    *((char *)tmp_node->key.ptr+key->len) =  '\0';
     tmp_node->left = tmp_node->right = wbt_rbtree_node_nil;
     tmp_node->parent = wbt_rbtree_node_nil;
     tmp_node->color = WBT_RBT_COLOR_RED;
