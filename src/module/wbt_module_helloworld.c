@@ -143,8 +143,13 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    // 如果该 ev 的超时回调函数为 wbt_module_helloworld_callback，则修改该事件并发送数据
     wbt_online_t *p = (wbt_online_t *)node_id->value.ptr;
+    if( p->status == 0 ) {
+        http->status = STATUS_404;
+        return WBT_OK;
+    }
+    
+    // 如果该 ev 的超时回调函数为 wbt_module_helloworld_callback，则修改该事件并发送数据
     if( p->ev->callback == wbt_module_helloworld_callback ) {
         wbt_mem_t tmp;
         wbt_malloc(&tmp, data.len);
