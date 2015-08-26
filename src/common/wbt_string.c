@@ -125,3 +125,14 @@ inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
 inline unsigned int wbt_strlen(const char *s) {
     return strlen(s);
 }
+
+inline int wbt_atoi(wbt_str_t * str) {
+    /* warning: A string of more than 16 characters is not supported */
+    if(str->len>=16) {
+        return -1;
+    }
+    
+    char temp[32];
+    strncpy(temp,str->str,str->len);
+    return atoi(temp);
+}

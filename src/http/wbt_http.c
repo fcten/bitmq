@@ -324,8 +324,25 @@ wbt_status wbt_http_check_body_end( wbt_http_t* http ) {
         /* GET 请求没有body数据，所以不论是否有body都返回 WBT_OK */
         return WBT_OK;
     } else if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_POST], REQUEST_METHOD[METHOD_POST].len ) == 0 ) {
-        /* TODO POST 请求需要根据 Content-Length 检查body长度 */
-        return WBT_OK;
+        /* POST 请求需要根据 Content-Length 检查body长度 */
+        int content_len = 0;
+        
+        wbt_http_header_t * header;
+        header = http->headers;
+        while( header != NULL ) {
+            if( header->key == HEADER_CONTENT_LENGTH ) {
+                content_len = wbt_atoi(&header->value);
+                break;
+            }
+
+            header = header->next;
+        }
+        
+        if( http->body.len >= content_len ) {
+            return WBT_OK;
+        } else {
+            return WBT_ERROR;
+        }
     }
 
     return WBT_OK;
