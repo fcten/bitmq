@@ -113,6 +113,29 @@ wbt_status wbt_http_check_header_end( wbt_http_t* http ) {
 }
 
 wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
+    /* 如果请求的 header 和 body 被分开发送，会导致 header
+     * 被重复解析。由于使用了 realloc，所以重复解析是必要的。
+     * 重复解析可能会被用于拒绝服务攻击，不过修正这一问题需要
+     * 重写整个请求处理逻辑，所以暂且就这样吧
+     */
+    /* 如果发生了重写，需要释放掉上一次生成的 header 链 */
+    if( http->headers != NULL ) {
+        wbt_http_header_t * header = http->headers, * next;
+        wbt_mem_t tmp;
+        
+        while( header != NULL ) {
+            next = header->next;
+
+            tmp.ptr = header;
+            tmp.len = 1;
+            wbt_free( &tmp );
+
+            header = next;
+        }
+        
+        http->headers = NULL;
+    }
+    
     wbt_str_t http_req;
 
     http_req.len = http->buff.len;
@@ -170,7 +193,7 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
                             tail = header;
                         } else {
                             /* 不应该出现这个错误 */
-                            wbt_log_add("wbt_http_parse_request_header error");
+                            wbt_log_add("wbt_http_parse_request_header error\n");
                             wbt_free(&tmp);
 
                             return WBT_ERROR;
