@@ -135,6 +135,12 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
         
         http->headers = NULL;
     }
+    http->method.str = NULL;
+    http->method.len = 0;
+    http->uri.str = NULL;
+    http->uri.len = 0;
+    http->version.str = NULL;
+    http->version.len = 0;
     
     wbt_str_t http_req;
 
