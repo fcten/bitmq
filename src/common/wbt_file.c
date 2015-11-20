@@ -74,6 +74,8 @@ wbt_status wbt_file_init() {
     if(wbt_event_add(&tmp_ev) == NULL) {
         return WBT_ERROR;
     }
+
+    /* TODO 根据端口号命名锁文件 */
     
     if( ( wbt_lock_accept = wbt_lock_create("/tmp/.wbt_accept_lock") ) <= 0 ) {
         return WBT_ERROR;
@@ -174,6 +176,9 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
     return WBT_OK;
 }
 
+/* 尝试对指定文件加锁
+ * 如果加锁失败，进程将会睡眠，直到加锁成功
+ */
 wbt_status wbt_trylock_fd(int fd) {
     struct flock  fl;
 
@@ -188,6 +193,9 @@ wbt_status wbt_trylock_fd(int fd) {
     return WBT_OK;
 }
 
+/* 尝试对指定文件加锁
+ * 如果加锁失败，立刻出错返回
+ */
 wbt_status wbt_lock_fd(int fd) {
     struct flock  fl;
 

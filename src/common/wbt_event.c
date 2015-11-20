@@ -322,6 +322,7 @@ wbt_status wbt_event_dispatch() {;
                     //wbt_log_add("new conn get by %d\n", pid);
                     
                     if( ev->trigger(ev) != WBT_OK ) {
+                        wbt_log_add("call %p failed\n", ev->trigger);
                         return WBT_ERROR;
                     }
 
@@ -347,6 +348,7 @@ wbt_status wbt_event_dispatch() {;
                 continue;
             } else if ( ev->trigger != NULL ) {
                 if( ev->trigger(ev) != WBT_OK ) {
+                    wbt_log_add("call %p failed\n", ev->trigger);
                     return WBT_ERROR;
                 }
             } else if (events[i].events & EPOLLIN) {
