@@ -226,7 +226,11 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
         if (nwrite == -1 && errno != EAGAIN) {
             wbt_conn_close(ev);
-            return WBT_ERROR;
+            /* Bugfix: 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
+             * 仅用于判断是否发生了必须重启工作进程的严重错误。
+             * TODO 数据发送失败的错误必须用其它方式进行处理。
+             */
+            return WBT_OK;
         }
 
         http->resp_offset += nwrite;
@@ -257,7 +261,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
         if (nwrite == -1 && errno != EAGAIN) { 
             wbt_conn_close(ev);
-            return WBT_ERROR;
+            /* Bugfix & TODO 同上 */
+            return WBT_OK;
         }
 
         wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
