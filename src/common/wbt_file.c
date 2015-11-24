@@ -26,8 +26,6 @@ wbt_rbtree_t wbt_file_rbtree;
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 
-int wbt_lock_accept;
-
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     /* 从叶节点递归处理至根节点 */
     if(node != wbt_rbtree_node_nil) {
@@ -72,12 +70,6 @@ wbt_status wbt_file_init() {
     tmp_ev.time_out = cur_mtime + 10000;
 
     if(wbt_event_add(&tmp_ev) == NULL) {
-        return WBT_ERROR;
-    }
-
-    /* TODO 根据端口号命名锁文件 */
-    
-    if( ( wbt_lock_accept = wbt_lock_create("/tmp/.wbt_accept_lock") ) <= 0 ) {
         return WBT_ERROR;
     }
     

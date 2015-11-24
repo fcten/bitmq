@@ -86,6 +86,7 @@ void wbt_worker_process() {
     const char * user = wbt_conf_get("user");
     if ( user != NULL && geteuid() == 0 ) {
         // 根据用户名查询
+        // TODO getpwnam 应当在更早的时候调用。以免调用 getpwnam 失败的时候，工作进程被不断重启。 
         struct passwd * pw = getpwnam(user);
         if( pw == NULL ) {
             wbt_log_add("user %s not exists\n", user);

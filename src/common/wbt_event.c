@@ -25,6 +25,8 @@ extern int listen_fd;
 
 extern int wating_to_exit;
 
+int wbt_lock_accept;
+
 /* 事件队列 */
 wbt_event_pool_t wbt_events;
 
@@ -54,6 +56,16 @@ wbt_status wbt_event_init() {
     if(wbt_heap_new(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
         wbt_log_add("create heap failed\n");
 
+        return WBT_ERROR;
+    }
+    
+    /* 根据端口号创建锁文件 */
+    wbt_mem_t lock_file;
+    wbt_malloc(&lock_file, sizeof("/tmp/.wbt_accept_lock_00000"));
+    wbt_sprintf(&lock_file, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
+    
+    if( ( wbt_lock_accept = wbt_lock_create(lock_file.ptr) ) <= 0 ) {
+        wbt_log_add("create lock file failed\n");
         return WBT_ERROR;
     }
 
@@ -233,8 +245,6 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
 }
 
 wbt_status wbt_event_cleanup();
-
-extern int wbt_lock_accept;
 
 /* 事件循环 */
 wbt_status wbt_event_dispatch() {;
