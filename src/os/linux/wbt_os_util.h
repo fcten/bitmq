@@ -14,6 +14,13 @@ extern "C" {
 
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
+#include <grp.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+
 #include "../../webit.h"
 #include "../../common/wbt_string.h"
 

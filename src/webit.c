@@ -7,10 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <grp.h>
-#include <sys/wait.h>
-#include <sys/resource.h>
+
+#include "os/linux/wbt_sigsegv.h"
+#include "os/linux/wbt_setproctitle.h"
+#include "os/linux/wbt_os_util.h"
 
 #include "webit.h"
 #include "common/wbt_string.h"
@@ -19,9 +19,6 @@
 #include "common/wbt_module.h"
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
-#include "os/linux/wbt_sigsegv.h"
-#include "os/linux/wbt_setproctitle.h"
-#include "os/linux/wbt_os_util.h"
 
 int wbt_argc;
 char** wbt_argv;
@@ -85,24 +82,31 @@ void wbt_worker_process() {
     
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
-    /* 降低 worker 进程的权限 
+    /* 降低 worker 进程的权限 */
     const char * user = wbt_conf_get("user");
     if ( user != NULL && geteuid() == 0 ) {
-        if (setgid(33) == -1) {
-            wbt_log_debug("setgid(%d) failed", 33)
+        // 根据用户名查询
+        struct passwd * pw = getpwnam(user);
+        if( pw == NULL ) {
+            wbt_log_add("user %s not exists\n", user);
+            return;
+        }
+        
+        if (setgid(pw->pw_gid) == -1) {
+            wbt_log_add("setgid(%d) failed", pw->pw_gid);
             return;
         }
 
-        if (initgroups("www-data", 33) == -1) {
-            wbt_log_debug("initgroups(www-data, %d) failed", 33);
+        if (initgroups(user, pw->pw_gid) == -1) {
+            wbt_log_add("initgroups(%s, %d) failed", user, pw->pw_gid);
             return;
         }
 
-        if (setuid(33) == -1) {
-            wbt_log_debug("setuid(%d) failed", 33);
+        if (setuid(pw->pw_uid) == -1) {
+            wbt_log_add("setuid(%d) failed", pw->pw_uid);
             return;
         }
-    } */
+    }
 
     /* 进入事件循环 */
     wbt_event_dispatch();
