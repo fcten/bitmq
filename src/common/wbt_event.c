@@ -66,8 +66,10 @@ wbt_status wbt_event_init() {
     
     if( ( wbt_lock_accept = wbt_lock_create(lock_file.ptr) ) <= 0 ) {
         wbt_log_add("create lock file failed\n");
+        wbt_free(&lock_file);
         return WBT_ERROR;
     }
+    wbt_free(&lock_file);
 
     return WBT_OK;
 }
