@@ -453,6 +453,12 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
     if( http->status > STATUS_UNKNOWN ) {
         return WBT_ERROR;
     }
+    
+    if( http->buff.len > 40960 ) {
+         /* 413 Request Entity Too Large */
+         http->status = STATUS_413;
+         return WBT_ERROR;
+    }
 
     /* 检查是否读完 http 消息头 */
     if( wbt_http_check_header_end( http ) != WBT_OK ) {

@@ -24,10 +24,10 @@ typedef struct wbt_module_s {
     wbt_str_t   name;
     wbt_status  (*init)();                      /* 模块初始化方法 */
     wbt_status  (*exit)();                      /* 模块卸载方法 */
-    wbt_status  (*on_conn)( wbt_event_t * );
-    wbt_status  (*on_recv)( wbt_event_t * );
-    wbt_status  (*on_send)( wbt_event_t * );
-    wbt_status  (*on_close)( wbt_event_t * );
+    wbt_status  (*on_conn)( wbt_event_t * );    /* 连接建立后调用 */
+    wbt_status  (*on_recv)( wbt_event_t * );    /* 请求完整接收并处理完毕后调用 */
+    wbt_status  (*on_send)( wbt_event_t * );    /* 响应发送完毕后调用 */
+    wbt_status  (*on_close)( wbt_event_t * );   /* 服务端主动关闭连接前调用 */
 } wbt_module_t;
 
 wbt_status wbt_module_init();

@@ -140,6 +140,22 @@ typedef enum {
     STATUS_LENGTH
 } wbt_http_status_t;
 
+typedef enum {
+    STATE_UNKNOWN,  // Unknown
+    STATE_CONNECTION_ESTABLISHED,
+    STATE_RECEIVING_HEADER,
+    STATE_PARSING_HEADER,
+    STATE_RECEIVING_BODY,
+    STATE_PARSING_BODY,
+    STATE_PARSING_REQUEST,
+    STATE_GENERATING_RESPONSE,
+    STATE_READY_TO_SEND,
+    STATE_SENDING,
+    STATE_SEND_COMPLETED,
+    STATE_CONNECTION_CLOSED,
+    STATE_LENGTH
+} wbt_http_state_t;
+
 typedef struct wbt_http_header_s {
     wbt_http_line_t key;
     wbt_str_t name;
@@ -162,7 +178,10 @@ typedef struct wbt_http_s {
     wbt_str_t resp_body;
     wbt_mem_t response;
     unsigned int resp_offset;
+    /* 以下变量用于保存请求头的解析结果 */
     unsigned int bit_flag;
+    /* 以下变量用于保存请求处理状态 */
+    unsigned int state;
 } wbt_http_t;
 
 #define WBT_HTTP_KEEP_ALIVE         1

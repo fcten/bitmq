@@ -113,7 +113,12 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;
         }
+        
+        if( wbt_module_on_conn(p_ev) != WBT_OK ) {
+            // 暂且忽略 on_conn 接口中的错误
+        }
     }
+
     if (conn_sock == -1) { 
         if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR) {
             wbt_log_add("accept failed\n");
@@ -169,11 +174,6 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
            bReadOk = 1;
            break; // 退出while(1),表示已经全部读完数据
        }
-    }
-
-    if( ev->data.buff.len > 40960 ) {
-         /* 413 Request Entity Too Large */
-         ev->data.status = STATUS_413;
     }
 
     if( bReadOk ) {
@@ -272,7 +272,10 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
     }
     
-    /* 所有数据发送完毕 */
+    /* 所有数据发送完毕，调用模块接口 */
+    if( wbt_module_on_send(ev) != WBT_OK ) {
+        // 暂且忽略 on_send 接口中的错误
+    }
 
     /* 如果是 keep-alive 连接，继续等待数据到来 */
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
