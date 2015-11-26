@@ -96,12 +96,6 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
         //wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
-        
-        /* 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
-        /*
-        int on = 1;
-        setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
-         */
 
         wbt_event_t *p_ev, tmp_ev;
         tmp_ev.callback = wbt_conn_close;
@@ -218,6 +212,10 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     int fd = ev->fd;
     int nwrite, n;
     wbt_http_t *http = &ev->data;
+    
+    /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
+    //int on = 1;
+    //setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
 
     /* 如果存在 response，发送 response */
     if( http->response.len - http->resp_offset > 0 ) {
@@ -226,9 +224,9 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
         if (nwrite == -1 && errno != EAGAIN) {
             wbt_conn_close(ev);
-            /* Bugfix: 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
+            /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
              * 仅用于判断是否发生了必须重启工作进程的严重错误。
-             * TODO 数据发送失败的错误必须用其它方式进行处理。
+             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_send 回调中处理。
              */
             return WBT_OK;
         }
@@ -261,7 +259,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
 
         if (nwrite == -1 && errno != EAGAIN) { 
             wbt_conn_close(ev);
-            /* Bugfix & TODO 同上 */
+            /* 连接被意外关闭，同上 */
             return WBT_OK;
         }
 
