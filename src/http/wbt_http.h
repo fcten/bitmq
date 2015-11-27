@@ -181,7 +181,7 @@ typedef struct wbt_http_s {
     /* 以下变量用于保存请求头的解析结果 */
     unsigned int bit_flag;
     /* 以下变量用于保存请求处理状态 */
-    unsigned int state;
+    wbt_http_state_t state;
 } wbt_http_t;
 
 #define WBT_HTTP_KEEP_ALIVE         1

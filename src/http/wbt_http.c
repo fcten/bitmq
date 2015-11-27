@@ -466,16 +466,29 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
         return WBT_OK;
     }
     
+    if( http->state == STATE_RECEIVING_HEADER ) {
+        http->state = STATE_PARSING_HEADER;
+    }
+    
     /* 解析 http 消息头 */
     if( wbt_http_parse_request_header( http ) != WBT_OK ) {
         /* 消息头格式不正确，具体状态码由所调用的函数设置 */
         return WBT_ERROR;
+    }
+    
+    if( http->state == STATE_PARSING_HEADER ) {
+        http->state = STATE_RECEIVING_BODY;
     }
 
     /* 检查是否读完 http 消息体 */
     if( wbt_http_check_body_end( http ) != WBT_OK ) {
         /* 尚未读完，继续等待数据，直至超时 */
         return WBT_OK;
+    }
+    
+    // TODO 需要添加 wbt_http_parse_request_body
+    if( http->state == STATE_RECEIVING_BODY ) {
+        http->state = STATE_PARSING_REQUEST;
     }
 
     /* 请求消息已经读完 */
@@ -530,6 +543,10 @@ wbt_status wbt_http_parse( wbt_http_t * http ) {
 }
 
 wbt_status wbt_http_process(wbt_http_t *http) {
+    if( http->state == STATE_PARSING_REQUEST ) {
+        http->state = STATE_GENERATING_RESPONSE;
+    }
+    
     /* 生成响应消息头 */
     wbt_http_set_header( http, HEADER_SERVER, &header_server );
     wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );

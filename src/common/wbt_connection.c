@@ -108,6 +108,8 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
             return WBT_ERROR;
         }
         
+        p_ev->data.state = STATE_CONNECTION_ESTABLISHED;
+        
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
             // 暂且忽略 on_conn 接口中的错误
         }
@@ -128,6 +130,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 有新的数据到达 */
     int fd = ev->fd;
     wbt_log_debug("recv data of connection %d.", fd);
+    
+    if( ev->data.state == STATE_CONNECTION_ESTABLISHED ||
+            ev->data.state == STATE_SEND_COMPLETED ) {
+        ev->data.state = STATE_RECEIVING_HEADER;
+    }
 
     int nread;
     int bReadOk = 0;
@@ -183,6 +190,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         if( ev->data.status > STATUS_UNKNOWN && ev->data.status < STATUS_LENGTH ) {
             /* 需要返回响应 */
             wbt_http_process(&ev->data);
+            
+            if( ev->data.state == STATE_GENERATING_RESPONSE ) {
+                ev->data.state = STATE_READY_TO_SEND;
+            }
+            
             /* 等待socket可写 */
             ev->trigger = wbt_on_send;
             ev->events = EPOLLOUT | EPOLLET;
@@ -208,6 +220,10 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 wbt_status wbt_on_send(wbt_event_t *ev) {
     /* 数据发送已经就绪 */
     wbt_log_debug("send data to connection %d.", ev->fd);
+    
+    if( ev->data.state == STATE_READY_TO_SEND ) {
+        ev->data.state = STATE_SENDING;
+    }
 
     int fd = ev->fd;
     int nwrite, n;
@@ -223,11 +239,12 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         nwrite = write(fd, http->response.ptr + http->resp_offset, n);
 
         if (nwrite == -1 && errno != EAGAIN) {
-            wbt_conn_close(ev);
             /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
              * 仅用于判断是否发生了必须重启工作进程的严重错误。
-             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_send 回调中处理。
+             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
              */
+            wbt_conn_close(ev);
+            
             return WBT_OK;
         }
 
@@ -258,8 +275,9 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         }
 
         if (nwrite == -1 && errno != EAGAIN) { 
-            wbt_conn_close(ev);
             /* 连接被意外关闭，同上 */
+            wbt_conn_close(ev);
+            
             return WBT_OK;
         }
 
@@ -271,6 +289,10 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
     
     /* 所有数据发送完毕，调用模块接口 */
+    if( ev->data.state == STATE_SENDING ) {
+        ev->data.state = STATE_SEND_COMPLETED;
+    }
+    
     if( wbt_module_on_send(ev) != WBT_OK ) {
         // 暂且忽略 on_send 接口中的错误
     }
@@ -283,6 +305,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         ev->trigger = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
         ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        
+        ev->data.state = STATE_CONNECTION_ESTABLISHED;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
