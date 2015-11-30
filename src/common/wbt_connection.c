@@ -29,6 +29,8 @@ wbt_module_t wbt_module_conn = {
 int listen_fd;
 
 wbt_status wbt_conn_init() {
+    // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
+    
     /* 初始化用于监听消息的 Socket 句柄 */
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(listen_fd <= 0) {

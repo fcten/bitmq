@@ -18,7 +18,8 @@ extern "C" {
 #include "wbt_memory.h"
 
 typedef struct {
-    int  len;
+    /* 使用 int 而不是 unsigned int，方便进行运算和比较 */
+    int len;
     u_char *str;
 } wbt_str_t;
 

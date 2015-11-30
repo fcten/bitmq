@@ -98,6 +98,7 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
 
+    /* 将 status 置为 STATUS_LENGTH 会使 webit 继续等待数据 */
     http->status = STATUS_LENGTH;
 
     /* 修改超时时间为 30 秒
@@ -162,7 +163,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         wbt_http_process(&p->ev->data);
 
         /* 等待socket可写 */
-        p->ev->callback = wbt_conn_close; // TODO 这个事件超时意味着消息会丢失
+        p->ev->callback = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
         p->ev->trigger = wbt_on_send;
         p->ev->events = EPOLLOUT | EPOLLET;
         p->ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
