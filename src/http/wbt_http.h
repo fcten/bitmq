@@ -17,6 +17,7 @@ extern "C" {
 #include "../common/wbt_memory.h"
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
+#include "../common/wbt_event.h"
 
 typedef enum { 
     METHOD_UNKNOWN,
@@ -148,7 +149,6 @@ typedef enum {
     STATE_RECEIVING_BODY,
     STATE_PARSING_BODY,
     STATE_PARSING_REQUEST,
-    STATE_GENERATING_RESPONSE,
     STATE_READY_TO_SEND,
     STATE_SENDING,
     STATE_SEND_COMPLETED,
@@ -164,8 +164,7 @@ typedef struct wbt_http_header_s {
 } wbt_http_header_t;
     
 typedef struct wbt_http_s {
-    /* 以下变量用于保存接收到的请求数据 */
-    wbt_mem_t buff;
+    /* 以下变量用于保存接收到的请求数据的解析结果 */
     wbt_str_t method;
     wbt_str_t uri;
     wbt_str_t version;
@@ -200,16 +199,6 @@ extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
 extern wbt_str_t header_cache_control;
 extern wbt_str_t header_content_type_text_html;
-
-wbt_status wbt_http_init();
-wbt_status wbt_http_check_header_end( wbt_http_t* );
-wbt_status wbt_http_parse_request_header( wbt_http_t* );
-wbt_status wbt_http_check_body_end( wbt_http_t* );
-wbt_status wbt_http_destroy( wbt_http_t* );
-wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
-wbt_status wbt_http_generate_response_header( wbt_http_t* );
-wbt_status wbt_http_parse( wbt_http_t* );
-wbt_status wbt_http_process(wbt_http_t *);
 
 #ifdef	__cplusplus
 }

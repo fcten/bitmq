@@ -11,12 +11,45 @@
 #include "../common/wbt_log.h"
 #include "../common/wbt_time.h"
 #include "../common/wbt_config.h"
+#include "../common/wbt_connection.h"
 #include "wbt_http.h"
 
-wbt_module_t wbt_module_http = {
-    wbt_string("http"),
+wbt_status wbt_http_init();
+wbt_status wbt_http_check_header_end( wbt_event_t * );
+wbt_status wbt_http_parse_request_header( wbt_event_t * );
+wbt_status wbt_http_check_body_end( wbt_http_t* );
+wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
+wbt_status wbt_http_generate_response_header( wbt_http_t* );
+
+
+wbt_status wbt_http_process( wbt_http_t * );
+
+
+wbt_status wbt_http_on_conn( wbt_event_t * );
+wbt_status wbt_http_on_recv( wbt_event_t * );
+wbt_status wbt_http_on_send( wbt_event_t * );
+wbt_status wbt_http_on_close( wbt_event_t * );
+
+wbt_status wbt_http_generater( wbt_event_t * );
+
+wbt_module_t wbt_module_http1_parser = {
+    wbt_string("http-parser"),
     wbt_http_init,
-    NULL
+    NULL,
+    wbt_http_on_conn,
+    wbt_http_on_recv,
+    wbt_http_on_send,
+    wbt_http_on_close
+};
+
+wbt_module_t wbt_module_http1_generater = {
+    wbt_string("http-generater"),
+    NULL,
+    NULL,
+    NULL,
+    wbt_http_generater,
+    NULL,
+    NULL,
 };
 
 wbt_mem_t wbt_file_path;
@@ -31,10 +64,118 @@ wbt_status wbt_http_init() {
     return WBT_OK;
 }
 
-/* 释放 http 结构体中动态分配的内存，并重新初始化结构体 */
-wbt_status wbt_http_destroy( wbt_http_t* http ) {
-    wbt_http_header_t * header, * next;
+wbt_status wbt_http_on_conn( wbt_event_t *ev ) {
+    if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    wbt_memset(&ev->data, 0);
+
+    wbt_http_t *http = ev->data.ptr;
+
+    http->state = STATE_CONNECTION_ESTABLISHED;
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_http_on_send( wbt_event_t *ev ) {
+    int nwrite, n;
+    wbt_http_t *http = ev->data.ptr;
+    
+    if( http->state != STATE_SENDING ) {
+        return WBT_ERROR;
+    }
+    
+    /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
+    //int on = 1;
+    //setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
+
+    /* 如果存在 response，发送 response */
+    if( http->response.len - http->resp_offset > 0 ) {
+        n = http->response.len - http->resp_offset; 
+        nwrite = write(ev->fd, http->response.ptr + http->resp_offset, n);
+
+        if (nwrite == -1 && errno != EAGAIN) {
+            /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
+             * 仅用于判断是否发生了必须重启工作进程的严重错误。
+             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
+             */
+            wbt_conn_close(ev);
+            
+            return WBT_OK;
+        }
+
+        http->resp_offset += nwrite;
+
+        wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
+        if( http->response.len > http->resp_offset ) {
+            /* 尚未发送完，缓冲区满 */
+            return WBT_OK;
+        }
+    }
+    
+    if( http->status == STATUS_200 && http->file.size > http->file.offset  ) {
+        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
+        // 需要在未发送完成前继续监听可写事件
+        n = http->file.size - http->file.offset;
+
+        if( http->file.ptr != NULL ) {
+            // 需要发送的数据已经在内存中
+            nwrite = write(ev->fd, http->file.ptr + http->file.offset, n);
+            http->file.offset += nwrite;
+        } else if( http->file.fd > 0  ) {
+            // 需要发送的数据不在内存中，但是指定了需要发送的文件
+            nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
+        } else {
+            // 不应该出现这种情况
+            n = nwrite = 0;
+        }
+
+        if (nwrite == -1 && errno != EAGAIN) { 
+            /* 连接被意外关闭，同上 */
+            wbt_conn_close(ev);
+            
+            return WBT_OK;
+        }
+
+        wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
+        if( n > nwrite ) {
+            /* 尚未发送完，缓冲区满 */
+            return WBT_OK;
+        }
+    }
+    
+    /* 所有数据发送完毕 */
+    http->state = STATE_SEND_COMPLETED;
+    
+    /* 如果是 keep-alive 连接，继续等待数据到来 */
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+        /* 为下一个连接初始化相关结构 */
+        wbt_http_on_close( ev );
+        if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
+            return WBT_ERROR;
+        }
+        wbt_memset(&ev->data, 0);
+
+        ev->trigger = wbt_on_recv;
+        ev->events = EPOLLIN | EPOLLET;
+        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    } else {
+        /* 非 keep-alive 连接，直接关闭 */
+        wbt_conn_close(ev);
+    }
+
+    return WBT_OK;
+}
+
+/* 释放 http 结构体中动态分配的内存 */
+wbt_status wbt_http_on_close( wbt_event_t *ev ) {
+    wbt_http_header_t *header, *next;
     wbt_mem_t tmp;
+    wbt_http_t *http = ev->data.ptr;
     
     /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
     if( http->file.fd > 0 ) {
@@ -78,9 +219,6 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
     /* 释放生成的响应消息头 */
     wbt_free( &http->response );
     
-    /* 释放接收到的请求数据 */
-    wbt_free( &http->buff );
-    
     /* 释放读入内存的文件内容 */
     if( http->file.ptr ) {
         tmp.ptr = http->file.ptr;
@@ -88,22 +226,18 @@ wbt_status wbt_http_destroy( wbt_http_t* http ) {
         wbt_free( &tmp );
     }
     
-    /* 初始化结构体
-     * 由于 keep-alive 请求会重用这段内存，必须重新初始化
-     */
-    tmp.ptr = http;
-    tmp.len = sizeof( wbt_http_t );
-    wbt_memset( &tmp, 0 );
+    /* 释放 http 结构体本身 */
+    wbt_free(&ev->data);
 
     return WBT_OK;
 }
 
-wbt_status wbt_http_check_header_end( wbt_http_t* http ) {
+wbt_status wbt_http_check_header_end( wbt_event_t *ev ) {
     wbt_str_t http_req;
     wbt_str_t http_header_end = wbt_string("\r\n\r\n");
 
-    http_req.len = http->buff.len;
-    http_req.str = http->buff.ptr;
+    http_req.len = ev->buff.len;
+    http_req.str = ev->buff.ptr;
 
     if( wbt_strpos( &http_req, &http_header_end ) < 0 ) {
         return WBT_ERROR;
@@ -112,12 +246,9 @@ wbt_status wbt_http_check_header_end( wbt_http_t* http ) {
     return WBT_OK;
 }
 
-wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
-    /* 如果请求的 header 和 body 被分开发送，会导致 header
-     * 被重复解析。由于使用了 realloc，所以重复解析是必要的。
-     * 重复解析可能会被用于拒绝服务攻击，不过修正这一问题需要
-     * 重写整个请求处理逻辑，所以暂且就这样吧
-     */
+wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
+    wbt_http_t *http = ev->data.ptr;
+    
     /* 如果发生了重写，需要释放掉上一次生成的 header 链 */
     if( http->headers != NULL ) {
         wbt_http_header_t * header = http->headers, * next;
@@ -144,8 +275,8 @@ wbt_status wbt_http_parse_request_header( wbt_http_t* http ) {
     
     wbt_str_t http_req;
 
-    http_req.len = http->buff.len;
-    http_req.str = http->buff.ptr;
+    http_req.len = ev->buff.len;
+    http_req.str = ev->buff.ptr;
     
     int offset = 0, state = 0, error = 0;
     char ch;
@@ -447,106 +578,147 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     return WBT_OK;
 }
 
-wbt_status wbt_http_parse( wbt_http_t * http ) {
-    //printf("------\n%.*s\n------\n", ev->data.buff.len, ev->data.buff.ptr);
+wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
+    wbt_http_t * http = ev->data.ptr;
+
+    if( http->state == STATE_CONNECTION_ESTABLISHED ||
+            http->state == STATE_SEND_COMPLETED ) {
+        http->state = STATE_RECEIVING_HEADER;
+    }
+    
     /* 检查是否已解析过 */
     if( http->status > STATUS_UNKNOWN ) {
         return WBT_ERROR;
     }
     
-    if( http->buff.len > 40960 ) {
+    if( ev->buff.len > 40960 ) {
          /* 413 Request Entity Too Large */
          http->status = STATUS_413;
-         return WBT_ERROR;
-    }
-
-    /* 检查是否读完 http 消息头 */
-    if( wbt_http_check_header_end( http ) != WBT_OK ) {
-        /* 尚未读完，继续等待数据，直至超时 */
-        return WBT_OK;
+         http->state = STATE_READY_TO_SEND;
+         return WBT_OK;
     }
     
     if( http->state == STATE_RECEIVING_HEADER ) {
+        /* 检查是否读完 http 消息头 */
+        if( wbt_http_check_header_end( ev ) != WBT_OK ) {
+            /* 尚未读完，继续等待数据，直至超时 */
+            return WBT_OK;
+        }
+        
         http->state = STATE_PARSING_HEADER;
     }
     
-    /* 解析 http 消息头 */
-    if( wbt_http_parse_request_header( http ) != WBT_OK ) {
-        /* 消息头格式不正确，具体状态码由所调用的函数设置 */
-        return WBT_ERROR;
-    }
-    
     if( http->state == STATE_PARSING_HEADER ) {
+        /* 解析 http 消息头 */
+        if( wbt_http_parse_request_header( ev ) != WBT_OK ) {
+            /* 消息头格式不正确，具体状态码由所调用的函数设置 */
+            http->state = STATE_READY_TO_SEND;
+            return WBT_OK;
+        }
+        
         http->state = STATE_RECEIVING_BODY;
-    }
-
-    /* 检查是否读完 http 消息体 */
-    if( wbt_http_check_body_end( http ) != WBT_OK ) {
-        /* 尚未读完，继续等待数据，直至超时 */
-        return WBT_OK;
     }
     
     // TODO 需要添加 wbt_http_parse_request_body
     if( http->state == STATE_RECEIVING_BODY ) {
+        /* 检查是否读完 http 消息体 */
+        if( wbt_http_check_body_end( http ) != WBT_OK ) {
+            /* 尚未读完，继续等待数据，直至超时 */
+            return WBT_OK;
+        }
+
         http->state = STATE_PARSING_REQUEST;
     }
 
-    /* 请求消息已经读完 */
-    //wbt_log_add("%.*s\n", http->uri.len, http->uri.str);
+    if( http->state == STATE_PARSING_REQUEST ) {
+        /* 请求消息已经读完 */
+        //wbt_log_add("%.*s\n", http->uri.len, http->uri.str);
 
-    /* 打开所请求的文件 */
-    // 判断 URI 是否以 / 开头
-    // 判断 URI 中是否包含 ..
-    wbt_str_t tmp_str = wbt_string("..");
-    if( *(http->uri.str) != '/'  || wbt_strpos( &http->uri, &tmp_str ) != -1 ) {
-        // 合法的 HTTP 请求中 URI 应当以 / 开头
-        // 也可以以 http:// 或 https:// 开头，但暂时不支持
-        http->status = STATUS_400;
-        return WBT_OK;
-    }
-
-    // 根据 URI 是否以 / 结束选择合适的补全方式
-    wbt_str_t full_path;
-    if( *(http->uri.str + http->uri.len - 1) == '/' ) {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
-            wbt_conf.root.len, wbt_conf.root.str,
-            http->uri.len, http->uri.str,
-            wbt_conf.index.len, wbt_conf.index.str);
-    } else {
-        full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-            wbt_conf.root.len, wbt_conf.root.str,
-            http->uri.len, http->uri.str);
-    }
-
-    wbt_file_t *tmp = wbt_file_open( &full_path );
-    if( tmp->fd < 0 ) {
-        if( tmp->fd  == -1 ) {
-            /* 文件不存在 */
-            http->status = STATUS_404;
-        } else if( tmp->fd  == -2 ) {
-            /* 试图访问目录 */
-            http->status = STATUS_403;
-        } else if( tmp->fd  == -3 ) {
-            /* 路径过长 */
-            http->status = STATUS_414;
+        /* 打开所请求的文件 */
+        // 判断 URI 是否以 / 开头
+        // 判断 URI 中是否包含 ..
+        wbt_str_t tmp_str = wbt_string("..");
+        if( *(http->uri.str) != '/'  || wbt_strpos( &http->uri, &tmp_str ) != -1 ) {
+            // 合法的 HTTP 请求中 URI 应当以 / 开头
+            // 也可以以 http:// 或 https:// 开头，但暂时不支持
+            http->status = STATUS_400;
+            http->state = STATE_READY_TO_SEND;
+            return WBT_OK;
         }
-        return WBT_OK;
-    }
 
-    http->status = STATUS_200;
-    http->file.fd = tmp->fd;
-    http->file.size = tmp->size;
-    http->file.last_modified = tmp->last_modified;
-    http->file.offset = 0;
+        // 根据 URI 是否以 / 结束选择合适的补全方式
+        wbt_str_t full_path;
+        if( *(http->uri.str + http->uri.len - 1) == '/' ) {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
+                wbt_conf.root.len, wbt_conf.root.str,
+                http->uri.len, http->uri.str,
+                wbt_conf.index.len, wbt_conf.index.str);
+        } else {
+            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                wbt_conf.root.len, wbt_conf.root.str,
+                http->uri.len, http->uri.str);
+        }
+
+        wbt_file_t *tmp = wbt_file_open( &full_path );
+        if( tmp->fd < 0 ) {
+            if( tmp->fd  == -1 ) {
+                /* 文件不存在 */
+                http->status = STATUS_404;
+            } else if( tmp->fd  == -2 ) {
+                /* 试图访问目录 */
+                http->status = STATUS_403;
+            } else if( tmp->fd  == -3 ) {
+                /* 路径过长 */
+                http->status = STATUS_414;
+            }
+            return WBT_OK;
+        }
+
+        http->state = STATE_READY_TO_SEND;
+        http->status = STATUS_200;
+        http->file.fd = tmp->fd;
+        http->file.size = tmp->size;
+        http->file.last_modified = tmp->last_modified;
+        http->file.offset = 0;
+    }
     
     return WBT_OK;
 }
 
-wbt_status wbt_http_process(wbt_http_t *http) {
-    if( http->state == STATE_PARSING_REQUEST ) {
-        http->state = STATE_GENERATING_RESPONSE;
+wbt_status wbt_http_generater( wbt_event_t *ev ) {
+    wbt_http_t * http = ev->data.ptr;
+
+    switch( http->state ) {
+        case STATE_READY_TO_SEND:
+            /* 需要返回响应 */
+            wbt_http_process(http);
+
+            http->state = STATE_SENDING;
+
+            /* 等待socket可写 */
+            ev->trigger = wbt_on_send;
+            ev->events = EPOLLOUT | EPOLLET;
+            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+
+            if(wbt_event_mod(ev) != WBT_OK) {
+                return WBT_ERROR;
+            }
+
+            break;
+        case STATE_RECEIVING_HEADER:
+        case STATE_RECEIVING_BODY:
+            /* 需要继续等待数据 */
+            break;
+        case STATE_PARSING_REQUEST:
+            /* 供自定义模块使用以阻塞请求不立即返回 */
+            break;
+        default:
+            /* 严重的错误，直接断开连接 */
+            wbt_conn_close(ev);
     }
-    
+}
+
+wbt_status wbt_http_process(wbt_http_t *http) {    
     /* 生成响应消息头 */
     wbt_http_set_header( http, HEADER_SERVER, &header_server );
     wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );

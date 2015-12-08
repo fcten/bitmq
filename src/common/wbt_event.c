@@ -137,20 +137,22 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     wbt_log_debug("event add, fd %d, addr %p, %ud enents.", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
-    wbt_event_t **tmp_ev = wbt_events.available.ptr;
-    /* 使用这个变量可能会提示未初始化的错误，但是无须在意 */
-    unsigned int modified = tmp_ev[wbt_events.top]->modified + 1;
-    *(tmp_ev[wbt_events.top]) = *(ev);
-    tmp_ev[wbt_events.top]->modified = modified;
-    
-    /* 初始化结构体 */
-    wbt_mem_t tmp;
-    tmp.ptr = &tmp_ev[wbt_events.top]->data;
-    tmp.len = sizeof( wbt_http_t );
-    wbt_memset( &tmp, 0 );
-    
-    wbt_event_t *t = tmp_ev[wbt_events.top];
+    wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
     wbt_events.top --;
+    
+    t->fd       = ev->fd;
+    t->callback = ev->callback;
+    t->trigger  = ev->trigger;
+    t->time_out = ev->time_out;
+    t->events   = ev->events;
+
+    t->modified ++;
+
+    t->buff.ptr = NULL;
+    t->buff.len = 0;
+    
+    t->data.ptr = NULL;
+    t->data.len = 0;
 
     /* 注册epoll事件 */
     if(t->fd >= 0) {
@@ -165,7 +167,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     }
     
     /* 如果存在超时时间，添加到超时队列中 */
-    if(ev->time_out >0) {
+    if(t->time_out > 0) {
         wbt_heap_node_t timeout_ev;
         timeout_ev.ev = t;
         timeout_ev.time_out = t->time_out;
@@ -197,8 +199,9 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     /* 使超时队列中的事件过期 */
     ev->modified ++;
     
-    /* 释放缓存 */
-    wbt_http_destroy(&ev->data);
+    /* 释放可能存在的事件数据缓存 */
+    /* 注意 ev->p 必须由模块自己确保释放，否则会造成内存泄漏 */
+    wbt_free(&ev->buff);
 
     /* 删除epoll事件 */
     if(ev->fd >= 0) {

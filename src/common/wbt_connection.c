@@ -110,8 +110,6 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
             return WBT_ERROR;
         }
         
-        p_ev->data.state = STATE_CONNECTION_ESTABLISHED;
-        
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
             // 暂且忽略 on_conn 接口中的错误
         }
@@ -132,23 +130,18 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 有新的数据到达 */
     int fd = ev->fd;
     wbt_log_debug("recv data of connection %d.", fd);
-    
-    if( ev->data.state == STATE_CONNECTION_ESTABLISHED ||
-            ev->data.state == STATE_SEND_COMPLETED ) {
-        ev->data.state = STATE_RECEIVING_HEADER;
-    }
 
     int nread;
     int bReadOk = 0;
 
-    while( ev->data.buff.len <= 40960 ) { /* 限制数据包长度 */
-        if( wbt_realloc(&ev->data.buff, ev->data.buff.len + 4096) != WBT_OK ) {
+    while( ev->buff.len <= 40960 ) { /* 限制数据包长度 */
+        if( wbt_realloc(&ev->buff, ev->buff.len + 4096) != WBT_OK ) {
             /* 内存不足 */
             wbt_log_add("wbt_realloc failed\n");
 
             return WBT_ERROR;
         }
-        nread = recv(fd, ev->data.buff.ptr + ev->data.buff.len - 4096, 4096, 0);
+        nread = recv(fd, ev->buff.ptr + ev->buff.len - 4096, 4096, 0);
         if(nread < 0) {
             if(errno == EAGAIN) {
                 // 当前缓冲区已无数据可读
@@ -179,40 +172,17 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
        }
     }
 
-    if( bReadOk ) {
-        /* 去除多余的缓冲区 */
-        wbt_realloc(&ev->data.buff, ev->data.buff.len - 4096 + nread);
-        wbt_status ret = wbt_http_parse(&ev->data);
-        
-        /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
-        if( wbt_module_on_recv(ev) != WBT_OK ) {
-            ev->data.status = STATUS_500;
-        }
-
-        if( ev->data.status > STATUS_UNKNOWN && ev->data.status < STATUS_LENGTH ) {
-            /* 需要返回响应 */
-            wbt_http_process(&ev->data);
-            
-            if( ev->data.state == STATE_GENERATING_RESPONSE ) {
-                ev->data.state = STATE_READY_TO_SEND;
-            }
-            
-            /* 等待socket可写 */
-            ev->trigger = wbt_on_send;
-            ev->events = EPOLLOUT | EPOLLET;
-            ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
-
-            if(wbt_event_mod(ev) != WBT_OK) {
-                return WBT_ERROR;
-            }
-        } else if( ret == WBT_OK ) {
-            /* 需要继续等待数据 */
-        } else {
-            /* 严重的错误，直接断开连接 */
-            wbt_conn_close(ev);
-        }
-    } else {
+    if( !bReadOk ) {
         /* 读取出错，或者客户端主动断开了连接 */
+        wbt_conn_close(ev);
+    }
+    
+    /* 去除多余的缓冲区 */
+    wbt_realloc(&ev->buff, ev->buff.len - 4096 + nread);
+
+    /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
+    if( wbt_module_on_recv(ev) != WBT_OK ) {
+        /* 严重的错误，直接断开连接 */
         wbt_conn_close(ev);
     }
     
@@ -223,98 +193,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     /* 数据发送已经就绪 */
     wbt_log_debug("send data to connection %d.", ev->fd);
     
-    if( ev->data.state == STATE_READY_TO_SEND ) {
-        ev->data.state = STATE_SENDING;
-    }
-
-    int fd = ev->fd;
-    int nwrite, n;
-    wbt_http_t *http = &ev->data;
-    
-    /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
-    //int on = 1;
-    //setsockopt( conn_sock, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
-
-    /* 如果存在 response，发送 response */
-    if( http->response.len - http->resp_offset > 0 ) {
-        n = http->response.len - http->resp_offset; 
-        nwrite = write(fd, http->response.ptr + http->resp_offset, n);
-
-        if (nwrite == -1 && errno != EAGAIN) {
-            /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
-             * 仅用于判断是否发生了必须重启工作进程的严重错误。
-             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
-             */
-            wbt_conn_close(ev);
-            
-            return WBT_OK;
-        }
-
-        http->resp_offset += nwrite;
-
-        wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
-        if( http->response.len > http->resp_offset ) {
-            /* 尚未发送完，缓冲区满 */
-            return WBT_OK;
-        }
-    }
-    
-    if( http->status == STATUS_200 && http->file.size > http->file.offset  ) {
-        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
-        // 需要在未发送完成前继续监听可写事件
-        n = http->file.size - http->file.offset;
-
-        if( http->file.ptr != NULL ) {
-            // 需要发送的数据已经在内存中
-            nwrite = write(fd, http->file.ptr + http->file.offset, n);
-            http->file.offset += nwrite;
-        } else if( http->file.fd > 0  ) {
-            // 需要发送的数据不在内存中，但是指定了需要发送的文件
-            nwrite = sendfile( fd, http->file.fd, &http->file.offset, n );
-        } else {
-            // 不应该出现这种情况
-            n = nwrite = 0;
-        }
-
-        if (nwrite == -1 && errno != EAGAIN) { 
-            /* 连接被意外关闭，同上 */
-            wbt_conn_close(ev);
-            
-            return WBT_OK;
-        }
-
-        wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
-        if( n > nwrite ) {
-            /* 尚未发送完，缓冲区满 */
-            return WBT_OK;
-        }
-    }
-    
-    /* 所有数据发送完毕，调用模块接口 */
-    if( ev->data.state == STATE_SENDING ) {
-        ev->data.state = STATE_SEND_COMPLETED;
-    }
-    
     if( wbt_module_on_send(ev) != WBT_OK ) {
-        // 暂且忽略 on_send 接口中的错误
-    }
-
-    /* 如果是 keep-alive 连接，继续等待数据到来 */
-    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
-        /* 为下一个连接初始化相关结构 */
-        wbt_http_destroy( &ev->data );
-
-        ev->trigger = wbt_on_recv;
-        ev->events = EPOLLIN | EPOLLET;
-        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
-        
-        ev->data.state = STATE_CONNECTION_ESTABLISHED;
-
-        if(wbt_event_mod(ev) != WBT_OK) {
-            return WBT_ERROR;
-        }
-    } else {
-        /* 非 keep-alive 连接，直接关闭 */
         wbt_conn_close(ev);
     }
 

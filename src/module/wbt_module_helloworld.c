@@ -59,9 +59,11 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
     wbt_malloc(&tmp, resp.len);
     wbt_memcpy(&tmp, (wbt_mem_t *)&resp, resp.len);
     
-    ev->data.status = STATUS_200;
-    ev->data.file.ptr = tmp.ptr;
-    ev->data.file.size = tmp.len;
+    wbt_http_t * http = ev->data.ptr;
+    
+    http->status = STATUS_200;
+    http->file.ptr = tmp.ptr;
+    http->file.size = tmp.len;
 
     wbt_http_process(&ev->data);
 
@@ -79,7 +81,7 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
-    wbt_http_t * http = &ev->data;
+    wbt_http_t * http = ev->data.ptr;
 
     // 必须是 GET 请求
     if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_GET], REQUEST_METHOD[METHOD_GET].len ) != 0 ) {
@@ -116,7 +118,7 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
-    wbt_http_t * http = &ev->data;
+    wbt_http_t * http = ev->data.ptr;
 
     // 必须是 POST 请求
     if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_POST], REQUEST_METHOD[METHOD_POST].len ) != 0 ) {
@@ -156,11 +158,15 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         wbt_malloc(&tmp, data.len);
         wbt_memcpy(&tmp, (wbt_mem_t *)&data, data.len);
 
-        p->ev->data.status = STATUS_200;
-        p->ev->data.file.ptr = tmp.ptr;
-        p->ev->data.file.size = tmp.len;
+        wbt_http_t * tmp_http = p->ev->data.ptr;
+        
+        tmp_http->status = STATUS_200;
+        tmp_http->file.ptr = tmp.ptr;
+        tmp_http->file.size = tmp.len;
 
-        wbt_http_process(&p->ev->data);
+        wbt_http_process(tmp_http);
+        
+        tmp_http->state = STATE_SENDING;
 
         /* 等待socket可写 */
         p->ev->callback = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
@@ -184,7 +190,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_recv(wbt_event_t *ev) {
-    wbt_http_t * http = &ev->data;
+    wbt_http_t * http = ev->data.ptr;
 
     // 只过滤 404 响应
     if( http->status != STATUS_404 ) {
@@ -212,7 +218,7 @@ wbt_status wbt_module_helloworld_recv(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
-    wbt_http_t * http = &ev->data;
+    wbt_http_t * http = ev->data.ptr;
 
     // 必须是 POST 请求
     if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_POST], REQUEST_METHOD[METHOD_POST].len ) != 0 ) {
@@ -297,7 +303,7 @@ void wbt_module_helloworld_show_recursion(wbt_rbtree_node_t *node, wbt_str_t *re
 }
 
 wbt_status wbt_module_helloworld_show(wbt_event_t *ev) {
-    wbt_http_t * http = &ev->data;
+    wbt_http_t * http = ev->data.ptr;
     
     // 必须是 GET 请求
     if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_GET], REQUEST_METHOD[METHOD_GET].len ) != 0 ) {

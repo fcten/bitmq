@@ -15,8 +15,9 @@ extern wbt_module_t wbt_module_event;
 extern wbt_module_t wbt_module_file;
 extern wbt_module_t wbt_module_conn;
 extern wbt_module_t wbt_module_ssl;
-extern wbt_module_t wbt_module_http;
+extern wbt_module_t wbt_module_http1_parser;
 extern wbt_module_t wbt_module_helloworld;
+extern wbt_module_t wbt_module_http1_generater;
 
 wbt_module_t * wbt_modules[] = {
     &wbt_module_time,
@@ -26,8 +27,9 @@ wbt_module_t * wbt_modules[] = {
     &wbt_module_file,
     &wbt_module_conn,
     &wbt_module_ssl,
-    &wbt_module_http,
+    &wbt_module_http1_parser,
     &wbt_module_helloworld,
+    &wbt_module_http1_generater,
     NULL
 };
 
@@ -101,7 +103,7 @@ wbt_status wbt_module_on_send(wbt_event_t *ev) {
 wbt_status wbt_module_on_close(wbt_event_t *ev) {
     /* filter模块 */
     int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
-    for( i = 0 ; i < size ; i++ ) {
+    for( i = size - 1 ; i >= 0 ; i-- ) {
         if( wbt_modules[i]->on_close && wbt_modules[i]->on_close(ev) != WBT_OK ) {
             /* fatal */
             return WBT_ERROR;

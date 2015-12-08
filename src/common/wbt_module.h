@@ -25,8 +25,8 @@ typedef struct wbt_module_s {
     wbt_status  (*init)();                      /* 模块初始化方法 */
     wbt_status  (*exit)();                      /* 模块卸载方法 */
     wbt_status  (*on_conn)( wbt_event_t * );    /* 连接建立后调用 */
-    wbt_status  (*on_recv)( wbt_event_t * );    /* 请求完整接收并解析完毕后调用 */
-    wbt_status  (*on_send)( wbt_event_t * );    /* 响应发送完毕后调用 */
+    wbt_status  (*on_recv)( wbt_event_t * );    /* 接收数据后调用 */
+    wbt_status  (*on_send)( wbt_event_t * );    /* 需要发送响应时调用 */
     wbt_status  (*on_close)( wbt_event_t * );   /* 服务端主动关闭连接前调用 */
 } wbt_module_t;
 
