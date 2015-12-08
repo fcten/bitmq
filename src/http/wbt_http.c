@@ -149,12 +149,15 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     
     /* 如果是 keep-alive 连接，继续等待数据到来 */
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
-        /* 为下一个连接初始化相关结构 */
         wbt_http_on_close( ev );
+        /* 为下一个连接初始化相关结构 */
         if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
             return WBT_ERROR;
         }
         wbt_memset(&ev->data, 0);
+        
+        http = ev->data.ptr;
+        http->state = STATE_SEND_COMPLETED;
 
         ev->trigger = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
@@ -228,6 +231,8 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
     
     /* 释放 http 结构体本身 */
     wbt_free(&ev->data);
+    /* 释放事件数据缓存 */
+    wbt_free(&ev->buff);
 
     return WBT_OK;
 }
@@ -671,6 +676,7 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
                 /* 路径过长 */
                 http->status = STATUS_414;
             }
+            http->state = STATE_READY_TO_SEND;
             return WBT_OK;
         }
 
@@ -716,6 +722,8 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
             /* 严重的错误，直接断开连接 */
             wbt_conn_close(ev);
     }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_http_process(wbt_http_t *http) {    

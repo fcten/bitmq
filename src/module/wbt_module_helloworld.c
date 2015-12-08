@@ -61,11 +61,12 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
     
     wbt_http_t * http = ev->data.ptr;
     
+    http->state = STATE_SENDING;
     http->status = STATUS_200;
     http->file.ptr = tmp.ptr;
     http->file.size = tmp.len;
 
-    wbt_http_process(&ev->data);
+    wbt_http_process(http);
 
     /* 等待socket可写 */
     ev->callback = wbt_conn_close;
@@ -100,12 +101,11 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    /* 将 status 置为 STATUS_LENGTH 会使 webit 继续等待数据 */
-    http->status = STATUS_LENGTH;
+    /* 将 state 置为 STATE_PARSING_REQUEST 会使 webit 继续等待数据 */
+    http->state = STATE_PARSING_REQUEST;
 
     /* 修改超时时间为 30 秒
-     * 这个时候如果继续有数据到来，则会作为 body 数据追加，并重置超时时间
-     * 由于请求长度存在限制，无限此过程将最终返回 413 错误
+     * 这个时候如果继续有数据到来，webit 会立刻关闭这个连接
      */
     ev->time_out = cur_mtime + 30000;
     ev->callback = wbt_module_helloworld_callback;
