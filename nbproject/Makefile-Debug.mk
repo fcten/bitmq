@@ -45,6 +45,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_memory.o \
 	${OBJECTDIR}/src/common/wbt_module.o \
 	${OBJECTDIR}/src/common/wbt_rbtree.o \
+	${OBJECTDIR}/src/common/wbt_ssl.o \
 	${OBJECTDIR}/src/common/wbt_string.o \
 	${OBJECTDIR}/src/common/wbt_time.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
@@ -131,6 +132,11 @@ ${OBJECTDIR}/src/common/wbt_rbtree.o: src/common/wbt_rbtree.c
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_rbtree.o src/common/wbt_rbtree.c
+
+${OBJECTDIR}/src/common/wbt_ssl.o: src/common/wbt_ssl.c 
+	${MKDIR} -p ${OBJECTDIR}/src/common
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_ssl.o src/common/wbt_ssl.c
 
 ${OBJECTDIR}/src/common/wbt_string.o: src/common/wbt_string.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common

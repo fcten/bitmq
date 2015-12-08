@@ -186,7 +186,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         
         /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
         if( wbt_module_on_recv(ev) != WBT_OK ) {
-            ev->data.status = 500;
+            ev->data.status = STATUS_500;
         }
 
         if( ev->data.status > STATUS_UNKNOWN && ev->data.status < STATUS_LENGTH ) {
