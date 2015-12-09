@@ -15,7 +15,8 @@
 
 wbt_module_t wbt_module_file = {
     wbt_string("file"),
-    wbt_file_init
+    wbt_file_init,
+    wbt_file_exit
 };
 
 wbt_file_t tmp;
@@ -55,6 +56,10 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
         return WBT_ERROR;
     }
 
+    return WBT_OK;
+}
+
+wbt_status wbt_file_exit() {
     return WBT_OK;
 }
 

@@ -45,6 +45,7 @@ typedef struct wbt_file_s {
 } wbt_file_t;
 
 wbt_status wbt_file_init();
+wbt_status wbt_file_exit();
 
 wbt_file_t * wbt_file_open( wbt_str_t * file_path );
 wbt_status wbt_file_close( wbt_str_t * file_path );

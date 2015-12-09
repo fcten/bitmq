@@ -5,7 +5,7 @@
 wbt_module_t wbt_module_helloworld = {
     wbt_string("helloworld"),
     wbt_module_helloworld_init, // init
-    NULL, // exit
+    wbt_module_helloworld_exit, // exit
     NULL, // on_conn
     wbt_module_helloworld_recv, // on_recv
     NULL, // on_send
@@ -18,12 +18,18 @@ wbt_rbtree_t wbt_online_id_rbtree;
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 extern time_t cur_mtime;
 
+extern int wating_to_exit;
+
 wbt_status wbt_module_helloworld_init() {
     /* 初始化一个红黑树用以根据 fd 查找客户端 */
     wbt_rbtree_init(&wbt_online_fd_rbtree);
     /* 初始化一个红黑树用以根据 id 查找客户端 */
     wbt_rbtree_init(&wbt_online_id_rbtree);
     
+    return WBT_OK;
+}
+
+wbt_status wbt_module_helloworld_exit() {
     return WBT_OK;
 }
 
@@ -52,6 +58,11 @@ wbt_status wbt_module_helloworld_close(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
+    if(wating_to_exit) {
+        wbt_conn_close(ev);
+        return WBT_OK;
+    }
+    
     /* 生成响应数据 */
     wbt_str_t resp = wbt_string("{\"status\":0}");
     

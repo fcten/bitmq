@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 wbt_status wbt_module_helloworld_init();
+wbt_status wbt_module_helloworld_exit();
 wbt_status wbt_module_helloworld_conn(wbt_event_t *ev);
 wbt_status wbt_module_helloworld_recv(wbt_event_t *ev);
 wbt_status wbt_module_helloworld_close(wbt_event_t *ev);

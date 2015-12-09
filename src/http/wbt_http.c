@@ -15,6 +15,7 @@
 #include "wbt_http.h"
 
 wbt_status wbt_http_init();
+wbt_status wbt_http_exit();
 wbt_status wbt_http_check_header_end( wbt_event_t * );
 wbt_status wbt_http_parse_request_header( wbt_event_t * );
 wbt_status wbt_http_check_body_end( wbt_http_t* );
@@ -35,7 +36,7 @@ wbt_status wbt_http_generater( wbt_event_t * );
 wbt_module_t wbt_module_http1_parser = {
     wbt_string("http-parser"),
     wbt_http_init,
-    NULL,
+    wbt_http_exit,
     wbt_http_on_conn,
     wbt_http_on_recv,
     wbt_http_on_send,
@@ -61,6 +62,10 @@ wbt_status wbt_http_init() {
     wbt_malloc(&wbt_send_buf, 10240);
     wbt_malloc(&wbt_file_path, 512);
     
+    return WBT_OK;
+}
+
+wbt_status wbt_http_exit() {
     return WBT_OK;
 }
 

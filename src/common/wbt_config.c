@@ -14,7 +14,8 @@
 
 wbt_module_t wbt_module_conf = {
     wbt_string("config"),
-    wbt_conf_init
+    wbt_conf_init,
+    wbt_conf_exit
 };
 
 /* 默认的配置文件位置 */
@@ -101,6 +102,10 @@ wbt_status wbt_conf_init() {
         wbt_conf.user.str = m_value->ptr;
     }
 
+    return WBT_OK;
+}
+
+wbt_status wbt_conf_exit() {
     return WBT_OK;
 }
 

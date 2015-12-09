@@ -380,3 +380,45 @@ void wbt_rbtree_print(wbt_rbtree_node_t *node) {
         wbt_rbtree_print(node->right);
     }
 }
+
+void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
+    if(node != wbt_rbtree_node_nil) {
+        wbt_rbtree_destroy_recursive(node->left);
+        wbt_rbtree_destroy_recursive(node->right);
+        
+        wbt_mem_t tmp;
+        tmp.ptr = node;
+        tmp.len = sizeof(wbt_rbtree_node_t);
+        wbt_free(&node->key);
+        wbt_free(&node->value);
+        wbt_free(&tmp);
+    }
+}
+
+void wbt_rbtree_destroy(wbt_rbtree_t *rbt) {
+    wbt_rbtree_destroy_recursive(rbt->root);
+    
+    rbt->max = 0;
+    rbt->size = 0;
+}
+
+void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
+    if(node != wbt_rbtree_node_nil) {
+        wbt_rbtree_destroy_recursive(node->left);
+        wbt_rbtree_destroy_recursive(node->right);
+        
+        wbt_mem_t tmp;
+        tmp.ptr = node;
+        tmp.len = sizeof(wbt_rbtree_node_t);
+        wbt_free(&node->key);
+        //wbt_free(&node->value);
+        wbt_free(&tmp);
+    }
+}
+
+void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt) {
+    wbt_rbtree_destroy_recursive_ignore_value(rbt->root);
+    
+    rbt->max = 0;
+    rbt->size = 0;
+}
