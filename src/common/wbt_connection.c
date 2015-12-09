@@ -111,7 +111,8 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         }
         
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
-            // 暂且忽略 on_conn 接口中的错误
+            wbt_conn_close(p_ev);
+            return WBT_ERROR;
         }
     }
 
@@ -175,6 +176,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     if( !bReadOk ) {
         /* 读取出错，或者客户端主动断开了连接 */
         wbt_conn_close(ev);
+        return WBT_OK;
     }
     
     /* 去除多余的缓冲区 */
@@ -183,7 +185,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
     if( wbt_module_on_recv(ev) != WBT_OK ) {
         /* 严重的错误，直接断开连接 */
+        /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。 */
         wbt_conn_close(ev);
+        return WBT_ERROR;
     }
     
     return WBT_OK;
@@ -195,6 +199,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
         wbt_conn_close(ev);
+        return WBT_ERROR;
     }
 
     return WBT_OK;

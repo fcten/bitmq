@@ -82,8 +82,10 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     wbt_http_t *http = ev->data.ptr;
     
     if( http->state != STATE_SENDING ) {
-        return WBT_ERROR;
+        return WBT_OK;
     }
+    
+    // 由模块自己处理数据发送，是为了避免不必要的内存拷贝
     
     /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
     //int on = 1;

@@ -200,8 +200,8 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->modified ++;
     
     /* 释放可能存在的事件数据缓存 */
-    /* 注意 ev->p 必须由模块自己确保释放，否则会造成内存泄漏 */
     wbt_free(&ev->buff);
+    wbt_free(&ev->data);
 
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
