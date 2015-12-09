@@ -124,6 +124,8 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
         }
         
         return WBT_OK;
+    } else if( err == SSL_ERROR_SYSCALL ) {
+        return WBT_OK;
     }
     
     // 握手异常，可能客户端在握手期间关闭了连接
