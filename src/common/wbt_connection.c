@@ -17,6 +17,7 @@
 #include "wbt_file.h"
 #include "wbt_config.h"
 #include "wbt_time.h"
+#include "wbt_ssl.h"
 
 wbt_status wbt_setnonblocking(int sock);
 
@@ -131,7 +132,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 有新的数据到达 */
     int fd = ev->fd;
     wbt_log_debug("recv data of connection %d.", fd);
-
+    
     int nread;
     int bReadOk = 0;
 
@@ -142,11 +143,15 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
             return WBT_ERROR;
         }
-        nread = recv(fd, ev->buff.ptr + ev->buff.len - 4096, 4096, 0);
+        nread = wbt_ssl_read(ev, ev->buff.ptr + ev->buff.len - 4096, 4096);
         if(nread < 0) {
             if(errno == EAGAIN) {
                 // 当前缓冲区已无数据可读
                 bReadOk = 1;
+                
+                /* 去除多余的缓冲区 */
+                wbt_realloc(&ev->buff, ev->buff.len - 4096);
+                
                 break;
             } else if (errno == ECONNRESET) {
                 // 对方发送了RST
@@ -163,8 +168,10 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             break;
         }
 
-        // recvNum > 0
-       if ( nread == 4096) {
+       if ( nread > 0) {
+            /* 去除多余的缓冲区 */
+            wbt_realloc(&ev->buff, ev->buff.len - 4096 + nread);
+            
            continue;   // 需要再次读取
        } else {
            // 安全读完
@@ -178,9 +185,6 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         wbt_conn_close(ev);
         return WBT_OK;
     }
-    
-    /* 去除多余的缓冲区 */
-    wbt_realloc(&ev->buff, ev->buff.len - 4096 + nread);
 
     /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
     if( wbt_module_on_recv(ev) != WBT_OK ) {

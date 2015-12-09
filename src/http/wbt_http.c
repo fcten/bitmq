@@ -12,6 +12,7 @@
 #include "../common/wbt_time.h"
 #include "../common/wbt_config.h"
 #include "../common/wbt_connection.h"
+#include "../common/wbt_ssl.h"
 #include "wbt_http.h"
 
 wbt_status wbt_http_init();
@@ -99,7 +100,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* 如果存在 response，发送 response */
     if( http->response.len - http->resp_offset > 0 ) {
         n = http->response.len - http->resp_offset; 
-        nwrite = write(ev->fd, http->response.ptr + http->resp_offset, n);
+        nwrite = wbt_ssl_write(ev, http->response.ptr + http->resp_offset, n);
 
         if (nwrite == -1 && errno != EAGAIN) {
             /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
@@ -127,11 +128,26 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
 
         if( http->file.ptr != NULL ) {
             // 需要发送的数据已经在内存中
-            nwrite = write(ev->fd, http->file.ptr + http->file.offset, n);
+            nwrite = wbt_ssl_write(ev, http->file.ptr + http->file.offset, n);
             http->file.offset += nwrite;
         } else if( http->file.fd > 0  ) {
             // 需要发送的数据不在内存中，但是指定了需要发送的文件
-            nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
+            if( wbt_conf.secure ) {
+                // TODO 发送大文件无法一次读完
+                wbt_mem_t tmp;
+                wbt_malloc(&tmp, http->file.size);
+                if( read( http->file.fd, tmp.ptr, tmp.len) != tmp.len ) {
+                    wbt_conn_close(ev);
+                    
+                    return WBT_OK;
+                }
+                
+                http->file.ptr = tmp.ptr;
+                nwrite = wbt_ssl_write(ev, http->file.ptr + http->file.offset, n);
+                http->file.offset += nwrite;
+            } else {
+                nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
+            }
         } else {
             // 不应该出现这种情况
             n = nwrite = 0;
@@ -187,53 +203,57 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
     wbt_mem_t tmp;
     wbt_http_t *http = ev->data.ptr;
     
-    /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
-    if( http->file.fd > 0 ) {
-        // TODO 需要判断 URI 是否以 / 开头
-        // TODO 需要和前面的代码整合到一起
-        wbt_str_t full_path;
-        if( *(http->uri.str + http->uri.len - 1) == '/' ) {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-                http->uri.len, http->uri.str,
-                wbt_conf.index.len, wbt_conf.index.str);
-        } else {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-                http->uri.len, http->uri.str);
+    if( http ) {
+    
+        /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
+        if( http->file.fd > 0 ) {
+            // TODO 需要判断 URI 是否以 / 开头
+            // TODO 需要和前面的代码整合到一起
+            wbt_str_t full_path;
+            if( *(http->uri.str + http->uri.len - 1) == '/' ) {
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                    http->uri.len, http->uri.str,
+                    wbt_conf.index.len, wbt_conf.index.str);
+            } else {
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s",
+                    http->uri.len, http->uri.str);
+            }
+            wbt_file_close( &full_path );
         }
-        wbt_file_close( &full_path );
-    }
 
-    /* 释放动态分配的内存 */
-    header = http->headers;
-    while( header != NULL ) {
-        next = header->next;
-        
-        tmp.ptr = header;
-        tmp.len = 1;
-        wbt_free( &tmp );
+        /* 释放动态分配的内存 */
+        header = http->headers;
+        while( header != NULL ) {
+            next = header->next;
 
-        header = next;
-    }
+            tmp.ptr = header;
+            tmp.len = 1;
+            wbt_free( &tmp );
 
-    header = http->resp_headers;
-    while( header != NULL ) {
-        next = header->next;
-        
-        tmp.ptr = header;
-        tmp.len = 1;
-        wbt_free( &tmp );
+            header = next;
+        }
 
-        header = next;
-    }
+        header = http->resp_headers;
+        while( header != NULL ) {
+            next = header->next;
+
+            tmp.ptr = header;
+            tmp.len = 1;
+            wbt_free( &tmp );
+
+            header = next;
+        }
+
+        /* 释放生成的响应消息头 */
+        wbt_free( &http->response );
+
+        /* 释放读入内存的文件内容 */
+        if( http->file.ptr ) {
+            tmp.ptr = http->file.ptr;
+            tmp.len = 1;
+            wbt_free( &tmp );
+        }
     
-    /* 释放生成的响应消息头 */
-    wbt_free( &http->response );
-    
-    /* 释放读入内存的文件内容 */
-    if( http->file.ptr ) {
-        tmp.ptr = http->file.ptr;
-        tmp.len = 1;
-        wbt_free( &tmp );
     }
     
     /* 释放 http 结构体本身 */
@@ -700,6 +720,8 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 
 wbt_status wbt_http_generater( wbt_event_t *ev ) {
     wbt_http_t * http = ev->data.ptr;
+    
+    wbt_str_t *t = (wbt_str_t *)&ev->buff;
 
     switch( http->state ) {
         case STATE_READY_TO_SEND:

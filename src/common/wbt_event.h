@@ -20,12 +20,15 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
-    
+
+#include <openssl/ssl.h>
+
 #include "../webit.h"
 #include "wbt_memory.h"
 
 typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
+    SSL *ssl;                                       /* 使用加密连接 */
     wbt_status (*callback)(struct wbt_event_s *);   /* 超时回调函数 */
     wbt_status (*trigger)(struct wbt_event_s *);    /* 触发回调函数 */
     time_t time_out;                                /* 事件超时时间 */

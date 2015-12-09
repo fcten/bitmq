@@ -62,7 +62,7 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
 }
 
 /*
- * 比较字符串 str1 和 str2
+ * 比较字符串 str1 和 str2 的前 len 个字符
  * 大小写敏感
  * 相同返回 0，否则返回 1
  */
@@ -82,6 +82,11 @@ int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     return 0;
 }
 
+/*
+ * 比较字符串 str1 和 str2
+ * 大小写敏感
+ * 相同返回 0，否则返回第一个不相等的字符的差值
+ */
 int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
     int pos = 0;
     int value, length;

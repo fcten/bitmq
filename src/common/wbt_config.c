@@ -20,6 +20,10 @@ wbt_module_t wbt_module_conf = {
 
 /* 默认的配置文件位置 */
 wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
+
+wbt_str_t wbt_conf_option_on = wbt_string("on");
+wbt_str_t wbt_conf_option_off = wbt_string("off");
+
 /* 供 setproctitle 显示使用，如果路径过长则会被截断 */
 wbt_mem_t wbt_config_file_path;
 
@@ -70,6 +74,33 @@ wbt_status wbt_conf_init() {
         wbt_conf.run_mode = atoi(value);
         if( wbt_conf.run_mode < 0 || wbt_conf.run_mode > 1 ) {
             wbt_log_add("run_mode out of range ( expect 0 - 1 )\n");
+            return WBT_ERROR;
+        }
+    }
+    
+    wbt_conf.secure = 0;
+    if( ( m_value = wbt_conf_get_v("secure") ) != NULL ) {
+        if( wbt_strcmp2( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+            wbt_conf.secure = 1;
+        }
+    }
+    
+    wbt_str_set_null(&wbt_conf.secure_key);
+    wbt_str_set_null(&wbt_conf.secure_crt);
+    if( wbt_conf.secure ) {
+        if( ( m_value = wbt_conf_get_v("secure_key") ) != NULL ) {
+            wbt_conf.secure_key.len = m_value->len;
+            wbt_conf.secure_key.str = m_value->ptr;
+        } else {
+            wbt_log_add("secure_key option must be defined in config file\n");
+            return WBT_ERROR;
+        }
+        
+        if( ( m_value = wbt_conf_get_v("secure_crt") ) != NULL ) {
+            wbt_conf.secure_crt.len = m_value->len;
+            wbt_conf.secure_crt.str = m_value->ptr;
+        } else {
+            wbt_log_add("secure_crt option must be defined in config file\n");
             return WBT_ERROR;
         }
     }
@@ -232,7 +263,11 @@ wbt_status wbt_conf_reload() {
     wbt_config_file.size = statbuff.st_size;
 
     wbt_malloc(&wbt_config_file_content, wbt_config_file.size);
-    read(wbt_config_file.fd, wbt_config_file_content.ptr, wbt_config_file_content.len);
+    if( read( wbt_config_file.fd,
+            wbt_config_file_content.ptr,
+            wbt_config_file_content.len) != wbt_config_file_content.len ) {
+        return WBT_ERROR;
+    }
     
     /* 关闭配置文件 */
     close(wbt_config_file.fd);

@@ -20,9 +20,10 @@ extern "C" {
 wbt_status wbt_ssl_init();
 wbt_status wbt_ssl_exit();
 wbt_status wbt_ssl_on_conn( wbt_event_t *ev );
-wbt_status wbt_ssl_on_recv( wbt_event_t *ev );
-wbt_status wbt_ssl_on_send( wbt_event_t *ev );
 wbt_status wbt_ssl_on_close( wbt_event_t *ev );
+
+int wbt_ssl_read(wbt_event_t *ev, void *buf, int num);
+int wbt_ssl_write(wbt_event_t *ev, const void *buf, int num);
 
 #ifdef	__cplusplus
 }
