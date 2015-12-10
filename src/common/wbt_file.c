@@ -224,3 +224,26 @@ wbt_status wbt_unlock_fd(int fd) {
 int wbt_lock_create( const char *name ) {
     return open( name, O_RDWR | O_CREAT, S_IRWXU );
 }
+
+ssize_t wbt_file_read( wbt_file_t *file ) {
+    if( !file->fd ) {
+        return -1;
+    }
+    
+    if( !file->ptr ) {
+        wbt_mem_t tmp;
+        wbt_malloc(&tmp, file->size);
+        file->ptr = tmp.ptr;
+    }
+    
+    ssize_t n = pread(file->fd,
+            file->ptr + file->offset,
+            file->size - file->offset,
+            file->offset);
+    
+    if( n >= 0 ) {
+        file->offset += n;
+    }
+    
+    return n;
+}

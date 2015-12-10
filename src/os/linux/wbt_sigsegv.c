@@ -27,7 +27,7 @@ char * __cxa_demangle(const char * __mangled_name, char * __output_buffer, size_
 #endif
 #if defined(REG_RIP)
 #define SIGSEGV_STACK_IA64
-#define REGFORMAT "%016lx"
+#define REGFORMAT "%016lld"
 #elif defined(REG_EIP)
 #define SIGSEGV_STACK_X86
 #define REGFORMAT "%08x"
@@ -37,7 +37,7 @@ char * __cxa_demangle(const char * __mangled_name, char * __output_buffer, size_
 #endif
 
 static FILE *sigsegv_log = NULL;
-static char sigsegv_log_file[128]="./webit_sigsegv.log";
+static char sigsegv_log_file[128] = "./webit_sigsegv.log";
 
 
 static int sigsegv_log_open(const char *filepath)
@@ -60,7 +60,7 @@ static void sigsegv_log_close()
 
 void  setSigsegvLogFilepath(const char *filepath)
 {
-	snprintf(sigsegv_log_file, 128,filepath );
+	snprintf(sigsegv_log_file, 128, "%s", filepath);
 }
 
 static void signal_segv(int signum, siginfo_t* info, void*ptr) 

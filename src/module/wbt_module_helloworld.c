@@ -1,6 +1,7 @@
 #include "wbt_module_helloworld.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_connection.h"
+#include "../http/wbt_http.h"
 
 wbt_module_t wbt_module_helloworld = {
     wbt_string("helloworld"),
@@ -112,8 +113,8 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    /* 将 state 置为 STATE_PARSING_REQUEST 会使 webit 继续等待数据 */
-    http->state = STATE_PARSING_REQUEST;
+    /* 将 state 置为 STATE_BLOCKING 会使 webit 继续等待数据 */
+    http->state = STATE_BLOCKING;
 
     /* 修改超时时间为 30 秒
      * 这个时候如果继续有数据到来，webit 会立刻关闭这个连接

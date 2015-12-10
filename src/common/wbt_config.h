@@ -20,6 +20,7 @@ typedef struct wbt_conf_s {
     int run_mode;       // 1 - deamon, 2 - debug
     int process;        // 工作进程数量
     int secure;         // 是否启用 https
+    int sendfile;       // 是否使用 sendfile
     wbt_str_t user;     // 低权限用户
     wbt_str_t admin;    // 管理员联系方式
     wbt_str_t root;     // 网站根目录

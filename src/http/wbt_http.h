@@ -149,6 +149,8 @@ typedef enum {
     STATE_RECEIVING_BODY,
     STATE_PARSING_BODY,
     STATE_PARSING_REQUEST,
+    STATE_READ_FILE,
+    STATE_BLOCKING,
     STATE_READY_TO_SEND,
     STATE_SENDING,
     STATE_SEND_COMPLETED,
@@ -199,6 +201,23 @@ extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
 extern wbt_str_t header_cache_control;
 extern wbt_str_t header_content_type_text_html;
+
+wbt_status wbt_http_init();
+wbt_status wbt_http_exit();
+wbt_status wbt_http_check_header_end( wbt_event_t * );
+wbt_status wbt_http_parse_request_header( wbt_event_t * );
+wbt_status wbt_http_check_body_end( wbt_http_t* );
+wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
+wbt_status wbt_http_generate_response_header( wbt_http_t* );
+
+wbt_status wbt_http_process( wbt_http_t * );
+
+wbt_status wbt_http_on_conn( wbt_event_t * );
+wbt_status wbt_http_on_recv( wbt_event_t * );
+wbt_status wbt_http_on_send( wbt_event_t * );
+wbt_status wbt_http_on_close( wbt_event_t * );
+
+wbt_status wbt_http_generater( wbt_event_t * );
 
 #ifdef	__cplusplus
 }

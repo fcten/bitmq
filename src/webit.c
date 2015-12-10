@@ -11,6 +11,8 @@
 #include "os/linux/wbt_sigsegv.h"
 #include "os/linux/wbt_setproctitle.h"
 #include "os/linux/wbt_os_util.h"
+#include "os/linux/wbt_terminal.h"
+#include "os/linux/wbt_process.h"
 
 #include "webit.h"
 #include "common/wbt_string.h"
@@ -258,7 +260,7 @@ int main(int argc, char** argv) {
      */
     if( setenv("TZ", "Asia/Shanghai", 1) != 0 ) {
         perror("setenv");
-        return;
+        return 1;
     }
     tzset();
 

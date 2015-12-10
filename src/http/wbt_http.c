@@ -5,6 +5,7 @@
  * Created on 2014年10月24日, 下午3:30
  */
 
+#include <sys/sendfile.h>
 
 #include "../common/wbt_module.h"
 #include "../common/wbt_memory.h"
@@ -13,26 +14,9 @@
 #include "../common/wbt_config.h"
 #include "../common/wbt_connection.h"
 #include "../common/wbt_ssl.h"
+#include "../common/wbt_string.h"
+#include "../common/wbt_file.h"
 #include "wbt_http.h"
-
-wbt_status wbt_http_init();
-wbt_status wbt_http_exit();
-wbt_status wbt_http_check_header_end( wbt_event_t * );
-wbt_status wbt_http_parse_request_header( wbt_event_t * );
-wbt_status wbt_http_check_body_end( wbt_http_t* );
-wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
-wbt_status wbt_http_generate_response_header( wbt_http_t* );
-
-
-wbt_status wbt_http_process( wbt_http_t * );
-
-
-wbt_status wbt_http_on_conn( wbt_event_t * );
-wbt_status wbt_http_on_recv( wbt_event_t * );
-wbt_status wbt_http_on_send( wbt_event_t * );
-wbt_status wbt_http_on_close( wbt_event_t * );
-
-wbt_status wbt_http_generater( wbt_event_t * );
 
 wbt_module_t wbt_module_http1_parser = {
     wbt_string("http-parser"),
@@ -129,33 +113,37 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         if( http->file.ptr != NULL ) {
             // 需要发送的数据已经在内存中
             nwrite = wbt_ssl_write(ev, http->file.ptr + http->file.offset, n);
-            http->file.offset += nwrite;
-        } else if( http->file.fd > 0  ) {
-            // 需要发送的数据不在内存中，但是指定了需要发送的文件
-            if( wbt_conf.secure ) {
-                // TODO 发送大文件无法一次读完
-                wbt_mem_t tmp;
-                wbt_malloc(&tmp, http->file.size);
-                if( read( http->file.fd, tmp.ptr, tmp.len) != tmp.len ) {
-                    wbt_conn_close(ev);
-                    
-                    return WBT_OK;
-                }
-                
-                http->file.ptr = tmp.ptr;
-                nwrite = wbt_ssl_write(ev, http->file.ptr + http->file.offset, n);
+            if( nwrite >= 0 ) {
                 http->file.offset += nwrite;
-            } else {
-                nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
             }
+        } else if( http->file.fd > 0 && wbt_conf.sendfile ) {
+            // 需要发送的数据不在内存中，但是指定了需要发送的文件
+            nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
         } else {
             // 不应该出现这种情况
             n = nwrite = 0;
         }
 
-        if (nwrite == -1 && errno != EAGAIN) { 
-            /* 连接被意外关闭，同上 */
-            wbt_conn_close(ev);
+        if (nwrite == -1) {
+            if( wbt_conf.secure ) {
+                int err = wbt_ssl_get_error(ev, nwrite);
+                switch(err) {
+                    case SSL_ERROR_WANT_READ:
+                        wbt_log_debug("SSL_ERROR_WANT_READ");
+                        break;
+                    case SSL_ERROR_WANT_WRITE:
+                        wbt_log_debug("SSL_ERROR_WANT_WRITE");
+                        break;
+                    case SSL_ERROR_SYSCALL:
+                        wbt_log_debug("SSL_ERROR_SYSCALL");
+                        break;
+                }
+            } else {
+                if( errno != EAGAIN ) {
+                    /* 连接被意外关闭，同上 */
+                    wbt_conn_close(ev);
+                }
+            }
             
             return WBT_OK;
         }
@@ -712,6 +700,9 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
         http->file.fd = tmp->fd;
         http->file.size = tmp->size;
         http->file.last_modified = tmp->last_modified;
+        if( !wbt_conf.sendfile ) {
+            wbt_file_read( &http->file );
+        }
         http->file.offset = 0;
     }
     
@@ -744,7 +735,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
         case STATE_RECEIVING_BODY:
             /* 需要继续等待数据 */
             break;
-        case STATE_PARSING_REQUEST:
+        case STATE_BLOCKING:
             /* 供自定义模块使用以阻塞请求不立即返回 */
             break;
         default:

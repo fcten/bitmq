@@ -84,6 +84,7 @@ wbt_status wbt_ssl_exit() {
 
 wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     int n = SSL_do_handshake(ev->ssl);
+
     if( n == 1 ) {
         /*打印所有加密算法的信息(可选)*/ 
         printf ("SSL connection using %s\n", SSL_get_cipher (ev->ssl));
@@ -251,4 +252,8 @@ int wbt_ssl_ecdh_curve() {
 #endif
 
     return WBT_OK;
+}
+
+int wbt_ssl_get_error(wbt_event_t *ev, int ret) {
+    return SSL_get_error(ev->ssl, ret);
 }

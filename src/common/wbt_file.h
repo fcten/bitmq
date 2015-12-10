@@ -50,6 +50,8 @@ wbt_status wbt_file_exit();
 wbt_file_t * wbt_file_open( wbt_str_t * file_path );
 wbt_status wbt_file_close( wbt_str_t * file_path );
 
+ssize_t wbt_file_read( wbt_file_t * );
+
 wbt_status wbt_trylock_fd(int fd);
 wbt_status wbt_lock_fd(int fd);
 wbt_status wbt_unlock_fd(int fd);

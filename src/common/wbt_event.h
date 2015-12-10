@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#define _GNU_SOURCE
+
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h> 

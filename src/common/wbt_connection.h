@@ -12,9 +12,13 @@
 extern "C" {
 #endif
 
+#define _GNU_SOURCE
+
 #include <sys/socket.h>
 #include <sys/epoll.h>
-#include <netinet/in.h> 
+#include <sys/sendfile.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <unistd.h>

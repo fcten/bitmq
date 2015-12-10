@@ -10,6 +10,7 @@
 #include "wbt_file.h"
 #include "wbt_log.h"
 #include "wbt_rbtree.h"
+#include "../os/linux/wbt_os_util.h"
 #include "../os/linux/wbt_setproctitle.h"
 
 wbt_module_t wbt_module_conf = {
@@ -105,6 +106,15 @@ wbt_status wbt_conf_init() {
         }
     }
 
+    wbt_conf.sendfile = 0;
+    if( !wbt_conf.secure ) {
+        if( ( m_value = wbt_conf_get_v("sendfile") ) != NULL ) {
+            if( wbt_strcmp2( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+                wbt_conf.sendfile = 1;
+            }
+        }
+    }
+    
     wbt_str_set_null(&wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
         wbt_conf.root.len = m_value->len;

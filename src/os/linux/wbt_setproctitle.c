@@ -6,6 +6,7 @@
  */
 
 #include "wbt_setproctitle.h"
+#include "../../common/wbt_string.h"
 
 extern int wbt_argc;
 extern char** wbt_argv;
