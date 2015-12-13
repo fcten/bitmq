@@ -86,12 +86,34 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         n = http->response.len - http->resp_offset; 
         nwrite = wbt_ssl_write(ev, http->response.ptr + http->resp_offset, n);
 
-        if (nwrite == -1 && errno != EAGAIN) {
-            /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
-             * 仅用于判断是否发生了必须重启工作进程的严重错误。
-             * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
-             */
-            wbt_conn_close(ev);
+        if (nwrite == -1) {
+            if( wbt_conf.secure ) {
+                int err = wbt_ssl_get_error(ev, nwrite);
+                switch(err) {
+                    case SSL_ERROR_WANT_WRITE:
+                        wbt_log_debug("SSL_ERROR_WANT_WRITE");
+                        break;
+                    case SSL_ERROR_WANT_READ:
+                        wbt_log_debug("SSL_ERROR_WANT_READ");
+                        wbt_conn_close(ev);
+                        break;
+                    case SSL_ERROR_SYSCALL:
+                        wbt_log_debug("SSL_ERROR_SYSCALL");
+                        wbt_conn_close(ev);
+                        break;
+                    default:
+                        wbt_log_debug("%d", err);
+                        wbt_conn_close(ev);
+                }
+            } else {
+                if( errno != EAGAIN ) {
+                    /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
+                     * 仅用于判断是否发生了必须重启工作进程的严重错误。
+                     * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
+                     */
+                    wbt_conn_close(ev);
+                }
+            }
             
             return WBT_OK;
         }
@@ -128,15 +150,19 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             if( wbt_conf.secure ) {
                 int err = wbt_ssl_get_error(ev, nwrite);
                 switch(err) {
-                    case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ");
-                        break;
                     case SSL_ERROR_WANT_WRITE:
                         wbt_log_debug("SSL_ERROR_WANT_WRITE");
                         break;
+                    case SSL_ERROR_WANT_READ:
+                        wbt_log_debug("SSL_ERROR_WANT_READ");
+                        wbt_conn_close(ev);
+                        break;
                     case SSL_ERROR_SYSCALL:
                         wbt_log_debug("SSL_ERROR_SYSCALL");
+                        wbt_conn_close(ev);
                         break;
+                    default:
+                        wbt_conn_close(ev);
                 }
             } else {
                 if( errno != EAGAIN ) {
@@ -480,7 +506,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     header->value.len, header->value.str); */
                 break;
             case HEADER_CONNECTION:
-                if( wbt_strcmp( &header->value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
+                if( wbt_stricmp( &header->value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
                     /* 声明为 keep-alive 连接 */
                     http->bit_flag |= WBT_HTTP_KEEP_ALIVE;
                 } else {
@@ -701,6 +727,7 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
         http->file.size = tmp->size;
         http->file.last_modified = tmp->last_modified;
         if( !wbt_conf.sendfile ) {
+            /* TODO 在 open file 的时候读取文件内容并缓存 */
             wbt_file_read( &http->file );
         }
         http->file.offset = 0;

@@ -63,11 +63,13 @@ wbt_status wbt_ssl_init() {
         return WBT_ERROR;
     }
     
-    SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
-    
     if( wbt_ssl_ecdh_curve() != WBT_OK ) {
         return WBT_ERROR;
     }
+
+    SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
+    /* TODO 根据情况决定是否 quiet shutdown。对已关闭的连接调用 SSL_shutdown 会导致 broken pipe */
+    SSL_CTX_set_quiet_shutdown(ctx, 1);
     
     return WBT_OK;
 }
