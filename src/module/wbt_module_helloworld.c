@@ -1,6 +1,7 @@
 #include "wbt_module_helloworld.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_connection.h"
+#include "../common/wbt_config.h"
 #include "../http/wbt_http.h"
 
 wbt_module_t wbt_module_helloworld = {
@@ -81,10 +82,10 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
     wbt_http_process(http);
 
     /* 等待socket可写 */
-    ev->callback = wbt_conn_close;
+    ev->on_timeout = wbt_conn_close;
     ev->trigger = wbt_on_send;
     ev->events = EPOLLOUT | EPOLLET;
-    ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+    ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
@@ -119,8 +120,8 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
     /* 修改超时时间为 30 秒
      * 这个时候如果继续有数据到来，webit 会立刻关闭这个连接
      */
-    ev->time_out = cur_mtime + 30000;
-    ev->callback = wbt_module_helloworld_callback;
+    ev->timeout = cur_mtime + 30000;
+    ev->on_timeout = wbt_module_helloworld_callback;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
@@ -165,7 +166,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
     }
     
     // 如果该 ev 的超时回调函数为 wbt_module_helloworld_callback，则修改该事件并发送数据
-    if( p->ev->callback == wbt_module_helloworld_callback ) {
+    if( p->ev->on_timeout == wbt_module_helloworld_callback ) {
         wbt_mem_t tmp;
         wbt_malloc(&tmp, data.len);
         wbt_memcpy(&tmp, (wbt_mem_t *)&data, data.len);
@@ -181,10 +182,10 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         tmp_http->state = STATE_SENDING;
 
         /* 等待socket可写 */
-        p->ev->callback = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
+        p->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
         p->ev->trigger = wbt_on_send;
         p->ev->events = EPOLLOUT | EPOLLET;
-        p->ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        p->ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(p->ev) != WBT_OK) {
             return WBT_ERROR;

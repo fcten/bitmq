@@ -39,6 +39,9 @@ wbt_status wbt_ssl_init() {
         return WBT_ERROR;
     }
     
+    // SSL/TLS有几个公认的bug,这样设置会使出错的可能更小
+    SSL_CTX_set_options(ctx,SSL_OP_ALL);
+    
     // 设置为要求强制校验对方（客户端）证书SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT
     SSL_CTX_set_verify(ctx,SSL_VERIFY_NONE,NULL); /*验证与否SSL_VERIFY_PEER*/ 
     // SSL_CTX_load_verify_locations(ctx,CACERT,NULL);  /*若验证,则放置CA证书*/
@@ -93,7 +96,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
 
         ev->trigger = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
-        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -110,7 +113,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     if( err == SSL_ERROR_WANT_READ ) {
         ev->trigger = wbt_ssl_handshake;
         ev->events = EPOLLIN | EPOLLET;
-        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -120,7 +123,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     } else if( err == SSL_ERROR_WANT_WRITE ) {
         ev->trigger = wbt_ssl_handshake;
         ev->events = EPOLLOUT | EPOLLET;
-        ev->time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;

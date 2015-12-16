@@ -115,6 +115,16 @@ wbt_status wbt_conf_init() {
         }
     }
     
+    wbt_conf.keep_alive_timeout = 600000;
+    if( ( value = wbt_conf_get("keep_alive_timeout") ) != NULL ) {
+        wbt_conf.run_mode = atoi(value);
+    }
+    
+    wbt_conf.event_timeout = 150000;
+    if( ( value = wbt_conf_get("event_timeout") ) != NULL ) {
+        wbt_conf.run_mode = atoi(value);
+    }
+    
     wbt_str_set_null(&wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
         wbt_conf.root.len = m_value->len;

@@ -50,7 +50,7 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
     wbt_log_debug("opened fd after cleanup: %d", wbt_file_rbtree.size);
 
     /* 重新注册定时事件 */
-    ev->time_out = cur_mtime + 10000;
+    ev->timeout = cur_mtime + 10000;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
@@ -69,10 +69,10 @@ wbt_status wbt_file_init() {
 
     /* 添加一个定时任务用以清理过期的文件句柄 */
     wbt_event_t tmp_ev;
-    tmp_ev.callback = wbt_file_cleanup;
+    tmp_ev.on_timeout = wbt_file_cleanup;
     tmp_ev.fd = -1;
     /* tmp_ev.events = 0; // fd 大于等于 0 时该属性才有意义 */
-    tmp_ev.time_out = cur_mtime + 10000;
+    tmp_ev.timeout = cur_mtime + 10000;
 
     if(wbt_event_add(&tmp_ev) == NULL) {
         return WBT_ERROR;

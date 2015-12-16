@@ -20,7 +20,7 @@ extern "C" {
 #include "wbt_event.h"
 
 typedef struct {
-    time_t time_out;        /* 超时时间，距离1970年的毫秒数 */
+    time_t timeout;         /* 超时时间，距离1970年的毫秒数 */
     wbt_event_t *ev;        /* 指向事件的指针，事件存储于事件队列中 */
     unsigned int modified;  /* 添加或修改事件时事件的版本号快照 */
 } wbt_heap_node_t;

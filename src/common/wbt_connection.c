@@ -98,11 +98,11 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         //wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
 
         wbt_event_t *p_ev, tmp_ev;
-        tmp_ev.callback = wbt_conn_close;
+        tmp_ev.on_timeout = wbt_conn_close;
         tmp_ev.trigger = wbt_on_recv;
         tmp_ev.events = EPOLLIN | EPOLLET;
         tmp_ev.fd = conn_sock;
-        tmp_ev.time_out = cur_mtime + WBT_CONN_TIMEOUT;
+        tmp_ev.timeout = cur_mtime + wbt_conf.event_timeout;
 
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;

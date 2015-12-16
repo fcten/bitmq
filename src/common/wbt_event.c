@@ -80,8 +80,8 @@ wbt_status wbt_event_exit() {
         wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
         while(timeout_events.size > 0) {
             /* 尝试调用回调函数 */
-            if(p->modified == p->ev->modified && p->ev->callback != NULL) {
-                p->ev->callback(p->ev);
+            if(p->modified == p->ev->modified && p->ev->on_timeout != NULL) {
+                p->ev->on_timeout(p->ev);
             }
             /* 移除超时事件 */
             wbt_heap_delete(&timeout_events);
@@ -140,11 +140,11 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
     wbt_events.top --;
     
-    t->fd       = ev->fd;
-    t->callback = ev->callback;
-    t->trigger  = ev->trigger;
-    t->time_out = ev->time_out;
-    t->events   = ev->events;
+    t->fd         = ev->fd;
+    t->on_timeout = ev->on_timeout;
+    t->trigger    = ev->trigger;
+    t->timeout    = ev->timeout;
+    t->events     = ev->events;
 
     t->modified ++;
 
@@ -167,10 +167,10 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     }
     
     /* 如果存在超时时间，添加到超时队列中 */
-    if(t->time_out > 0) {
+    if(t->timeout > 0) {
         wbt_heap_node_t timeout_ev;
         timeout_ev.ev = t;
-        timeout_ev.time_out = t->time_out;
+        timeout_ev.timeout = t->timeout;
         timeout_ev.modified = t->modified;
         if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
             return NULL;
@@ -236,10 +236,10 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
     ev->modified ++;
 
     /* 如果存在超时时间，重新添加到超时队列中 */
-    if(ev->time_out >0) {
+    if(ev->timeout >0) {
         wbt_heap_node_t timeout_ev;
         timeout_ev.ev = ev;
-        timeout_ev.time_out = ev->time_out;
+        timeout_ev.timeout  = ev->timeout;
         timeout_ev.modified = ev->modified;
         if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
             return WBT_ERROR;
@@ -269,11 +269,11 @@ wbt_status wbt_event_dispatch() {;
     pid_t pid = getpid();
 
     wbt_event_t listen_ev;
-    listen_ev.callback = NULL;
+    listen_ev.on_timeout = NULL;
     listen_ev.trigger = wbt_on_connect;
     listen_ev.events = EPOLLIN | EPOLLET;
     listen_ev.fd = listen_fd;
-    listen_ev.time_out = 0;
+    listen_ev.timeout = 0;
     
     if( wbt_conf.process == 1 ) {
         wbt_log_debug("add listen event");
@@ -376,17 +376,17 @@ wbt_status wbt_event_dispatch() {;
         /* 删除超时事件 */
         if(timeout_events.size > 0) {
             wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
-            while(timeout_events.size > 0 && p->time_out <= cur_mtime) {
+            while(timeout_events.size > 0 && p->timeout <= cur_mtime) {
                 /* 尝试调用回调函数 */
-                if(p->modified == p->ev->modified && p->ev->callback != NULL) {
-                    p->ev->callback(p->ev);
+                if(p->modified == p->ev->modified && p->ev->on_timeout != NULL) {
+                    p->ev->on_timeout(p->ev);
                 }
                 /* 移除超时事件 */
                 wbt_heap_delete(&timeout_events);
                 p = wbt_heap_get(&timeout_events);
             }
             if(timeout_events.size > 0) {
-                timeout = p->time_out - cur_mtime;
+                timeout = p->timeout - cur_mtime;
             } else {
                 timeout = -1;
             }

@@ -21,6 +21,8 @@ typedef struct wbt_conf_s {
     int process;        // 工作进程数量
     int secure;         // 是否启用 https
     int sendfile;       // 是否使用 sendfile
+    int keep_alive_timeout; // 长连接超时时间 毫秒
+    int event_timeout;      // 事件超时时间 毫秒
     wbt_str_t user;     // 低权限用户
     wbt_str_t admin;    // 管理员联系方式
     wbt_str_t root;     // 网站根目录
