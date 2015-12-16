@@ -79,7 +79,7 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
     http->file.ptr = tmp.ptr;
     http->file.size = tmp.len;
 
-    wbt_http_process(http);
+    wbt_http_process(ev);
 
     /* 等待socket可写 */
     ev->on_timeout = wbt_conn_close;
@@ -98,7 +98,7 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
     wbt_http_t * http = ev->data.ptr;
 
     // 必须是 GET 请求
-    if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_GET], REQUEST_METHOD[METHOD_GET].len ) != 0 ) {
+    if( http->method != METHOD_GET ) {
         http->status = STATUS_405;
         return WBT_OK;
     }
@@ -134,7 +134,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
     wbt_http_t * http = ev->data.ptr;
 
     // 必须是 POST 请求
-    if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_POST], REQUEST_METHOD[METHOD_POST].len ) != 0 ) {
+    if( http->method != METHOD_POST ) {
         http->status = STATUS_405;
         return WBT_OK;
     }
@@ -147,9 +147,8 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
     }
     
     wbt_str_t id, data;
-    id.str = http->body.str;
-    id.len = 32;
-    data.str = http->body.str + 32;
+    wbt_offset_to_str(http->body, id, ev->buff.ptr);
+    data.str = id.str + 32;
     data.len = http->body.len - 32;
 
     // 通过ID 查找 ev
@@ -177,7 +176,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         tmp_http->file.ptr = tmp.ptr;
         tmp_http->file.size = tmp.len;
 
-        wbt_http_process(tmp_http);
+        wbt_http_process(p->ev);
         
         tmp_http->state = STATE_SENDING;
 
@@ -215,15 +214,19 @@ wbt_status wbt_module_helloworld_recv(wbt_event_t *ev) {
     wbt_str_t pull = wbt_string("/pull/");
     wbt_str_t push = wbt_string("/push/");
     wbt_str_t show = wbt_string("/show/");
-    if( wbt_strcmp( &http->uri, &api, api.len ) == 0 ) {
+    
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+    
+    if( wbt_strcmp( &http_uri, &api, api.len ) == 0 ) {
         return WBT_OK;
-    } else if( wbt_strcmp2( &http->uri, &login ) == 0 ) {
+    } else if( wbt_strcmp2( &http_uri, &login ) == 0 ) {
         return wbt_module_helloworld_login(ev);
-    } else if( wbt_strcmp2( &http->uri, &pull ) == 0 ) {
+    } else if( wbt_strcmp2( &http_uri, &pull ) == 0 ) {
         return wbt_module_helloworld_pull(ev);
-    } else if( wbt_strcmp2( &http->uri, &push ) == 0 ) {
+    } else if( wbt_strcmp2( &http_uri, &push ) == 0 ) {
         return wbt_module_helloworld_push(ev);
-    } else if( wbt_strcmp2( &http->uri, &show ) == 0 ) {
+    } else if( wbt_strcmp2( &http_uri, &show ) == 0 ) {
         return wbt_module_helloworld_show(ev);
     }
     
@@ -234,7 +237,7 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
     wbt_http_t * http = ev->data.ptr;
 
     // 必须是 POST 请求
-    if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_POST], REQUEST_METHOD[METHOD_POST].len ) != 0 ) {
+    if( http->method != METHOD_POST ) {
         http->status = STATUS_405;
         return WBT_OK;
     }
@@ -259,12 +262,14 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
     wbt_mem_t client;
     
     // 记录登录 ID
-    wbt_rbtree_node_t *node_id =  wbt_rbtree_get(&wbt_online_id_rbtree, &http->body);
+    wbt_str_t http_body;
+    wbt_offset_to_str(http->body, http_body, ev->buff.ptr);
+    wbt_rbtree_node_t *node_id =  wbt_rbtree_get(&wbt_online_id_rbtree, &http_body);
     if( node_id == NULL ) {
         wbt_malloc(&client, sizeof(wbt_online_t));
         wbt_memset(&client, 0);
 
-        node_id = wbt_rbtree_insert(&wbt_online_id_rbtree, &http->body);
+        node_id = wbt_rbtree_insert(&wbt_online_id_rbtree, &http_body);
         node_id->value = client;
     } else {
         client = node_id->value;
@@ -285,7 +290,7 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
     wbt_mem_t tmp;
     tmp.ptr = p->id;
     tmp.len = 32;
-    wbt_memcpy( &tmp, (wbt_mem_t *)&http->body, http->body.len );
+    wbt_memcpy( &tmp, (wbt_mem_t *)&http_body, http_body.len );
     p->online = cur_mtime;
     p->status = 1;
     
@@ -319,7 +324,7 @@ wbt_status wbt_module_helloworld_show(wbt_event_t *ev) {
     wbt_http_t * http = ev->data.ptr;
     
     // 必须是 GET 请求
-    if( wbt_strcmp(&http->method, &REQUEST_METHOD[METHOD_GET], REQUEST_METHOD[METHOD_GET].len ) != 0 ) {
+    if( http->method != METHOD_GET ) {
         http->status = STATUS_405;
         return WBT_OK;
     }

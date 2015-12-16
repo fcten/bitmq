@@ -23,11 +23,26 @@ typedef struct {
     u_char *str;
 } wbt_str_t;
 
+typedef struct {
+    int len;
+    int start;
+} wbt_str_offset_t;
+
+typedef union {
+    wbt_str_t s;
+    wbt_str_offset_t o;
+} wbt_str_union_t;
+
 #define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
 #define wbt_null_string     { 0, NULL }
 
 #define wbt_str_set(stri, text)  (stri)->len = sizeof(text) - 1; (stri)->str = (u_char *) text
 #define wbt_str_set_null(stri)   (stri)->len = 0; (stri)->str = NULL
+
+#define wbt_offset_to_str(offset, stri, p)   do { \
+    (stri).str = (char *)(p) + (offset).start; \
+    (stri).len = (offset).len; \
+} while(0);
 
 const char * wbt_stdstr(wbt_str_t * str);
 

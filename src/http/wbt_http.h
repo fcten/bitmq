@@ -160,18 +160,18 @@ typedef enum {
 
 typedef struct wbt_http_header_s {
     wbt_http_line_t key;
-    wbt_str_t name;
-    wbt_str_t value;
+    wbt_str_union_t name;
+    wbt_str_union_t value;
     struct wbt_http_header_s * next;
 } wbt_http_header_t;
     
 typedef struct wbt_http_s {
     /* 以下变量用于保存接收到的请求数据的解析结果 */
-    wbt_str_t method;
-    wbt_str_t uri;
-    wbt_str_t version;
+    wbt_http_method_t method;
+    wbt_str_offset_t uri;
+    wbt_str_offset_t version;
     wbt_http_header_t * headers;
-    wbt_str_t body;
+    wbt_str_offset_t body;
     /* 以下变量用于保存响应数据 */
     wbt_http_status_t status;
     wbt_file_t file;
@@ -206,11 +206,11 @@ wbt_status wbt_http_init();
 wbt_status wbt_http_exit();
 wbt_status wbt_http_check_header_end( wbt_event_t * );
 wbt_status wbt_http_parse_request_header( wbt_event_t * );
-wbt_status wbt_http_check_body_end( wbt_http_t* );
+wbt_status wbt_http_check_body_end( wbt_event_t * );
 wbt_status wbt_http_set_header( wbt_http_t*, wbt_http_line_t, wbt_str_t* );
-wbt_status wbt_http_generate_response_header( wbt_http_t* );
+wbt_status wbt_http_generate_response_header( wbt_http_t * );
 
-wbt_status wbt_http_process( wbt_http_t * );
+wbt_status wbt_http_process( wbt_event_t * );
 
 wbt_status wbt_http_on_conn( wbt_event_t * );
 wbt_status wbt_http_on_recv( wbt_event_t * );
