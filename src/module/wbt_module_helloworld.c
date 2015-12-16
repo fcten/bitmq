@@ -83,7 +83,7 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
 
     /* 等待socket可写 */
     ev->on_timeout = wbt_conn_close;
-    ev->trigger = wbt_on_send;
+    ev->on_send = wbt_on_send;
     ev->events = EPOLLOUT | EPOLLET;
     ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
@@ -183,7 +183,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
 
         /* 等待socket可写 */
         p->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
-        p->ev->trigger = wbt_on_send;
+        p->ev->on_send = wbt_on_send;
         p->ev->events = EPOLLOUT | EPOLLET;
         p->ev->timeout = cur_mtime + wbt_conf.event_timeout;
 

@@ -94,7 +94,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
         /*打印所有加密算法的信息(可选)*/ 
         printf ("SSL connection using %s\n", SSL_get_cipher (ev->ssl));
 
-        ev->trigger = wbt_on_recv;
+        ev->on_recv = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
         ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
@@ -111,7 +111,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     wbt_log_debug("Error: %s", ERR_reason_error_string(ERR_get_error()));
 
     if( err == SSL_ERROR_WANT_READ ) {
-        ev->trigger = wbt_ssl_handshake;
+        ev->on_recv = wbt_ssl_handshake;
         ev->events = EPOLLIN | EPOLLET;
         ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
@@ -121,7 +121,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
         
         return WBT_OK;
     } else if( err == SSL_ERROR_WANT_WRITE ) {
-        ev->trigger = wbt_ssl_handshake;
+        ev->on_send = wbt_ssl_handshake;
         ev->events = EPOLLOUT | EPOLLET;
         ev->timeout = cur_mtime + wbt_conf.event_timeout;
 

@@ -32,7 +32,8 @@ typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
     SSL *ssl;                                       /* 使用加密连接 */
     wbt_status (*on_timeout)(struct wbt_event_s *); /* 超时回调函数 */
-    wbt_status (*trigger)(struct wbt_event_s *);    /* 触发回调函数 */
+    wbt_status (*on_recv)(struct wbt_event_s *);    /* 触发回调函数 */
+    wbt_status (*on_send)(struct wbt_event_s *);    /* 触发回调函数 */
     time_t timeout;                                 /* 事件超时时间 */
     unsigned int events;                            /* 事件类型 */
     unsigned int modified;                          /* 事件版本 */

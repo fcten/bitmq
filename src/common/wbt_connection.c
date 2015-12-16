@@ -99,7 +99,8 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 
         wbt_event_t *p_ev, tmp_ev;
         tmp_ev.on_timeout = wbt_conn_close;
-        tmp_ev.trigger = wbt_on_recv;
+        tmp_ev.on_recv = wbt_on_recv;
+        tmp_ev.on_send = NULL;
         tmp_ev.events = EPOLLIN | EPOLLET;
         tmp_ev.fd = conn_sock;
         tmp_ev.timeout = cur_mtime + wbt_conf.event_timeout;

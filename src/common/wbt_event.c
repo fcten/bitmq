@@ -142,7 +142,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     
     t->fd         = ev->fd;
     t->on_timeout = ev->on_timeout;
-    t->trigger    = ev->trigger;
+    t->on_recv    = ev->on_recv;
+    t->on_send    = ev->on_send;
     t->timeout    = ev->timeout;
     t->events     = ev->events;
 
@@ -270,7 +271,8 @@ wbt_status wbt_event_dispatch() {;
 
     wbt_event_t listen_ev;
     listen_ev.on_timeout = NULL;
-    listen_ev.trigger = wbt_on_connect;
+    listen_ev.on_recv = wbt_on_connect;
+    listen_ev.on_send = NULL;
     listen_ev.events = EPOLLIN | EPOLLET;
     listen_ev.fd = listen_fd;
     listen_ev.timeout = 0;
@@ -336,8 +338,8 @@ wbt_status wbt_event_dispatch() {;
                 if( ev->fd == listen_fd ) {
                     //wbt_log_add("new conn get by %d\n", pid);
                     
-                    if( ev->trigger(ev) != WBT_OK ) {
-                        wbt_log_add("call %p failed\n", ev->trigger);
+                    if( ev->on_recv(ev) != WBT_OK ) {
+                        wbt_log_add("call %p failed\n", ev->on_recv);
                         return WBT_ERROR;
                     }
 
@@ -361,15 +363,16 @@ wbt_status wbt_event_dispatch() {;
             /* 尝试调用该事件的回调函数 */
             if( ev->fd == listen_fd ) {
                 continue;
-            } else if ( ev->trigger != NULL ) {
-                if( ev->trigger(ev) != WBT_OK ) {
-                    wbt_log_add("call %p failed\n", ev->trigger);
+            } else if ((events[i].events & EPOLLIN) && ev->on_recv) {
+                if( ev->on_recv(ev) != WBT_OK ) {
+                    wbt_log_add("call %p failed\n", ev->on_recv);
                     return WBT_ERROR;
                 }
-            } else if (events[i].events & EPOLLIN) {
-
-            } else if (events[i].events & EPOLLOUT) {
-
+            } else if ((events[i].events & EPOLLOUT) && ev->on_send) {
+                if( ev->on_send(ev) != WBT_OK ) {
+                    wbt_log_add("call %p failed\n", ev->on_send);
+                    return WBT_ERROR;
+                }
             }
         }
         

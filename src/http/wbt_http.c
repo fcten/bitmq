@@ -196,7 +196,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         http = ev->data.ptr;
         http->state = STATE_SEND_COMPLETED;
 
-        ev->trigger = wbt_on_recv;
+        ev->on_recv = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
         ev->timeout = cur_mtime + wbt_conf.keep_alive_timeout;
 
@@ -749,7 +749,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
             http->state = STATE_SENDING;
 
             /* 等待socket可写 */
-            ev->trigger = wbt_on_send;
+            ev->on_send = wbt_on_send;
             ev->events = EPOLLOUT | EPOLLET;
             ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
