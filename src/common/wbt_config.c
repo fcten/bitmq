@@ -243,7 +243,11 @@ static wbt_status wbt_conf_parse(wbt_mem_t * conf) {
                         /* 已有的值 */
                         wbt_free(&option->value);
                     }
-                    wbt_malloc(&option->value, value.len);
+                    if( wbt_malloc(&option->value, value.len) != WBT_OK ) {
+                        /* 这里返回 WBT_ERROR 会导致提示配置文件语法错误，
+                         * 但事实上是由于内存不足导致的。在启动阶段出现这种情况的概率不大，所以就这样吧。 */
+                        return WBT_ERROR;
+                    }
                     /* 直接把 (wbt_str_t *) 转换为 (wbt_mem_t *) 会导致越界访问，
                      * 不过目前我认为这不是问题 */
                     wbt_memcpy(&option->value, (wbt_mem_t *)&value, value.len);
@@ -282,10 +286,13 @@ wbt_status wbt_conf_reload() {
     }
     wbt_config_file.size = statbuff.st_size;
 
-    wbt_malloc(&wbt_config_file_content, wbt_config_file.size);
+    if( wbt_malloc(&wbt_config_file_content, wbt_config_file.size) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     if( read( wbt_config_file.fd,
             wbt_config_file_content.ptr,
             wbt_config_file_content.len) != wbt_config_file_content.len ) {
+        wbt_log_add("Read config file failed\n");
         return WBT_ERROR;
     }
     

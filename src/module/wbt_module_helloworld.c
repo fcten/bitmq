@@ -79,16 +79,18 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
     http->file.ptr = tmp.ptr;
     http->file.size = tmp.len;
 
-    wbt_http_process(ev);
+    if( wbt_http_process(ev) != WBT_OK ) {
+        wbt_conn_close(ev);
+    } else {
+        /* 等待socket可写 */
+        ev->on_timeout = wbt_conn_close;
+        ev->on_send = wbt_on_send;
+        ev->events = EPOLLOUT | EPOLLET;
+        ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
-    /* 等待socket可写 */
-    ev->on_timeout = wbt_conn_close;
-    ev->on_send = wbt_on_send;
-    ev->events = EPOLLOUT | EPOLLET;
-    ev->timeout = cur_mtime + wbt_conf.event_timeout;
-
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
     }
 
     return WBT_OK;
@@ -176,21 +178,24 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
         tmp_http->file.ptr = tmp.ptr;
         tmp_http->file.size = tmp.len;
 
-        wbt_http_process(p->ev);
-        
-        tmp_http->state = STATE_SENDING;
+        if( wbt_http_process(p->ev) != WBT_OK ) {
+            wbt_conn_close(p->ev);
+        } else {
+            tmp_http->state = STATE_SENDING;
 
-        /* 等待socket可写 */
-        p->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
-        p->ev->on_send = wbt_on_send;
-        p->ev->events = EPOLLOUT | EPOLLET;
-        p->ev->timeout = cur_mtime + wbt_conf.event_timeout;
+            /* 等待socket可写 */
+            p->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
+            p->ev->on_send = wbt_on_send;
+            p->ev->events = EPOLLOUT | EPOLLET;
+            p->ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
-        if(wbt_event_mod(p->ev) != WBT_OK) {
-            return WBT_ERROR;
+            if(wbt_event_mod(p->ev) != WBT_OK) {
+                return WBT_ERROR;
+            }
+
+            http->status = STATUS_200;
         }
-        
-        http->status = STATUS_200;
+
         return WBT_OK;
     } else {
         // 否则返回失败

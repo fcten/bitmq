@@ -95,60 +95,62 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         wbt_log_debug("file path too long");
 
         tmp.fd = -3;
-    } else {
-        wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
-        if( file == NULL ) {
-            struct stat statbuff;  
-            if(stat(file_path->str, &statbuff) < 0){  
-                /* 文件访问失败 */
+        
+        return &tmp;
+    }
+
+    wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
+    if( file == NULL ) {
+        struct stat statbuff;  
+        if(stat(file_path->str, &statbuff) < 0){  
+            /* 文件访问失败 */
+            tmp.size = 0;
+            if( errno == ENOENT ) {
+                tmp.fd   = -1;  /* 文件不存在 */
+            } else {
+                tmp.fd   = -2;  /* 权限不足或者其他错误 */
+            }
+            wbt_log_debug("stat: %s", strerror(errno));
+        }else{  
+            if( S_ISDIR(statbuff.st_mode) ) {
+                 /* 尝试打开的是目录 */
                 tmp.size = 0;
-                if( errno == ENOENT ) {
-                    tmp.fd   = -1;  /* 文件不存在 */
+                tmp.fd   = -2;
+            } else {
+                /* 尝试打开的是文件 */
+                tmp.size = statbuff.st_size;
+                tmp.fd = open(file_path->str, O_RDONLY);
+                tmp.last_modified =  statbuff.st_mtime;
+
+                if( tmp.fd > 0 ) {
+                    file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
+
+                    wbt_malloc(&file->value, sizeof(wbt_file_t));
+                    wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+
+                    tmp_file->fd = tmp.fd;
+                    tmp_file->refer = 1;
+                    tmp_file->size = tmp.size;
+                    tmp_file->last_modified = tmp.last_modified;
+
+                    wbt_log_debug("open file: %d %zd", tmp.fd, tmp.size);
                 } else {
-                    tmp.fd   = -2;  /* 权限不足或者其他错误 */
-                }
-                wbt_log_debug("stat: %s", strerror(errno));
-            }else{  
-                if( S_ISDIR(statbuff.st_mode) ) {
-                     /* 尝试打开的是目录 */
                     tmp.size = 0;
-                    tmp.fd   = -2;
-                } else {
-                    /* 尝试打开的是文件 */
-                    tmp.size = statbuff.st_size;
-                    tmp.fd = open(file_path->str, O_RDONLY);
-                    tmp.last_modified =  statbuff.st_mtime;
-
-                    if( tmp.fd > 0 ) {
-                        file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
-
-                        wbt_malloc(&file->value, sizeof(wbt_file_t));
-                        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
-
-                        tmp_file->fd = tmp.fd;
-                        tmp_file->refer = 1;
-                        tmp_file->size = tmp.size;
-                        tmp_file->last_modified = tmp.last_modified;
-
-                        wbt_log_debug("open file: %d %zd", tmp.fd, tmp.size);
+                    if( errno == EACCES ) {
+                        tmp.fd   = -2;
                     } else {
-                        tmp.size = 0;
-                        if( errno == EACCES ) {
-                            tmp.fd   = -2;
-                        } else {
-                            tmp.fd   = -1;
-                        }
+                        tmp.fd   = -1;
                     }
                 }
             }
-        } else {
-            wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
-            tmp_file->refer ++;
-            
-            tmp.fd = tmp_file->fd;
-            tmp.size = tmp_file->size;
-            tmp.last_modified = tmp_file->last_modified;
         }
+    } else {
+        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+        tmp_file->refer ++;
+
+        tmp.fd = tmp_file->fd;
+        tmp.size = tmp_file->size;
+        tmp.last_modified = tmp_file->last_modified;
     }
 
     return &tmp;

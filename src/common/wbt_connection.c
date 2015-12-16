@@ -138,9 +138,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         /* TODO realloc 意味着潜在的内存拷贝行为，目前的代码在接收大请求时效率很低 */
         if( wbt_realloc(&ev->buff, ev->buff.len + 4096) != WBT_OK ) {
             /* 内存不足 */
-            wbt_log_add("wbt_realloc failed\n");
+            wbt_conn_close(ev);
 
-            return WBT_ERROR;
+            return WBT_OK;
         }
         nread = wbt_ssl_read(ev, ev->buff.ptr + ev->buff.len - 4096, 4096);
         if(nread < 0) {

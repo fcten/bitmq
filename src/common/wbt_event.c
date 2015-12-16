@@ -61,7 +61,9 @@ wbt_status wbt_event_init() {
     
     /* 根据端口号创建锁文件 */
     wbt_mem_t lock_file;
-    wbt_malloc(&lock_file, sizeof("/tmp/.wbt_accept_lock_00000"));
+    if( wbt_malloc(&lock_file, sizeof("/tmp/.wbt_accept_lock_00000")) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     wbt_sprintf(&lock_file, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
     
     if( ( wbt_lock_accept = wbt_lock_create(lock_file.ptr) ) <= 0 ) {
@@ -104,6 +106,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         while(tmp_mem->next != NULL) tmp_mem = tmp_mem->next;
 
         /* 申请空间 */
+        // TODO 需要正确地处理内存申请失败的情况，目前会产生内存泄漏
         if( wbt_malloc(&new_mem, sizeof(wbt_mem_t)) == WBT_OK ) {
             if( wbt_malloc(new_mem.ptr, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) == WBT_OK ) {
                 if( wbt_realloc(&wbt_events.available, (wbt_events.max + WBT_EVENT_LIST_SIZE) * sizeof(wbt_event_t *)) == WBT_OK ) {

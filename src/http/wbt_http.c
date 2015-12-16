@@ -605,7 +605,10 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
         header = header->next;
     }
     mem_len += http->resp_body.len;
-    wbt_malloc( &http->response, mem_len );
+    
+    if( wbt_malloc( &http->response, mem_len ) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     
     /* 生成响应消息头 */
     wbt_str_t dest;
@@ -759,17 +762,19 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
     switch( http->state ) {
         case STATE_READY_TO_SEND:
             /* 需要返回响应 */
-            wbt_http_process(ev);
+            if( wbt_http_process(ev) != WBT_OK ) {
+                wbt_conn_close(ev);
+            } else {
+                http->state = STATE_SENDING;
 
-            http->state = STATE_SENDING;
+                /* 等待socket可写 */
+                ev->on_send = wbt_on_send;
+                ev->events = EPOLLOUT | EPOLLET;
+                ev->timeout = cur_mtime + wbt_conf.event_timeout;
 
-            /* 等待socket可写 */
-            ev->on_send = wbt_on_send;
-            ev->events = EPOLLOUT | EPOLLET;
-            ev->timeout = cur_mtime + wbt_conf.event_timeout;
-
-            if(wbt_event_mod(ev) != WBT_OK) {
-                return WBT_ERROR;
+                if(wbt_event_mod(ev) != WBT_OK) {
+                    return WBT_ERROR;
+                }
             }
 
             break;
@@ -836,7 +841,11 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
     }
     wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
     
-    wbt_http_generate_response_header( http );
+    if( wbt_http_generate_response_header( http ) != WBT_OK ) {
+        /* 内存不足，生成响应消息头失败 */
+        return WBT_ERROR;
+        
+    }
     wbt_log_debug("%.*s", http->response.len, (char *)http->response.ptr);
     
     return WBT_OK;
