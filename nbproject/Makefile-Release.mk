@@ -60,7 +60,7 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=-fgnu89-inline
+CFLAGS=
 
 # CC Compiler Flags
 CCFLAGS=

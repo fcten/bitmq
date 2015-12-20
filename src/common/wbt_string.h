@@ -53,10 +53,13 @@ int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2);
 
-inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
-inline unsigned int wbt_strlen(const char *s);
+void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
 
-inline int wbt_atoi(wbt_str_t * str);
+static inline unsigned int wbt_strlen(const char *s) {
+    return strlen(s);
+}
+
+int wbt_atoi(wbt_str_t * str);
 
 #ifdef	__cplusplus
 }

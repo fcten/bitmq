@@ -18,6 +18,6 @@ int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf) {
     return readlink(tmp, buf->ptr, buf->len);
 }
 
-inline int wbt_getopt(int argc,char * const argv[ ],const char * optstring) {
+int wbt_getopt(int argc,char * const argv[ ],const char * optstring) {
     return getopt(argc,argv,optstring); 
 }  

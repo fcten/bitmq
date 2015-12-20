@@ -23,12 +23,71 @@ typedef struct wbt_mem_s {
     struct wbt_mem_s *next; /* 指向下一个内存块 TODO 移除该属性 */
 } wbt_mem_t;
 
-inline wbt_status wbt_malloc(wbt_mem_t * p, size_t len);
-inline wbt_status wbt_calloc(wbt_mem_t * p, size_t len, size_t size);
-inline void wbt_free(wbt_mem_t * p);
-inline void wbt_memset(wbt_mem_t * p, int ch);
-inline wbt_status wbt_realloc(wbt_mem_t * p, size_t len);
-inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len);
+static inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
+    p->ptr = malloc(len);
+    if(p->ptr != NULL) {
+        p->len = len;
+        p->next = NULL;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
+}
+
+static inline wbt_status wbt_calloc(wbt_mem_t *p, size_t len, size_t size) {
+    p->ptr = calloc(len, size);
+    if(p->ptr != NULL) {
+        p->len = len;
+        p->next = NULL;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
+}
+
+static inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {
+    void *tmp = realloc(p->ptr, len);
+    /* bugfix: len == 0 时相当于执行 free，此时 tmp == NULL */
+    if(tmp != NULL || len == 0) {
+        p->ptr = tmp;
+        p->len = len;
+        
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
+}
+
+static inline void wbt_free(wbt_mem_t *p) {
+    if( p->len > 0 && p->ptr != NULL ) {
+        free(p->ptr);
+        p->ptr = NULL;
+        p->len = 0;
+    }
+}
+
+static inline void wbt_memset(wbt_mem_t *p, int ch) {
+    memset(p->ptr, ch, p->len);
+}
+
+static inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len) {
+    if( dest == NULL ) return;
+    if( src == NULL ) {
+        if( dest->len >= len ) {
+            memset( dest->ptr, '\0', len);
+        } else {
+            memset( dest->ptr, '\0', dest->len);
+        }
+    } else {
+        if( dest->len >= len ) {
+            memcpy( dest->ptr, src->ptr, len );
+        } else {
+            memcpy( dest->ptr, src->ptr, dest->len );
+        }
+    }
+}
 
 #ifdef	__cplusplus
 }

@@ -143,7 +143,7 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
 }
 
 /* 连接字符串 */
-inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
+void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     /* 防止缓冲区溢出 */
     int src_len = src->len;
     if( dest->len + src->len > max_len ) src_len = max_len - dest->len;
@@ -155,11 +155,7 @@ inline void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     dest->len += src_len;
 }
 
-inline unsigned int wbt_strlen(const char *s) {
-    return strlen(s);
-}
-
-inline int wbt_atoi(wbt_str_t * str) {
+int wbt_atoi(wbt_str_t * str) {
     /* warning: A string of more than 16 characters is not supported */
     if(str->len>=16) {
         return -1;
