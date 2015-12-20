@@ -211,7 +211,7 @@ int wbt_ssl_read(wbt_event_t *ev, void *buf, int num) {
     if( wbt_conf.secure ) {
         return SSL_read(ev->ssl, buf, num);
     } else {
-        return read(ev->fd, buf, num);
+        return recv(ev->fd, buf, num, 0);
     }
 }
 
@@ -219,7 +219,7 @@ int wbt_ssl_write(wbt_event_t *ev, const void *buf, int num) {
     if( wbt_conf.secure ) {
         return SSL_write(ev->ssl, buf, num);
     } else {
-        return write(ev->fd, buf, num);
+        return send(ev->fd, buf, num, 0);
     }
 }
 

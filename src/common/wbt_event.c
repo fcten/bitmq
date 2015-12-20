@@ -35,7 +35,9 @@ wbt_heap_t timeout_events;
 
 /* 初始化事件队列 */
 wbt_status wbt_event_init() {
-    if( wbt_malloc(&wbt_events.pool, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) != WBT_OK ) {
+    wbt_list_init(&wbt_events.node.list);
+    
+    if( wbt_malloc(&wbt_events.node.pool, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) != WBT_OK ) {
         return WBT_ERROR;
     }
     if( wbt_malloc(&wbt_events.available, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t *)) != WBT_OK ) {
@@ -45,7 +47,7 @@ wbt_status wbt_event_init() {
     wbt_events.top = WBT_EVENT_LIST_SIZE - 1;
     
     /* 把所有可用内存压入栈内 */
-    wbt_event_t *tmp_ev = wbt_events.pool.ptr;
+    wbt_event_t *tmp_ev = wbt_events.node.pool.ptr;
     wbt_event_t **tmp_ev_p = wbt_events.available.ptr;
     int i;
     for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
@@ -94,50 +96,57 @@ wbt_status wbt_event_exit() {
     return WBT_OK;
 }
 
+wbt_status wbt_event_resize() {
+    wbt_mem_t tmp;
+
+    if( wbt_malloc(&tmp, sizeof(wbt_event_pool_node_t)) != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    wbt_event_pool_node_t *new_node = tmp.ptr;
+
+    if( wbt_malloc(&new_node->pool, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) != WBT_OK ) {
+        wbt_free(&tmp);
+        return WBT_ERROR;
+    }
+    
+    if( wbt_realloc(&wbt_events.available, (wbt_events.max + WBT_EVENT_LIST_SIZE) * sizeof(wbt_event_t *)) != WBT_OK ) {
+        wbt_free(&new_node->pool);
+        wbt_free(&tmp);
+        return WBT_ERROR;
+    }
+    
+    /* 将新的内存块加入到链表末尾 */
+    wbt_list_add_tail(&new_node->list, &wbt_events.node.list);
+
+    /* 把新的可用内存压入栈内 */
+    wbt_event_t *tmp_ev = new_node->pool.ptr;
+    wbt_event_t **tmp_ev_p = wbt_events.available.ptr;
+    int i;
+    for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
+        tmp_ev_p[++wbt_events.top] = tmp_ev + i;
+    }
+
+    wbt_events.max += WBT_EVENT_LIST_SIZE;
+    
+    return WBT_OK;
+}
+
 /* 添加事件 */
 wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     if( wating_to_exit ) return NULL;
 
     if( wbt_events.top == 0 ) {
         /* 事件池已满,尝试动态扩充 */
-        wbt_mem_t *tmp_mem, new_mem;
-        int op_status = 0;
-        tmp_mem = &wbt_events.pool;
-        while(tmp_mem->next != NULL) tmp_mem = tmp_mem->next;
-
-        /* 申请空间 */
-        // TODO 需要正确地处理内存申请失败的情况，目前会产生内存泄漏
-        if( wbt_malloc(&new_mem, sizeof(wbt_mem_t)) == WBT_OK ) {
-            if( wbt_malloc(new_mem.ptr, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) == WBT_OK ) {
-                if( wbt_realloc(&wbt_events.available, (wbt_events.max + WBT_EVENT_LIST_SIZE) * sizeof(wbt_event_t *)) == WBT_OK ) {
-                    /* 将新的内存块加入到链表末尾 */
-                    tmp_mem->next = new_mem.ptr;
-                     /* 把新的可用内存压入栈内 */
-                    wbt_event_t *tmp_ev = tmp_mem->next->ptr;
-                    wbt_event_t **tmp_ev_p = wbt_events.available.ptr;
-                    int i;
-                    for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
-                        wbt_events.top ++;
-                        tmp_ev_p[wbt_events.top] = tmp_ev + i;
-                    }
-
-                    wbt_events.max += WBT_EVENT_LIST_SIZE;
-
-                    op_status = 1;
-                }
-            }
-        }
-        
-        if(op_status == 0) {
+        if(wbt_event_resize() != WBT_OK) {
             wbt_log_add("event pool overflow\n");
 
             return NULL;
         } else {
-            wbt_log_debug("event pool resize to %d", wbt_events.max);
+            wbt_log_add("event pool resize to %u\n", wbt_events.max);
         }
     }
     
-    wbt_log_debug("event add, fd %d, addr %p, %ud enents.", ev->fd ,ev, wbt_events.max-wbt_events.top);
+    wbt_log_debug("event add, fd %d, addr %p, %u events.", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
     wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
@@ -193,7 +202,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    wbt_log_debug("event del, fd %d, addr %p, %ud events", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    wbt_log_debug("event del, fd %d, addr %p, %u events", ev->fd, ev, wbt_events.max-wbt_events.top-2);
 
     /* 从事件池中移除 */
     wbt_event_t **tmp_ev = wbt_events.available.ptr;
@@ -366,6 +375,8 @@ wbt_status wbt_event_dispatch() {;
             /* 尝试调用该事件的回调函数 */
             if( ev->fd == listen_fd ) {
                 continue;
+            } else if (events[i].events & EPOLLRDHUP) {
+                wbt_conn_close(ev);
             } else if ((events[i].events & EPOLLIN) && ev->on_recv) {
                 if( ev->on_recv(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_recv);

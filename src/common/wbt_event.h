@@ -27,6 +27,7 @@ extern "C" {
 
 #include "../webit.h"
 #include "wbt_memory.h"
+#include "wbt_list.h"
 
 typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
@@ -41,12 +42,19 @@ typedef struct wbt_event_s {
     wbt_mem_t data;                                 /* 供模块使用的自定义指针 */
 } wbt_event_t;
 
+typedef struct wbt_event_pool_node_s {
+    wbt_mem_t pool;
+    wbt_list_t list;
+} wbt_event_pool_node_t;
+
 typedef struct wbt_event_pool_s {
-    wbt_mem_t pool;                             /* 一次性申请的大内存块 */
+    wbt_event_pool_node_t node;                 /* 一次性申请的大内存块 */
     wbt_mem_t available;                        /* 栈，保存可用的内存块 */
     unsigned int max;                           /* 当前可以容纳的事件数 */
     unsigned int top;                           /* 当前栈顶的位置 */
 } wbt_event_pool_t; 
+
+
 
 /* 初始化事件池 */
 wbt_status wbt_event_init();

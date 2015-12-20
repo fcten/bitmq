@@ -28,7 +28,7 @@ char** wbt_argv;
 int wating_to_exit = 0;
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
-    wbt_log_debug("received singal: %d", signo);
+    wbt_log_add("received singal: %d\n", signo);
 
     pid_t pid;
     int   stat;
@@ -54,6 +54,12 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
             /* 仅调试模式，退出 */
             wating_to_exit = 1;
             break;
+        case SIGPIPE:
+            /* 对一个已经收到FIN包的socket调用write方法时, 如果发送缓冲没问题, 
+             * 会返回正确写入(发送). 但发送的报文会导致对端发送RST报文, 因为对端的socket
+             * 已经调用了close, 完全关闭, 既不发送, 也不接收数据. 所以, 第二次调用write方法
+             * (假设在收到RST之后), 会生成SIGPIPE信号 */
+            break;
     }
 }
 
@@ -74,6 +80,7 @@ void wbt_worker_process() {
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGPIPE);
 
     if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
         wbt_log_add("sigprocmask() failed\n");
@@ -81,6 +88,7 @@ void wbt_worker_process() {
 
     sigaction(SIGINT, &act, NULL); /* 退出信号 */
     sigaction(SIGTERM, &act, NULL); /* 退出信号 */
+    sigaction(SIGPIPE, &act, NULL); /* 忽略 */
     
     wbt_log_add("Webit startup (pid: %d)\n", getpid());
 
@@ -129,6 +137,7 @@ void wbt_master_process() {
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGPIPE);
 
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         wbt_log_add("sigprocmask() failed\n");
@@ -138,7 +147,8 @@ void wbt_master_process() {
     
     sigaction(SIGCHLD, &act, NULL); /* 子进程退出 */
     sigaction(SIGTERM, &act, NULL); /* 命令 Webit 退出 */
-    /* 自定义的 reload 信号 */
+    sigaction(SIGPIPE, &act, NULL); /* 忽略 */
+    /* TODO: 自定义的 reload 信号 */
 
     time_t prev_time;
     int count = 0;
