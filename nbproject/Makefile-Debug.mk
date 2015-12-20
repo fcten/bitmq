@@ -60,7 +60,7 @@ OBJECTFILES= \
 
 
 # C Compiler Flags
-CFLAGS=
+CFLAGS=-pg
 
 # CC Compiler Flags
 CCFLAGS=
@@ -81,7 +81,7 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -ldl -lssl -lcrypto
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -ldl -lssl -lcrypto -pg
 
 ${OBJECTDIR}/src/common/wbt_config.o: src/common/wbt_config.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common

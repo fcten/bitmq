@@ -246,6 +246,13 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
     }
     
     /* 使超时队列中的事件过期 */
+    /* 采用这样的设计，而不是从超时队列中删除对应事件，是因为从最小堆中删除特定事件
+     * 需要首先知道该事件的位置，而由于最小堆中元素的位置在频繁地变化，我们将不得不
+     * 在每次删除前搜索整个堆。
+     * 不过，这样做的坏处是，每一个请求都会产生数个超时事件并残留在超时队列中 15 秒
+     * （默认的 event_timeout 设定），对于一个繁忙的服务器，这意味着数百万个已失效的
+     * 超时事件会残留在超时队列中，使得插入操作花费额外的时间，并占用额外的服务器内
+     * 存。 */
     ev->modified ++;
 
     /* 如果存在超时时间，重新添加到超时队列中 */
@@ -393,7 +400,8 @@ wbt_status wbt_event_dispatch() {;
         /* 删除超时事件 */
         if(timeout_events.size > 0) {
             wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
-            while(timeout_events.size > 0 && p->timeout <= cur_mtime) {
+            while(timeout_events.size > 0 &&
+                    (p->timeout <= cur_mtime || p->modified != p->ev->modified)) {
                 /* 尝试调用回调函数 */
                 if(p->modified == p->ev->modified && p->ev->on_timeout != NULL) {
                     p->ev->on_timeout(p->ev);
