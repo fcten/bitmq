@@ -150,6 +150,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
     
     wbt_str_t id, data;
     wbt_offset_to_str(http->body, id, ev->buff.ptr);
+    id.len = 32;
     data.str = id.str + 32;
     data.len = http->body.len - 32;
 

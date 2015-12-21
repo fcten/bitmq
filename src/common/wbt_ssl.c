@@ -33,7 +33,7 @@ wbt_status wbt_ssl_init() {
     SSL_load_error_strings();     /*为打印调试信息作准备*/
     OpenSSL_add_ssl_algorithms(); /*初始化*/
     
-    ctx = SSL_CTX_new(TLSv1_2_server_method());
+    ctx = SSL_CTX_new(SSLv23_server_method());
     if (!ctx) {
         wbt_log_add("SSL_CTX_new failed\n");
         return WBT_ERROR;
