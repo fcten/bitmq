@@ -43,6 +43,14 @@ wbt_status wbt_conn_init() {
         return WBT_ERROR;
     }
     
+    /* 在重启程序以及进行热更新时，避免 TIME_WAIT 和 CLOSE_WAIT 状态的连接导致 bind 失败 */
+    int on = 1; 
+    if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
+        wbt_log_add("set SO_REUSEADDR failed\n");  
+        
+        return WBT_ERROR;
+    }
+    
     /* bind & listen */    
     struct sockaddr_in sin;
     bzero(&sin, sizeof(sin));
