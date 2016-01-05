@@ -5,6 +5,8 @@
  * Created on 2014年9月1日, 上午11:54
  */
 
+#include "../os/linux/wbt_os_util.h"
+
 #include "wbt_event.h"
 #include "wbt_string.h"
 #include "wbt_heap.h"
@@ -23,7 +25,7 @@ wbt_module_t wbt_module_event = {
 int epoll_fd;
 extern int listen_fd;
 
-extern int wating_to_exit;
+extern sig_atomic_t wbt_wating_to_exit;
 
 int wbt_lock_accept;
 
@@ -133,7 +135,7 @@ wbt_status wbt_event_resize() {
 
 /* 添加事件 */
 wbt_event_t * wbt_event_add(wbt_event_t *ev) {
-    if( wating_to_exit ) return NULL;
+    if( wbt_wating_to_exit ) return NULL;
 
     if( wbt_events.top == 0 ) {
         /* 事件池已满,尝试动态扩充 */
@@ -230,7 +232,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
-    if( wating_to_exit ) return WBT_OK;
+    if( wbt_wating_to_exit ) return WBT_OK;
     //wbt_log_debug("event mod, fd %d, addr %d",ev->fd,ev);
 
     /* 修改epoll事件 */
@@ -304,7 +306,7 @@ wbt_status wbt_event_dispatch() {;
         is_accept_add = 1;
     }
     
-    while (!wating_to_exit) {
+    while (!wbt_wating_to_exit) {
         /* 把监听socket加入epoll中 */
         if( !is_accept_add ) {
             if( wbt_events.max-wbt_events.top == 2 ) { // TODO 判断是否有请求正在处理

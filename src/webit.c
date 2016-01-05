@@ -24,8 +24,10 @@
 
 int wbt_argc;
 char** wbt_argv;
+char** wbt_os_argv;
 
-int wating_to_exit = 0;
+sig_atomic_t wbt_wating_to_exit = 0;
+sig_atomic_t wbt_wating_to_update = 0;
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_add("received singal: %d\n", signo);
@@ -47,18 +49,28 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
         case SIGTERM:
             /* 父进程：停止所有子进程并退出 */
             /* 子进程：停止事件循环并退出 */
-            wating_to_exit = 1;
+            wbt_wating_to_exit = 1;
             break;
-            /* 仅父进程：reload 信号 */
         case SIGINT:
             /* 仅调试模式，退出 */
-            wating_to_exit = 1;
+            wbt_wating_to_exit = 1;
             break;
         case SIGPIPE:
             /* 对一个已经收到FIN包的socket调用write方法时, 如果发送缓冲没问题, 
              * 会返回正确写入(发送). 但发送的报文会导致对端发送RST报文, 因为对端的socket
              * 已经调用了close, 完全关闭, 既不发送, 也不接收数据. 所以, 第二次调用write方法
              * (假设在收到RST之后), 会生成SIGPIPE信号 */
+            break;
+        case SIGHUP:
+            /* 仅父进程：reload 信号 */
+            break;
+        case SIGUSR1:
+            /* 重新打开日志文件 */
+            break;
+        case SIGUSR2:
+            /* 平滑的升级二进制文件 */
+            wbt_wating_to_exit = 1;
+            wbt_wating_to_update = 1;
             break;
     }
 }
@@ -138,6 +150,7 @@ void wbt_master_process() {
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGTERM);
     sigaddset(&set, SIGPIPE);
+    sigaddset(&set, SIGUSR2);
 
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         wbt_log_add("sigprocmask() failed\n");
@@ -148,11 +161,12 @@ void wbt_master_process() {
     sigaction(SIGCHLD, &act, NULL); /* 子进程退出 */
     sigaction(SIGTERM, &act, NULL); /* 命令 Webit 退出 */
     sigaction(SIGPIPE, &act, NULL); /* 忽略 */
+    sigaction(SIGUSR2, &act, NULL); /* 更新二进制文件 */
     /* TODO: 自定义的 reload 信号 */
 
     time_t prev_time;
     int count = 0;
-    while(!wating_to_exit) {
+    while(!wbt_wating_to_exit) {
         /* 防止 worker process 出错导致 fork 炸弹 */
         wbt_time_update();
         if( cur_mtime - prev_time <= 1000 ) {
@@ -180,11 +194,17 @@ void wbt_master_process() {
         kill( child, SIGTERM );
     }
     
+    if( wbt_wating_to_update ) {
+        if (execv(wbt_argv[0], wbt_argv) < 0) {
+            wbt_log_add("execv failed: errno:%d error:%s\n", errno, strerror(errno));
+        }
+    }
+    
     wbt_exit(0);
 }
 
 void wbt_exit(int exit_code) {
-    wating_to_exit = 1;
+    wbt_wating_to_exit = 1;
 
     /* 卸载所有模块 */
     wbt_module_exit();
@@ -197,10 +217,40 @@ void wbt_exit(int exit_code) {
 
 extern wbt_mem_t wbt_log_buf;
 
+static wbt_status wbt_save_argv(int argc, char** argv) {
+    size_t len;
+    int i;
+
+    wbt_argc = argc;
+    wbt_os_argv = argv;
+
+    wbt_mem_t tmp_buf;
+    if (wbt_malloc(&tmp_buf, (argc + 1) * sizeof(char *)) != WBT_OK) {
+        return WBT_ERROR;
+    }
+    wbt_argv = tmp_buf.ptr;
+
+    for (i = 0; i < argc; i++) {
+        len = wbt_strlen(argv[i]) + 1;
+
+        if(wbt_malloc(&tmp_buf, len)  != WBT_OK) {
+            return WBT_ERROR;
+        }
+        wbt_argv[i] = tmp_buf.ptr;
+
+        memcpy((u_char *) wbt_argv[i], (u_char *) argv[i], len);
+    }
+
+    wbt_argv[i] = NULL;
+
+    return WBT_OK;
+}
+
 int main(int argc, char** argv) {
     /* 保存传入参数 */
-    wbt_argc = argc;
-    wbt_argv = argv;
+    if( wbt_save_argv(argc, argv) != WBT_OK ) {
+        return 1;
+    }
 
     /* 初始化日至输出缓冲 */
     if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        

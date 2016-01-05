@@ -9,7 +9,7 @@
 #include "../../common/wbt_string.h"
 
 extern int wbt_argc;
-extern char** wbt_argv;
+extern char **wbt_os_argv;
 extern char **environ;
 
 char *wbt_argv_last;
@@ -27,11 +27,11 @@ wbt_status wbt_init_proc_title() {
         return WBT_ERROR;
     }
     
-    wbt_argv_last = wbt_argv[0];
+    wbt_argv_last = wbt_os_argv[0];
 
-    for (i = 0; wbt_argv[i]; i++) {
-        if (wbt_argv_last == wbt_argv[i]) {
-            wbt_argv_last = wbt_argv[i] + strlen(wbt_argv[i]) + 1;
+    for (i = 0; wbt_os_argv[i]; i++) {
+        if (wbt_argv_last == wbt_os_argv[i]) {
+            wbt_argv_last = wbt_os_argv[i] + strlen(wbt_os_argv[i]) + 1;
         }
     }
     
@@ -53,11 +53,10 @@ wbt_status wbt_init_proc_title() {
 }
  
 void wbt_set_proc_title(const char *title) {
-    wbt_argv[1] = 0;
-    char * p;
+    wbt_os_argv[1] = 0;
 
-    memcpy((u_char *) wbt_argv[0], (u_char *) title,
-        wbt_argv_last - wbt_argv[0]);
+    memcpy((u_char *) wbt_os_argv[0], (u_char *) title,
+        wbt_argv_last - wbt_os_argv[0]);
 
     *wbt_argv_last = '\0';
 }

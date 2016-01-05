@@ -20,4 +20,11 @@ int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf) {
 
 int wbt_getopt(int argc,char * const argv[ ],const char * optstring) {
     return getopt(argc,argv,optstring); 
-}  
+}
+
+
+int wbt_get_self(wbt_mem_t* buf) {
+    wbt_memset(buf, 0);
+
+    return readlink("/proc/self/exe", buf->ptr, buf->len);
+}

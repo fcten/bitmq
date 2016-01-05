@@ -1,4 +1,5 @@
 #include "wbt_module_helloworld.h"
+#include "../os/linux/wbt_os_util.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"
@@ -20,7 +21,7 @@ wbt_rbtree_t wbt_online_id_rbtree;
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 extern time_t cur_mtime;
 
-extern int wating_to_exit;
+extern sig_atomic_t wbt_wating_to_exit;
 
 wbt_status wbt_module_helloworld_init() {
     /* 初始化一个红黑树用以根据 fd 查找客户端 */
@@ -60,7 +61,7 @@ wbt_status wbt_module_helloworld_close(wbt_event_t *ev) {
 }
 
 wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
-    if(wating_to_exit) {
+    if(wbt_wating_to_exit) {
         wbt_conn_close(ev);
         return WBT_OK;
     }
