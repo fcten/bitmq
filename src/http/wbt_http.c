@@ -18,6 +18,8 @@
 #include "../common/wbt_file.h"
 #include "wbt_http.h"
 
+extern wbt_atomic_t wbt_wating_to_exit;
+
 wbt_module_t wbt_module_http1_parser = {
     wbt_string("http-parser"),
     wbt_http_init,
@@ -188,17 +190,17 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
-    wbt_log_add("[%d] %.*s %.*s %.*s\n",
-        getpid(),
+    wbt_log_add("%.*s %.*s %.*s %d\n",
         REQUEST_METHOD[http->method].len,
         REQUEST_METHOD[http->method].str,
         http_uri.len,
         http_uri.str,
         3,
-        STATUS_CODE[http->status].str);
+        STATUS_CODE[http->status].str,
+        http->file.size/*TODO 这个值不等于 Content-Length*/);
     
     /* 如果是 keep-alive 连接，继续等待数据到来 */
-    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE && !wbt_wating_to_exit ) {
         wbt_http_on_close( ev );
         /* 为下一个连接初始化相关结构 */
         if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
@@ -220,7 +222,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         /* 非 keep-alive 连接，直接关闭 */
         wbt_conn_close(ev);
     }
-
+    
     return WBT_OK;
 }
 
@@ -811,7 +813,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
     /* 生成响应消息头 */
     wbt_http_set_header( http, HEADER_SERVER, &header_server );
     wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );
-    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
+    if( http->bit_flag & WBT_HTTP_KEEP_ALIVE && !wbt_wating_to_exit ) {
         wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_keep_alive );
     } else {
         wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );

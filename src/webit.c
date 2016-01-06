@@ -31,8 +31,8 @@ char** wbt_os_argv;
 char** wbt_environ;
 char** wbt_os_environ;
 
-sig_atomic_t wbt_wating_to_exit = 0;
-sig_atomic_t wbt_wating_to_update = 0;
+wbt_atomic_t wbt_wating_to_exit = 0;
+wbt_atomic_t wbt_wating_to_update = 0;
 
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_add("received singal: %d\n", signo);

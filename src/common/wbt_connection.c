@@ -16,6 +16,8 @@
 #include "wbt_time.h"
 #include "wbt_ssl.h"
 
+wbt_atomic_t wbt_connection_count = 0;
+
 wbt_status wbt_setnonblocking(int sock);
 
 wbt_module_t wbt_module_conn = {
@@ -96,6 +98,8 @@ wbt_status wbt_conn_close(wbt_event_t *ev) {
     close(ev->fd);
     ev->fd = -1;        /* close 之后 fd 会自动从 epoll 中删除 */
     wbt_event_del(ev);
+    
+    wbt_connection_count --;
 
     return WBT_OK;
 }
@@ -123,6 +127,8 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;
         }
+        
+        wbt_connection_count ++;
         
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
             wbt_conn_close(p_ev);

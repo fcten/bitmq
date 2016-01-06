@@ -27,6 +27,8 @@ wbt_rbtree_t wbt_file_rbtree;
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 
+extern wbt_atomic_t wbt_wating_to_exit;
+
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     /* 从叶节点递归处理至根节点 */
     if(node != wbt_rbtree_node_nil) {
@@ -49,11 +51,13 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
     
     wbt_log_debug("opened fd after cleanup: %d", wbt_file_rbtree.size);
 
-    /* 重新注册定时事件 */
-    ev->timeout = cur_mtime + 10000;
+    if(!wbt_wating_to_exit) {
+        /* 重新注册定时事件 */
+        ev->timeout = cur_mtime + 10000;
 
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
     }
 
     return WBT_OK;

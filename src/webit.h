@@ -26,13 +26,15 @@ extern "C" {
 #define CR      "\r"
 #define LF      "\n"
 #define CRLF    CR LF
-    
+
 #define WBT_USE_ACCEPT4
     
 typedef enum {
     WBT_OK,
     WBT_ERROR
 } wbt_status;
+
+typedef int wbt_atomic_t;
 
 void wbt_exit(int exit_code);
 
