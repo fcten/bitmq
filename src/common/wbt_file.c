@@ -224,7 +224,7 @@ wbt_status wbt_unlock_fd(int fd) {
 }
 
 int wbt_lock_create( const char *name ) {
-    return open( name, O_RDWR | O_CREAT, S_IRWXU );
+    return open( name, O_RDWR | O_CREAT | O_CLOEXEC, S_IRWXU );
 }
 
 ssize_t wbt_file_read( wbt_file_t *file ) {

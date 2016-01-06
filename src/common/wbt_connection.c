@@ -30,45 +30,52 @@ wbt_status wbt_conn_init() {
     // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
     
     /* 初始化用于监听消息的 Socket 句柄 */
-    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(listen_fd <= 0) {
-        wbt_log_add("create socket failed\n");
+    char * listen_fd_env = getenv("WBT_LISTEN_FD");
+    if(listen_fd_env == NULL) {
+        listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if(listen_fd <= 0) {
+            wbt_log_add("create socket failed\n");
 
-        return WBT_ERROR;
-    }
-    /* 把监听socket设置为非阻塞方式 */
-    if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
-        wbt_log_add("set nonblocking failed\n");
+            return WBT_ERROR;
+        }
+        /* 把监听socket设置为非阻塞方式 */
+        if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
+            wbt_log_add("set nonblocking failed\n");
 
-        return WBT_ERROR;
+            return WBT_ERROR;
+        }
+
+        /* 在重启程序以及进行热更新时，避免 TIME_WAIT 和 CLOSE_WAIT 状态的连接导致 bind 失败 */
+        int on = 1; 
+        if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
+            wbt_log_add("set SO_REUSEADDR failed\n");  
+
+            return WBT_ERROR;
+        }
+
+        /* bind & listen */    
+        struct sockaddr_in sin;
+        bzero(&sin, sizeof(sin));
+        sin.sin_family = AF_INET;
+        sin.sin_addr.s_addr = INADDR_ANY;
+        sin.sin_port = htons(wbt_conf.listen_port);
+
+        if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
+            wbt_log_add("bind failed\n");
+
+            return WBT_ERROR;
+        }
+
+        if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
+            wbt_log_add("listen failed\n");
+
+            return WBT_ERROR;
+        }
+    } else {
+        listen_fd = atoi(listen_fd_env);
     }
     
-    /* 在重启程序以及进行热更新时，避免 TIME_WAIT 和 CLOSE_WAIT 状态的连接导致 bind 失败 */
-    int on = 1; 
-    if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
-        wbt_log_add("set SO_REUSEADDR failed\n");  
-        
-        return WBT_ERROR;
-    }
-    
-    /* bind & listen */    
-    struct sockaddr_in sin;
-    bzero(&sin, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(wbt_conf.listen_port);
-
-    if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
-        wbt_log_add("bind failed\n");
-        
-        return WBT_ERROR;
-    }
-
-    if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
-        wbt_log_add("listen failed\n");
-        
-        return WBT_ERROR;
-    }
+    wbt_log_add("listen fd: %d\n", listen_fd);
 
     return WBT_OK;
 }

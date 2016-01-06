@@ -186,6 +186,17 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* 所有数据发送完毕 */
     http->state = STATE_SEND_COMPLETED;
     
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+    wbt_log_add("[%d] %.*s %.*s %.*s\n",
+        getpid(),
+        REQUEST_METHOD[http->method].len,
+        REQUEST_METHOD[http->method].str,
+        http_uri.len,
+        http_uri.str,
+        3,
+        STATUS_CODE[http->status].str);
+    
     /* 如果是 keep-alive 连接，继续等待数据到来 */
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE ) {
         wbt_http_on_close( ev );

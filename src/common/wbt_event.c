@@ -330,7 +330,10 @@ wbt_status wbt_event_dispatch() {;
                 }
                 is_accept_add = 1;
             } else {
-                if( timeout > 500 || timeout == -1 ) timeout = 500;
+                // 如果未能抢占 listen fd，等待一段时间重新尝试抢占 
+                if( timeout > 100 * wbt_conf.process || timeout == -1 ) {
+                    timeout = 100 * wbt_conf.process;
+                }
             }
         }
 

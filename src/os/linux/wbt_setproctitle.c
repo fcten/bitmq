@@ -10,7 +10,7 @@
 
 extern int wbt_argc;
 extern char **wbt_os_argv;
-extern char **environ;
+extern char **wbt_os_environ;
 
 char *wbt_argv_last;
 
@@ -19,8 +19,8 @@ wbt_status wbt_init_proc_title() {
     int i;
     char * p;
 
-    for (i = 0; environ[i]; ++i) {
-        size += strlen(environ[i]) + 1;
+    for (i = 0; wbt_os_environ[i]; ++i) {
+        size += strlen(wbt_os_environ[i]) + 1;
     }
  
     if( ( p = malloc(size*sizeof(char)) ) == NULL ) {
@@ -35,14 +35,14 @@ wbt_status wbt_init_proc_title() {
         }
     }
     
-    for (i = 0; environ[i]; i++) {
-        if (wbt_argv_last == environ[i]) {
+    for (i = 0; wbt_os_environ[i]; i++) {
+        if (wbt_argv_last == wbt_os_environ[i]) {
 
-            size = wbt_strlen(environ[i]) + 1;
-            wbt_argv_last = environ[i] + size;
+            size = wbt_strlen(wbt_os_environ[i]) + 1;
+            wbt_argv_last = wbt_os_environ[i] + size;
 
-            memcpy(p, (u_char *) environ[i], size);
-            environ[i] = (char *) p;
+            memcpy(p, (u_char *) wbt_os_environ[i], size);
+            wbt_os_environ[i] = (char *) p;
             p += size;
         }
     }

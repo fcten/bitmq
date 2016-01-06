@@ -22,9 +22,14 @@
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
 
+extern int listen_fd;
+
+extern char **environ;
 int wbt_argc;
 char** wbt_argv;
 char** wbt_os_argv;
+char** wbt_environ;
+char** wbt_os_environ;
 
 sig_atomic_t wbt_wating_to_exit = 0;
 sig_atomic_t wbt_wating_to_update = 0;
@@ -69,7 +74,6 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
             break;
         case SIGUSR2:
             /* 平滑的升级二进制文件 */
-            wbt_wating_to_exit = 1;
             wbt_wating_to_update = 1;
             break;
     }
@@ -181,6 +185,34 @@ void wbt_master_process() {
             count = 0;
         }
         prev_time = cur_mtime;
+
+        /* fork + execve */
+        /* 在 master 进程中，只有监听端口和日志文件是打开状态，其中监听描述符需要被传递给新进程 */
+        /* 新老进程将共用监听端口同时提提供服务 */
+        if( wbt_wating_to_update && fork() == 0 ) {
+            // 子进程并且 fork 成功
+            int i = 0;
+            for (i = 0; wbt_os_environ[i]; i++) {
+            }
+            wbt_mem_t tmp;
+            wbt_malloc(&tmp, (i + 3) * sizeof(char *));
+            wbt_environ = tmp.ptr;
+            memcpy(wbt_environ, wbt_os_environ, i * sizeof(char *));
+            wbt_malloc(&tmp, 32 * sizeof(char *));
+            wbt_sprintf(&tmp, "WBT_LISTEN_FD=%d", listen_fd);
+            wbt_environ[i] = tmp.ptr;
+            wbt_environ[i+1] = 
+               "SPARE=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+               "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+               "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+               "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+               "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+            wbt_environ[i+2] = NULL;
+            if (execve(wbt_argv[0], wbt_argv, wbt_environ) < 0) {
+                wbt_log_add("execve failed: errno:%d error:%s\n", errno, strerror(errno));
+            }
+        }
+        wbt_wating_to_update = 0;
         
         /* 创建子进程直至指定数量 */
         wbt_proc_create(wbt_worker_process, wbt_conf.process);
@@ -192,12 +224,6 @@ void wbt_master_process() {
     pid_t child;
     while( ( child = wbt_proc_pop() ) != 0 ) {
         kill( child, SIGTERM );
-    }
-    
-    if( wbt_wating_to_update ) {
-        if (execv(wbt_argv[0], wbt_argv) < 0) {
-            wbt_log_add("execv failed: errno:%d error:%s\n", errno, strerror(errno));
-        }
     }
     
     wbt_exit(0);
@@ -242,6 +268,8 @@ static wbt_status wbt_save_argv(int argc, char** argv) {
     }
 
     wbt_argv[i] = NULL;
+    
+    wbt_os_environ = environ;
 
     return WBT_OK;
 }
