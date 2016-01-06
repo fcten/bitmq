@@ -14,24 +14,26 @@ Webit 目前只支持 GNU/Linux 平台，并且可能无法在 Linux 2.6 以及�
 
 使用当前工作路径下的配置文件 (webit.conf) 启动
 
-> ./webit
+    ./webit
 
 使用指定的配置文件启动
 
-> ./webit -c /opt/webit/1039.conf
+    ./webit -c /opt/webit/1039.conf
+
+注意，您可以使用多个配置文件在同一台服务器上启动多个 webit 实例。但这些配置文件中设定的端口必须各不相同。
 
 ### 停止
 
 首先找到 master 进程的 pid，例如
 
-> root@localhost:~# ps -ef | grep webit
-> root      118675   1553  0 14:36 ?        00:00:00 webit: master process (/opt/webit/webit.conf)
-> www-data  118676 118675  0 14:36 ?        00:00:00 webit: worker process
+    root@localhost:~# ps -ef | grep webit
+    root      118675   1553  0 14:36 ?        00:00:00 webit: master process (/opt/webit/webit.conf)
+    www-data  118676 118675  0 14:36 ?        00:00:00 webit: worker process
 
 
 然后执行
 
-> kill 118675
+    kill 118675
 
 注意，此时 worker 进程并不会立刻退出，而是停止 accept 新连接。直到所有已建立的连接处理完毕并正常关闭后， worker 进程才会退出。这最长需要等待 keep-alive-timeout 的时间。
 
@@ -41,7 +43,7 @@ Webit 目前只支持 GNU/Linux 平台，并且可能无法在 Linux 2.6 以及�
 
 首先找到 master 进程的 pid，然后执行
 
-> kill -USR2 118675 && kill 118675
+    kill -USR2 118675 && kill 118675
 
 执行该命令后会产生新的 master 进程和 worker 进程。旧进程会在所有已建立的连接处理完毕并正常关闭后退出。
 
