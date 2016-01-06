@@ -24,7 +24,7 @@ wbt_rbtree_node_t wbt_rbtree_node_nil_s = {
     &wbt_rbtree_node_nil_s,
     &wbt_rbtree_node_nil_s,
     WBT_RBT_COLOR_BLACK,
-    {0, NULL, NULL},
+    {0, NULL},
     0
 };
 wbt_rbtree_node_t *wbt_rbtree_node_nil = &wbt_rbtree_node_nil_s;

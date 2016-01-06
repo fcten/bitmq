@@ -6,7 +6,10 @@ Webit 目前只支持 GNU/Linux 平台，并且可能无法在 Linux 2.6 以及�
 
 ## 编译 Webit
 
-编译 Webit 需要安装 openssl 1.0.2 以上版本，用以支持 HTTPS。
+编译 Webit 需要安装 openssl 1.0.2 以上版本，用以支持 HTTPS。您可以使用包管理工具安装或者下载源代码编译安装
+
+    centos/redhat# yum install openssl-devel openssl
+	debian/ubuntu# apt-get install libssl-dev openssl
 
 ## 使用 Webit
 
