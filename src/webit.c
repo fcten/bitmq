@@ -170,7 +170,7 @@ void wbt_master_process() {
 
     time_t prev_time;
     int count = 0;
-    while(!wbt_wating_to_exit) {
+    while(1) {
         /* 防止 worker process 出错导致 fork 炸弹 */
         wbt_time_update();
         if( cur_mtime - prev_time <= 1000 ) {
@@ -213,6 +213,10 @@ void wbt_master_process() {
             }
         }
         wbt_wating_to_update = 0;
+        
+        if( wbt_wating_to_exit ) {
+            break;
+        }
         
         /* 创建子进程直至指定数量 */
         wbt_proc_create(wbt_worker_process, wbt_conf.process);
