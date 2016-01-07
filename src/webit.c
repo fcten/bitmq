@@ -340,9 +340,18 @@ int main(int argc, char** argv) {
 
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
-    rlim.rlim_cur = 65535;
+    rlim.rlim_cur = wbt_conf.max_open_files;
     rlim.rlim_max = 65535;
     setrlimit(RLIMIT_NOFILE, &rlim);
+    
+    /* 设置程序允许生成的 core dump 文件大小 */
+    if( wbt_conf.max_core_file_size < 0 ) {
+        rlim.rlim_cur = RLIM_INFINITY;
+    } else {
+        rlim.rlim_cur = wbt_conf.max_core_file_size;
+    }
+    rlim.rlim_max = RLIM_INFINITY;
+    setrlimit(RLIMIT_CORE, &rlim);
     
     /* 屏蔽 umask */
     umask(0);

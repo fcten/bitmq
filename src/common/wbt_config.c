@@ -124,6 +124,16 @@ wbt_status wbt_conf_init() {
     if( ( value = wbt_conf_get("event_timeout") ) != NULL ) {
         wbt_conf.event_timeout = atoi(value);
     }
+
+    wbt_conf.max_open_files = 65535;
+    if( ( value = wbt_conf_get("max_open_files") ) != NULL ) {
+        wbt_conf.max_open_files = atoi(value);
+    }
+    
+    wbt_conf.max_core_file_size = 0;
+    if( ( value = wbt_conf_get("max_core_file_size") ) != NULL ) {
+        wbt_conf.max_core_file_size = atoi(value);
+    }
     
     wbt_str_set_null(&wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
