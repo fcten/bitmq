@@ -18,7 +18,6 @@
 
 #include "wbt_sigsegv.h"
 
-
 #define NO_CPP_DEMANGLE
 #ifndef NO_CPP_DEMANGLE
 #include "/usr/include/c++/4.1.1/cxxabi.h"
@@ -164,11 +163,11 @@ int setup_sigsegv()
  	}
 	return 1;
 }
-/*#ifndef SIGSEGV_NO_AUTO_INIT*/
+/*
 static void __attribute((constructor)) init(void)
 { 
 	setup_sigsegv();
 }
-/*#endif*/
+*/
 
 

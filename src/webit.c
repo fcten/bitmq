@@ -326,8 +326,6 @@ int main(int argc, char** argv) {
                 return 1;
         }
     }
-    
-    setup_sigsegv();
 
     wbt_init_proc_title();
     
