@@ -132,7 +132,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
             wbt_conn_close(p_ev);
-            return WBT_ERROR;
+            return WBT_OK;
         }
     }
 
@@ -211,7 +211,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         /* 严重的错误，直接断开连接 */
         /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。 */
         wbt_conn_close(ev);
-        return WBT_ERROR;
+        return WBT_OK;
     }
     
     return WBT_OK;
@@ -223,7 +223,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
         wbt_conn_close(ev);
-        return WBT_ERROR;
+        return WBT_OK;
     }
 
     return WBT_OK;

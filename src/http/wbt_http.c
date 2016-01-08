@@ -26,7 +26,7 @@ wbt_module_t wbt_module_http1_parser = {
     wbt_http_exit,
     wbt_http_on_conn,
     wbt_http_on_recv,
-    wbt_http_on_send,
+    NULL,
     wbt_http_on_close
 };
 
@@ -36,7 +36,7 @@ wbt_module_t wbt_module_http1_generater = {
     NULL,
     NULL,
     wbt_http_generater,
-    NULL,
+    wbt_http_on_send,
     NULL,
 };
 
@@ -99,15 +99,13 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
                         break;
                     case SSL_ERROR_WANT_READ:
                         wbt_log_debug("SSL_ERROR_WANT_READ");
-                        wbt_conn_close(ev);
-                        break;
+                        return WBT_ERROR;
                     case SSL_ERROR_SYSCALL:
                         wbt_log_debug("SSL_ERROR_SYSCALL");
-                        wbt_conn_close(ev);
-                        break;
+                        return WBT_ERROR;
                     default:
                         wbt_log_debug("%d", err);
-                        wbt_conn_close(ev);
+                        return WBT_ERROR;
                 }
             } else {
                 if( errno != EAGAIN ) {
@@ -115,7 +113,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
                      * 仅用于判断是否发生了必须重启工作进程的严重错误。
                      * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
                      */
-                    wbt_conn_close(ev);
+                    return WBT_ERROR;
                 }
             }
             
@@ -159,19 +157,17 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
                         break;
                     case SSL_ERROR_WANT_READ:
                         wbt_log_debug("SSL_ERROR_WANT_READ");
-                        wbt_conn_close(ev);
-                        break;
+                        return WBT_ERROR;
                     case SSL_ERROR_SYSCALL:
                         wbt_log_debug("SSL_ERROR_SYSCALL");
-                        wbt_conn_close(ev);
-                        break;
+                        return WBT_ERROR;
                     default:
-                        wbt_conn_close(ev);
+                        return WBT_ERROR;
                 }
             } else {
                 if( errno != EAGAIN ) {
                     /* 连接被意外关闭，同上 */
-                    wbt_conn_close(ev);
+                    return WBT_ERROR;
                 }
             }
             
@@ -222,6 +218,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         }
     } else {
         /* 非 keep-alive 连接，直接关闭 */
+        /* 这个模块总是被最后调用，所以这里直接关闭并返回 WBT_OK。返回 WBT_ERROR 感觉怪怪的。 */
         wbt_conn_close(ev);
     }
     
@@ -773,14 +770,19 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 
 wbt_status wbt_http_generater( wbt_event_t *ev ) {
     wbt_http_t * http = ev->data.ptr;
-    
-    wbt_str_t *t = (wbt_str_t *)&ev->buff;
 
+    if( !http ) {
+        /* 如果在之前的 on_recv 调用中错误地关闭了自身又没有返回 WBT_ERROR，
+         * 该模块可能会接收到一个已关闭的 event */
+        /* 这个模块总是在最后被调用，此时连接已经被关闭，所以不需要返回 WBT_ERROR */
+        return WBT_OK;
+    }
+    
     switch( http->state ) {
         case STATE_READY_TO_SEND:
             /* 需要返回响应 */
             if( wbt_http_process(ev) != WBT_OK ) {
-                wbt_conn_close(ev);
+                return WBT_ERROR;
             } else {
                 http->state = STATE_SENDING;
 
@@ -804,7 +806,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
             break;
         default:
             /* 严重的错误，直接断开连接 */
-            wbt_conn_close(ev);
+            return WBT_ERROR;
     }
     
     return WBT_OK;

@@ -247,16 +247,8 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    wbt_str_t fd;
-    fd.str = (u_char *)&ev->fd;
-    fd.len = sizeof(ev->fd);
-
-    wbt_rbtree_node_t *node_fd =  wbt_rbtree_get(&wbt_online_fd_rbtree, &fd);
-    if( node_fd != NULL ) {
-        // 该连接已经登录过了
-        http->status = STATUS_405;
-        return WBT_OK;
-    }
+    // 如果在同一个连接内重复登录，先将旧的登录客户端设为离线
+    wbt_module_helloworld_close(ev);
     
     wbt_mem_t client;
     
@@ -274,13 +266,16 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
         client = node_id->value;
     }
     
-    // 该连接第一次登录，记录该连接
-    node_fd = wbt_rbtree_insert(&wbt_online_fd_rbtree, &fd);
+    // 记录该连接
+    wbt_str_t fd;
+    fd.str = (u_char *)&ev->fd;
+    fd.len = sizeof(ev->fd);
+    wbt_rbtree_node_t *node_fd = wbt_rbtree_insert(&wbt_online_fd_rbtree, &fd);
     node_fd->value = client;
     
     wbt_online_t *p = (wbt_online_t *)client.ptr;
  
-    if ( p->status == 1 ) {
+    if ( p->status == 1 && p->ev != ev ) {
         // 踢掉另一个登录的同 ID 客户端
         wbt_conn_close(p->ev);
     }
@@ -301,8 +296,8 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
 void wbt_module_helloworld_show_recursion(wbt_rbtree_node_t *node, wbt_str_t *resp, int maxlen) {
     wbt_online_t *p = (wbt_online_t *)node->value.ptr;
 
-    wbt_str_t online = wbt_string("online \n");
-    wbt_str_t offline = wbt_string("offline\n");
+    wbt_str_t online  = wbt_string(" online   \n");
+    wbt_str_t offline = wbt_string(" offline  \n");
     wbt_str_t id;
     id.str = p->id;
     id.len = 32;
@@ -315,6 +310,7 @@ void wbt_module_helloworld_show_recursion(wbt_rbtree_node_t *node, wbt_str_t *re
         } else {
             wbt_strcat(resp, &offline, maxlen);
         }
+        resp->str[resp->len-2] = p->ev->fd + '0';
         wbt_module_helloworld_show_recursion(node->right, resp, maxlen);
     }
 }

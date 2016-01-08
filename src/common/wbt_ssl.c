@@ -135,9 +135,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     }
     
     // 握手异常，可能客户端在握手期间关闭了连接
-    wbt_conn_close(ev);
-
-    return WBT_OK;
+    return WBT_ERROR;
 }
 
 wbt_status wbt_ssl_on_conn( wbt_event_t * ev ) {
