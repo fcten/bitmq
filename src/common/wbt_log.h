@@ -30,7 +30,6 @@ typedef enum {
 } wbt_log_level_t;
 
 wbt_status wbt_log_init();
-wbt_status wbt_log_write(wbt_str_t p);
 wbt_status wbt_log_add(const char *fmt, ...);
 wbt_status wbt_log_print(const char *fmt, ...);
 
