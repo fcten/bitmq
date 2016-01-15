@@ -45,12 +45,12 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {
     wbt_heap_node_t * p_node = (wbt_heap_node_t *)p->heap.ptr;
     for( i = ++ p->size; p_node[i/2].timeout > node->timeout; i /= 2 ) {
         p_node[i].timeout = p_node[i/2].timeout;
-        p_node[i].ev = p_node[i/2].ev;
+        p_node[i].ptr = p_node[i/2].ptr;
         p_node[i].modified = p_node[i/2].modified;
     }
 
     p_node[i].timeout = node->timeout;
-    p_node[i].ev = node->ev;
+    p_node[i].ptr = node->ptr;
     p_node[i].modified = node->modified;
     
     //wbt_log_debug("heap insert at %d, %d nodes.", (p_node + i), p->size);
@@ -97,7 +97,7 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
         /* Percolate one level. */
         if( last_node.timeout > p_node[child].timeout ) {
             p_node[i].timeout = p_node[child].timeout;
-            p_node[i].ev = p_node[child].ev;
+            p_node[i].ptr = p_node[child].ptr;
             p_node[i].modified = p_node[child].modified;
         } else {
             break;
@@ -105,7 +105,7 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
     }
 
     p_node[i].timeout = last_node.timeout;
-    p_node[i].ev = last_node.ev;
+    p_node[i].ptr = last_node.ptr;
     p_node[i].modified = last_node.modified;
     
     //wbt_log_debug("heap delete, %d nodes.", p->size);

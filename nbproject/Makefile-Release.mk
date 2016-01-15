@@ -51,6 +51,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/module/wbt_module_helloworld.o \
+	${OBJECTDIR}/src/mq/wbt_mq.o \
+	${OBJECTDIR}/src/mq/wbt_mq_subscriber.o \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
 	${OBJECTDIR}/src/os/linux/wbt_setproctitle.o \
@@ -162,6 +164,16 @@ ${OBJECTDIR}/src/module/wbt_module_helloworld.o: src/module/wbt_module_helloworl
 	${MKDIR} -p ${OBJECTDIR}/src/module
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/module/wbt_module_helloworld.o src/module/wbt_module_helloworld.c
+
+${OBJECTDIR}/src/mq/wbt_mq.o: src/mq/wbt_mq.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq.o src/mq/wbt_mq.c
+
+${OBJECTDIR}/src/mq/wbt_mq_subscriber.o: src/mq/wbt_mq_subscriber.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_subscriber.o src/mq/wbt_mq_subscriber.c
 
 ${OBJECTDIR}/src/os/linux/wbt_os_util.o: src/os/linux/wbt_os_util.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux

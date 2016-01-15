@@ -211,7 +211,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
 
         ev->on_recv = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
-        ev->timeout = cur_mtime + wbt_conf.keep_alive_timeout;
+        ev->timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -789,7 +789,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
                 /* 等待socket可写 */
                 ev->on_send = wbt_on_send;
                 ev->events = EPOLLOUT | EPOLLET;
-                ev->timeout = cur_mtime + wbt_conf.event_timeout;
+                ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
                 if(wbt_event_mod(ev) != WBT_OK) {
                     return WBT_ERROR;

@@ -122,7 +122,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
         tmp_ev.on_send = NULL;
         tmp_ev.events = EPOLLIN | EPOLLET;
         tmp_ev.fd = conn_sock;
-        tmp_ev.timeout = cur_mtime + wbt_conf.event_timeout;
+        tmp_ev.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;

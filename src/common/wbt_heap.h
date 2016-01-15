@@ -21,7 +21,7 @@ extern "C" {
 
 typedef struct {
     time_t timeout;         /* 超时时间，距离1970年的毫秒数 */
-    wbt_event_t *ev;        /* 指向事件的指针，事件存储于事件队列中 */
+    void * ptr;             /* 指向自定义数据的指针 */
     unsigned int modified;  /* 添加或修改事件时事件的版本号快照 */
 } wbt_heap_node_t;
 

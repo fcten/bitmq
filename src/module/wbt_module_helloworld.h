@@ -10,6 +10,7 @@
 
 #include "../webit.h"
 #include "../http/wbt_http.h"
+#include "../common/wbt_time.h"
 #include "../common/wbt_module.h"
 
 #ifdef	__cplusplus

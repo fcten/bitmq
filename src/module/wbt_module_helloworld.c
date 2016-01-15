@@ -18,7 +18,6 @@ wbt_rbtree_t wbt_online_fd_rbtree;
 wbt_rbtree_t wbt_online_id_rbtree;
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
-extern time_t cur_mtime;
 
 wbt_status wbt_module_helloworld_init() {
     /* 初始化一个红黑树用以根据 fd 查找客户端 */
@@ -47,7 +46,7 @@ wbt_status wbt_module_helloworld_close(wbt_event_t *ev) {
     if( node_fd != NULL ) {
         wbt_online_t *p = (wbt_online_t *)node_fd->value.ptr;
         p->status = 0;
-        p->offline = cur_mtime;
+        p->offline = wbt_cur_mtime;
         
         node_fd->value.ptr = NULL;
         node_fd->value.len = 0;
@@ -79,7 +78,7 @@ wbt_status wbt_module_helloworld_callback(wbt_event_t *ev) {
         ev->on_timeout = wbt_conn_close;
         ev->on_send = wbt_on_send;
         ev->events = EPOLLOUT | EPOLLET;
-        ev->timeout = cur_mtime + wbt_conf.event_timeout;
+        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -115,7 +114,7 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
     /* 修改超时时间为 30 秒
      * 这个时候如果继续有数据到来，webit 会立刻关闭这个连接
      */
-    ev->timeout = cur_mtime + 30000;
+    ev->timeout = wbt_cur_mtime + 30000;
     ev->on_timeout = wbt_module_helloworld_callback;
 
     if(wbt_event_mod(ev) != WBT_OK) {
@@ -181,7 +180,7 @@ wbt_status wbt_module_helloworld_push(wbt_event_t *ev) {
             p->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
             p->ev->on_send = wbt_on_send;
             p->ev->events = EPOLLOUT | EPOLLET;
-            p->ev->timeout = cur_mtime + wbt_conf.event_timeout;
+            p->ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
             if(wbt_event_mod(p->ev) != WBT_OK) {
                 return WBT_ERROR;
@@ -285,7 +284,7 @@ wbt_status wbt_module_helloworld_login(wbt_event_t *ev) {
     tmp.ptr = p->id;
     tmp.len = 32;
     wbt_memcpy( &tmp, (wbt_mem_t *)&http_body, http_body.len );
-    p->online = cur_mtime;
+    p->online = wbt_cur_mtime;
     p->status = 1;
     
     http->status = STATUS_200;

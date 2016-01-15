@@ -84,8 +84,9 @@ wbt_status wbt_event_exit() {
         wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
         while(timeout_events.size > 0) {
             /* 尝试调用回调函数 */
-            if(p->modified == p->ev->modified && p->ev->on_timeout != NULL) {
-                p->ev->on_timeout(p->ev);
+            if(p->modified == ((wbt_event_t *)(p->ptr))->modified
+                    && ((wbt_event_t *)(p->ptr))->on_timeout != NULL) {
+                ((wbt_event_t *)(p->ptr))->on_timeout(p->ptr);
             }
             /* 移除超时事件 */
             wbt_heap_delete(&timeout_events);
@@ -180,7 +181,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     /* 如果存在超时时间，添加到超时队列中 */
     if(t->timeout > 0) {
         wbt_heap_node_t timeout_ev;
-        timeout_ev.ev = t;
+        timeout_ev.ptr = t;
         timeout_ev.timeout = t->timeout;
         timeout_ev.modified = t->modified;
         if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
@@ -255,7 +256,7 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
     /* 如果存在超时时间，重新添加到超时队列中 */
     if(ev->timeout >0) {
         wbt_heap_node_t timeout_ev;
-        timeout_ev.ev = ev;
+        timeout_ev.ptr = ev;
         timeout_ev.timeout  = ev->timeout;
         timeout_ev.modified = ev->modified;
         if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
@@ -401,17 +402,17 @@ wbt_status wbt_event_dispatch() {;
         if(timeout_events.size > 0) {
             wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
             while(timeout_events.size > 0 &&
-                    (p->timeout <= cur_mtime || p->modified != p->ev->modified)) {
+                    (p->timeout <= wbt_cur_mtime || p->modified != ((wbt_event_t *)(p->ptr))->modified)) {
                 /* 尝试调用回调函数 */
-                if(p->modified == p->ev->modified && p->ev->on_timeout != NULL) {
-                    p->ev->on_timeout(p->ev);
+                if(p->modified == ((wbt_event_t *)(p->ptr))->modified && ((wbt_event_t *)(p->ptr))->on_timeout != NULL) {
+                    ((wbt_event_t *)(p->ptr))->on_timeout(p->ptr);
                 }
                 /* 移除超时事件 */
                 wbt_heap_delete(&timeout_events);
                 p = wbt_heap_get(&timeout_events);
             }
             if(timeout_events.size > 0) {
-                timeout = p->timeout - cur_mtime;
+                timeout = p->timeout - wbt_cur_mtime;
             } else {
                 timeout = -1;
             }

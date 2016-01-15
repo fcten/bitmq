@@ -173,7 +173,7 @@ void wbt_master_process() {
     while(1) {
         /* 防止 worker process 出错导致 fork 炸弹 */
         wbt_time_update();
-        if( cur_mtime - prev_time <= 1000 ) {
+        if( wbt_cur_mtime - prev_time <= 1000 ) {
             if( ( count ++ ) > 9 ) {
                 wbt_log_add("try to fork child too fast\n");
                 /* 触发限制后，每 5s 尝试一次 
@@ -184,7 +184,7 @@ void wbt_master_process() {
         } else {
             count = 0;
         }
-        prev_time = cur_mtime;
+        prev_time = wbt_cur_mtime;
 
         /* fork + execve */
         /* 在 master 进程中，只有监听端口和日志文件是打开状态，其中监听描述符需要被传递给新进程 */

@@ -36,7 +36,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         wbt_file_cleanup_recursive(node->right);
         
         wbt_file_t * tmp_file = (wbt_file_t *)node->value.ptr;
-        if( tmp_file->refer == 0 && cur_mtime - tmp_file->last_use_mtime > 10000 ) {
+        if( tmp_file->refer == 0 && wbt_cur_mtime - tmp_file->last_use_mtime > 10000 ) {
             wbt_log_debug("closed fd:%d %.*s", tmp_file->fd, node->key.len, (char *)node->key.ptr);
             close(tmp_file->fd);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
@@ -53,7 +53,7 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
 
     if(!wbt_wating_to_exit) {
         /* 重新注册定时事件 */
-        ev->timeout = cur_mtime + 10000;
+        ev->timeout = wbt_cur_mtime + 10000;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -76,7 +76,7 @@ wbt_status wbt_file_init() {
     tmp_ev.on_timeout = wbt_file_cleanup;
     tmp_ev.fd = -1;
     /* tmp_ev.events = 0; // fd 大于等于 0 时该属性才有意义 */
-    tmp_ev.timeout = cur_mtime + 10000;
+    tmp_ev.timeout = wbt_cur_mtime + 10000;
 
     if(wbt_event_add(&tmp_ev) == NULL) {
         return WBT_ERROR;
@@ -172,7 +172,7 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
 
         if( tmp_file->refer == 0 ) {
             /* 当所有对该文件的使用都被释放后，更新时间戳 */
-            tmp_file->last_use_mtime = cur_mtime;
+            tmp_file->last_use_mtime = wbt_cur_mtime;
         }
     }
 

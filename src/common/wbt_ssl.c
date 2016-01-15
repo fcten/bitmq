@@ -96,7 +96,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
 
         ev->on_recv = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
-        ev->timeout = cur_mtime + wbt_conf.event_timeout;
+        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -113,7 +113,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     if( err == SSL_ERROR_WANT_READ ) {
         ev->on_recv = wbt_ssl_handshake;
         ev->events = EPOLLIN | EPOLLET;
-        ev->timeout = cur_mtime + wbt_conf.event_timeout;
+        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -123,7 +123,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     } else if( err == SSL_ERROR_WANT_WRITE ) {
         ev->on_send = wbt_ssl_handshake;
         ev->events = EPOLLOUT | EPOLLET;
-        ev->timeout = cur_mtime + wbt_conf.event_timeout;
+        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;

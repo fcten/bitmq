@@ -17,7 +17,7 @@ wbt_module_t wbt_module_time = {
 };
 
 /* 当前时间戳，单位毫秒 */
-time_t cur_mtime;
+time_t wbt_cur_mtime;
 
 wbt_str_t wbt_time_str_log;
 wbt_str_t wbt_time_str_http;
@@ -55,7 +55,7 @@ wbt_status wbt_time_init() {
 wbt_status wbt_time_update() {
     struct timeval cur_utime;
     gettimeofday(&cur_utime, NULL);
-    cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
+    wbt_cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
 
     time_t now;
     struct tm *timenow;
