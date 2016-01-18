@@ -29,7 +29,7 @@ static inline void * wbt_new(size_t len) {
 // 固定已知长度内存分配
 #define wbt_new(type) calloc(1, sizeof(type))
 
-#define wbt_delete(ptr) free(ptr)
+#define wbt_delete(ptr) if(ptr) {free(ptr);ptr=NULL;}
 
 static inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
     p->ptr = malloc(len);

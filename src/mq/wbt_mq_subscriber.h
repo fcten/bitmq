@@ -14,7 +14,9 @@ extern "C" {
 
 #include "wbt_mq.h"
 
-
+wbt_subscriber_t * wbt_mq_subscriber_create(wbt_mq_id subscriber_id);
+wbt_subscriber_t * wbt_mq_subscriber_get(wbt_mq_id subscriber_id);
+void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber);
 
 #ifdef	__cplusplus
 }

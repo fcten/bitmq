@@ -136,5 +136,17 @@ int wbt_atoi(wbt_str_t * str) {
     
     char temp[32];
     strncpy(temp,str->str,str->len);
+    temp[str->len] = '\0';
     return atoi(temp);
+}
+
+unsigned long long int wbt_str_to_ull(wbt_str_t * str, int base) {
+    if(str->len>=21) {
+        return -1;
+    }
+    
+    char temp[32];
+    strncpy(temp,str->str,str->len);
+    temp[str->len] = '\0';
+    return strtoull(temp, NULL, base);
 }

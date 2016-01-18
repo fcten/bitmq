@@ -67,6 +67,8 @@ static inline unsigned int wbt_strlen(const char *s) {
 
 int wbt_atoi(wbt_str_t * str);
 
+unsigned long long int wbt_str_to_ull(wbt_str_t * str, int base);
+
 #ifdef	__cplusplus
 }
 #endif
