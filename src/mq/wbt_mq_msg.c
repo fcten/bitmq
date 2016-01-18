@@ -21,26 +21,19 @@ wbt_heap_t wbt_mq_message_created;
 wbt_heap_t wbt_mq_message_effective;
 
 wbt_msg_t * wbt_mq_msg_create() {
-    wbt_mem_t tmp;
-    if( wbt_malloc(&tmp, sizeof(wbt_msg_t)) != WBT_OK ) {
-        return NULL;
-    }
-    wbt_memset(&tmp, 0);
-    
     static wbt_mq_id auto_inc_id = 0;
-    wbt_msg_t * msg = tmp.ptr;
+    wbt_msg_t * msg = wbt_new(wbt_msg_t);
     
-    msg->msg_id = ++auto_inc_id;
-    msg->create = wbt_cur_mtime;
+    if( msg ) {
+        msg->msg_id = ++auto_inc_id;
+        msg->create = wbt_cur_mtime;
+    }
     
     return msg;
 }
 
 void wbt_mq_msg_destory(wbt_msg_t *msg) {
-    wbt_mem_t tmp;
-    tmp.ptr = msg;
-    tmp.len = sizeof(wbt_msg_t);
-    wbt_free(&tmp);
+    wbt_delete(msg);
 }
 
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {

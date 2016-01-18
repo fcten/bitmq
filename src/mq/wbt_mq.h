@@ -101,6 +101,8 @@ typedef struct wbt_msg_list_s {
 typedef struct wbt_subscriber_s {
     // 订阅者 ID
     wbt_mq_id subscriber_id;
+    // 创建时间
+    time_t create;
     // 消息队列缓存
     struct wbt_msg_list_s * msg_list;
     // TCP 连接上下文
@@ -120,6 +122,8 @@ typedef struct wbt_subscriber_list_s {
 typedef struct wbt_channel_s {
     // 频道 ID
     wbt_mq_id channel_id;
+    // 创建时间
+    time_t create;
     // 频道类型
     // 1、临时频道
     // 如果没有订阅者，将无法向该频道投递消息

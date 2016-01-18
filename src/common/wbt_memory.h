@@ -22,6 +22,14 @@ typedef struct wbt_mem_s {
     void   *ptr;            /* 指向内存块的指针 */
 } wbt_mem_t;
 
+static inline void * wbt_new(size_t len) {
+    return malloc(len);
+}
+
+#define wbt_new(type) calloc(1, sizeof(type))
+
+#define wbt_delete(ptr) free(ptr)
+
 static inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
     p->ptr = malloc(len);
     if(p->ptr != NULL) {
