@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "../webit.h"
+#include "../common/wbt_log.h"
 #include "../common/wbt_time.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_heap.h"
@@ -49,14 +50,12 @@ enum {
 typedef long long unsigned int wbt_mq_id;
 
 typedef struct wbt_msg_s {
-    // 链表结构体
-    wbt_list_t list;
     // 消息 ID
     wbt_mq_id msg_id;
     // 消息生产者所订阅的频道 ID
-    wbt_mq_id producer;
+    wbt_mq_id producer_id;
     // 消息消费者所订阅的频道 ID
-    wbt_mq_id consumer;
+    wbt_mq_id consumer_id;
     // 创建时间
     time_t create;
     // 生效时间
@@ -67,8 +66,6 @@ typedef struct wbt_msg_s {
     time_t deliver;
     // 第一次消费时间
     time_t consume;
-    // 消息状态
-    //unsigned int state:4;
     // 优先级
     // 数值较小的消息会被优先处理
     //unsigned int priority:4;
@@ -92,6 +89,34 @@ typedef struct wbt_msg_s {
     unsigned int reference_count;
 } wbt_msg_t;
 
+typedef struct wbt_msg_list_s {
+    // 链表结构体
+    wbt_list_t list;
+    // 消息指针
+    wbt_msg_t * msg;
+    // 消息状态
+    unsigned int state:4;
+} wbt_msg_list_t;
+
+typedef struct wbt_subscriber_s {
+    // 订阅者 ID
+    wbt_mq_id subscriber_id;
+    // 消息队列缓存
+    struct wbt_msg_list_s * msg_list;
+    // TCP 连接上下文
+    wbt_event_t * ev;
+    // 订阅频道列表
+    struct wbt_channel_list_s * channel_list;
+    
+} wbt_subscriber_t;
+
+typedef struct wbt_subscriber_list_s {
+    // 链表结构体
+    wbt_list_t list;
+    // 消息指针
+    wbt_subscriber_t * subscriber;
+} wbt_subscriber_list_t;
+
 typedef struct wbt_channel_s {
     // 频道 ID
     wbt_mq_id channel_id;
@@ -104,24 +129,23 @@ typedef struct wbt_channel_s {
     // 频道永远不会撤销
     unsigned int type;
     // 订阅者
-    wbt_rbtree_t subscriber;
+    struct wbt_subscriber_list_s * subscriber_list;
+    // 已生效消息队列
+    // 广播消息和未投递成功的负载均衡消息会保存在该队列中
+    // 广播消息会一直保存到消息过期，未获取过该消息的订阅者将在上线后获得该消息
+    // 负载均衡消息将保存到第一次投递成功，或者消息过期
+    
+    // 已投递消息队列
+    // 保存已投递但订阅者尚未处理完毕的消息
+    
 } wbt_channel_t;
 
-typedef struct wbt_msg_list_s{
+typedef struct wbt_channel_list_s {
     // 链表结构体
     wbt_list_t list;
     // 消息指针
-    wbt_msg_t * msg;
-} wbt_msg_list_t;
-
-typedef struct wbt_subscriber_s {
-    // 链表结构体
-    wbt_list_t list;
-    // 消息队列缓存
-    wbt_msg_list_t * msg_list;
-    // TCP 连接上下文
-    wbt_event_t * ev;
-} wbt_subscriber_t;
+    wbt_channel_t * channel;
+} wbt_channel_list_t;
 
 #ifdef	__cplusplus
 }

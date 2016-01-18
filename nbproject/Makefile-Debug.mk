@@ -52,6 +52,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/module/wbt_module_helloworld.o \
 	${OBJECTDIR}/src/mq/wbt_mq.o \
+	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
+	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
 	${OBJECTDIR}/src/mq/wbt_mq_subscriber.o \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
@@ -169,6 +171,16 @@ ${OBJECTDIR}/src/mq/wbt_mq.o: src/mq/wbt_mq.c
 	${MKDIR} -p ${OBJECTDIR}/src/mq
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq.o src/mq/wbt_mq.c
+
+${OBJECTDIR}/src/mq/wbt_mq_channel.o: src/mq/wbt_mq_channel.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_channel.o src/mq/wbt_mq_channel.c
+
+${OBJECTDIR}/src/mq/wbt_mq_msg.o: src/mq/wbt_mq_msg.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_msg.o src/mq/wbt_mq_msg.c
 
 ${OBJECTDIR}/src/mq/wbt_mq_subscriber.o: src/mq/wbt_mq_subscriber.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq

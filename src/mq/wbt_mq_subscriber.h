@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+#include "wbt_mq.h"
 
 
 

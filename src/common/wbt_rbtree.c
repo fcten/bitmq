@@ -373,6 +373,15 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
     return NULL;
 }
 
+void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key) {
+    wbt_rbtree_node_t * node = wbt_rbtree_get(rbt, key);
+    if( node == NULL ) {
+        return NULL;
+    } else {
+        return node->value.ptr;
+    }
+}
+
 void wbt_rbtree_print(wbt_rbtree_node_t *node) {
     if(node != wbt_rbtree_node_nil) {
         wbt_rbtree_print(node->left);

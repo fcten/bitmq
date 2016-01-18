@@ -55,7 +55,7 @@ wbt_status wbt_event_init() {
     }
 
     /* 初始化事件超时队列 */
-    if(wbt_heap_new(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
+    if(wbt_heap_init(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
         wbt_log_add("create heap failed\n");
 
         return WBT_ERROR;

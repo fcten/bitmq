@@ -10,7 +10,7 @@
 #include "wbt_log.h"
 
 /* 建立一个空堆 */
-wbt_status wbt_heap_new(wbt_heap_t * p, size_t max_size) {    
+wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size) {    
     if(wbt_malloc(&p->heap, (max_size + 1) * sizeof(wbt_heap_node_t))
         == WBT_ERROR)
     {

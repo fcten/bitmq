@@ -46,6 +46,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key);
 void wbt_rbtree_delete(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node);
 
 wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key);
+void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key);
 
 void wbt_rbtree_destroy(wbt_rbtree_t *rbt);
 void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt);

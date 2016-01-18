@@ -32,7 +32,7 @@ typedef struct {
 } wbt_heap_t;
 
 /* 建立一个空堆 */
-wbt_status wbt_heap_new(wbt_heap_t * p, size_t max_size);
+wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size);
 /* 向堆中插入一个新元素 */
 wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node);
 /* 获取堆顶元素 */
