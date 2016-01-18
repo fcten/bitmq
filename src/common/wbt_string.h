@@ -14,6 +14,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "wbt_memory.h"
 
@@ -36,12 +37,17 @@ typedef union {
 #define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
 #define wbt_null_string     { 0, NULL }
 
-#define wbt_str_set(stri, text)  (stri)->len = sizeof(text) - 1; (stri)->str = (u_char *) text
-#define wbt_str_set_null(stri)   (stri)->len = 0; (stri)->str = NULL
+#define wbt_str_set(stri, text)  (stri).len = sizeof(text) - 1; (stri).str = (u_char *) text
+#define wbt_str_set_null(stri)   (stri).len = 0; (stri).str = NULL
 
 #define wbt_offset_to_str(offset, stri, p)   do { \
-    (stri).str = (char *)(p) + (offset).start; \
+    (stri).str = (u_char *)(p) + (offset).start; \
     (stri).len = (offset).len; \
+} while(0);
+
+#define wbt_variable_to_str(vari, stri)   do { \
+    (stri).str = (u_char *)(&vari); \
+    (stri).len = sizeof(vari); \
 } while(0);
 
 const char * wbt_stdstr(wbt_str_t * str);
@@ -49,9 +55,9 @@ const char * wbt_stdstr(wbt_str_t * str);
 wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
 
 int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 );
-int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len );
+int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len );
-int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2);
+int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2);
 
 void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
 

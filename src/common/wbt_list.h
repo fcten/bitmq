@@ -59,11 +59,11 @@ typedef struct wbt_list_s {
 	     &pos->member != (head);					\
 	     pos = wbt_list_next_entry(pos, member))
 
-static inline void __wbt_list_add(wbt_list_t *new, wbt_list_t *prev, wbt_list_t *next) {
-    next->prev = new;
-    new->next = next;
-    new->prev = prev;
-    prev->next = new;
+static inline void __wbt_list_add(wbt_list_t *list, wbt_list_t *prev, wbt_list_t *next) {
+    next->prev = list;
+    list->next = next;
+    list->prev = prev;
+    prev->next = list;
 }
 
 static inline void __wbt_list_del(wbt_list_t *prev, wbt_list_t *next) {
@@ -71,12 +71,12 @@ static inline void __wbt_list_del(wbt_list_t *prev, wbt_list_t *next) {
     prev->next = next;
 }
   
-static inline void wbt_list_add(wbt_list_t *new, wbt_list_t *head) {
-    __wbt_list_add(new, head, head->next);
+static inline void wbt_list_add(wbt_list_t *list, wbt_list_t *head) {
+    __wbt_list_add(list, head, head->next);
 }
 
-static inline void wbt_list_add_tail(wbt_list_t *new, wbt_list_t *head) {
-    __wbt_list_add(new, head->prev, head);
+static inline void wbt_list_add_tail(wbt_list_t *list, wbt_list_t *head) {
+    __wbt_list_add(list, head->prev, head);
 }  
 
 static inline void wbt_list_del(wbt_list_t *entry) {
@@ -85,6 +85,11 @@ static inline void wbt_list_del(wbt_list_t *entry) {
 
 static inline int wbt_list_empty(const wbt_list_t *head) {
 	return head->next == head;
+}
+
+static inline void wbt_list_move_tail(wbt_list_t *list, wbt_list_t *head) {
+	wbt_list_del(list);
+	wbt_list_add_tail(list, head);
 }
 
 #ifdef	__cplusplus

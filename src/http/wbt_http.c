@@ -339,7 +339,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     http->method = METHOD_UNKNOWN;
                     int i;
                     for(i = METHOD_UNKNOWN + 1 ; i < METHOD_LENGTH ; i++ ) {
-                        if( wbt_strcmp(&method,
+                        if( wbt_strncmp(&method,
                                 &REQUEST_METHOD[i],
                                 REQUEST_METHOD[i].len ) == 0 ) {
                             http->method = i;
@@ -413,7 +413,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     wbt_offset_to_str(tail->name.o, header_name, ev->buff.ptr);
                     tail->key = HEADER_UNKNOWN;
                     for( i = 1 ; i < HEADER_LENGTH ; i ++ ) {
-                        if( wbt_strcmp( &header_name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
+                        if( wbt_strncmp( &header_name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
                             tail->key = i;
                             break;
                         }
@@ -507,8 +507,8 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
     /* 检查 HTTP 版本信息 */
     wbt_str_t http_version;
     wbt_offset_to_str(http->version, http_version, ev->buff.ptr);
-    if( wbt_strcmp( &http_version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
-        wbt_strcmp( &http_version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
+    if( wbt_strncmp( &http_version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
+        wbt_strncmp( &http_version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
         /* HTTP Version not supported */
         http->status = STATUS_505;
         return WBT_ERROR;
@@ -831,7 +831,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
             while( header != NULL ) {
                 wbt_offset_to_str(header->value.o, header_value, ev->buff.ptr);
                 if( header->key == HEADER_IF_MODIFIED_SINCE &&
-                    wbt_strcmp2( last_modified, &header_value ) == 0 ) {
+                    wbt_strcmp( last_modified, &header_value ) == 0 ) {
                     /* 304 Not Modified */
                     http->status = STATUS_304;
                 }

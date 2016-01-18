@@ -216,15 +216,15 @@ wbt_status wbt_module_helloworld_recv(wbt_event_t *ev) {
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
     
-    if( wbt_strcmp( &http_uri, &api, api.len ) == 0 ) {
+    if( wbt_strncmp( &http_uri, &api, api.len ) == 0 ) {
         return WBT_OK;
-    } else if( wbt_strcmp2( &http_uri, &login ) == 0 ) {
+    } else if( wbt_strcmp( &http_uri, &login ) == 0 ) {
         return wbt_module_helloworld_login(ev);
-    } else if( wbt_strcmp2( &http_uri, &pull ) == 0 ) {
+    } else if( wbt_strcmp( &http_uri, &pull ) == 0 ) {
         return wbt_module_helloworld_pull(ev);
-    } else if( wbt_strcmp2( &http_uri, &push ) == 0 ) {
+    } else if( wbt_strcmp( &http_uri, &push ) == 0 ) {
         return wbt_module_helloworld_push(ev);
-    } else if( wbt_strcmp2( &http_uri, &show ) == 0 ) {
+    } else if( wbt_strcmp( &http_uri, &show ) == 0 ) {
         return wbt_module_helloworld_show(ev);
     }
     

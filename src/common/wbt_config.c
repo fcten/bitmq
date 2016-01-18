@@ -81,13 +81,13 @@ wbt_status wbt_conf_init() {
     
     wbt_conf.secure = 0;
     if( ( m_value = wbt_conf_get_v("secure") ) != NULL ) {
-        if( wbt_strcmp2( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
             wbt_conf.secure = 1;
         }
     }
     
-    wbt_str_set_null(&wbt_conf.secure_key);
-    wbt_str_set_null(&wbt_conf.secure_crt);
+    wbt_str_set_null(wbt_conf.secure_key);
+    wbt_str_set_null(wbt_conf.secure_crt);
     if( wbt_conf.secure ) {
         if( ( m_value = wbt_conf_get_v("secure_key") ) != NULL ) {
             wbt_conf.secure_key.len = m_value->len;
@@ -109,7 +109,7 @@ wbt_status wbt_conf_init() {
     wbt_conf.sendfile = 0;
     if( !wbt_conf.secure ) {
         if( ( m_value = wbt_conf_get_v("sendfile") ) != NULL ) {
-            if( wbt_strcmp2( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+            if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
                 wbt_conf.sendfile = 1;
             }
         }
@@ -135,7 +135,7 @@ wbt_status wbt_conf_init() {
         wbt_conf.max_core_file_size = atoi(value);
     }
     
-    wbt_str_set_null(&wbt_conf.root); 
+    wbt_str_set_null(wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
         wbt_conf.root.len = m_value->len;
         wbt_conf.root.str = m_value->ptr;
@@ -145,19 +145,19 @@ wbt_status wbt_conf_init() {
         return WBT_ERROR;
     }
     
-    wbt_str_set_null(&wbt_conf.index);
+    wbt_str_set_null(wbt_conf.index);
     if( ( m_value = wbt_conf_get_v("default") ) != NULL ) {
         wbt_conf.index.len = m_value->len;
         wbt_conf.index.str = m_value->ptr;
     }
 
-    wbt_str_set_null(&wbt_conf.admin);
+    wbt_str_set_null(wbt_conf.admin);
     if( ( m_value = wbt_conf_get_v("server_admin") ) != NULL ) {
         wbt_conf.admin.len = m_value->len;
         wbt_conf.admin.str = m_value->ptr;
     }
 
-    wbt_str_set_null(&wbt_conf.user);
+    wbt_str_set_null(wbt_conf.user);
     if( ( m_value = wbt_conf_get_v("user") ) != NULL ) {
         wbt_conf.user.len = m_value->len;
         wbt_conf.user.str = m_value->ptr;

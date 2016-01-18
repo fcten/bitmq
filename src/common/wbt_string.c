@@ -64,22 +64,14 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
 /*
  * 比较字符串 str1 和 str2 的前 len 个字符
  * 大小写敏感
- * 相同返回 0，否则返回 1
+ * 相同返回 0，否则返回第一个不相等字符的差值
  */
-int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
-    int pos = 0;
-
+int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     if( len > str1->len || len > str2->len ) {
         return 1;
     }
-    
-    for( pos = 0; pos < len ; pos ++ ) {
-        if( *(str1->str + pos) != *(str2->str + pos) ) {
-            return 1;
-        }
-    }
 
-    return 0;
+    return strncmp( str1->str, str2->str, len );
 }
 
 /*
@@ -88,35 +80,19 @@ int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
  * 相同返回 0，否则返回 1
  */
 int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
-    int pos = 0;
-    char ch1, ch2;
-
     if( len > str1->len || len > str2->len ) {
         return 1;
     }
     
-    for( pos = 0; pos < len ; pos ++ ) {
-        if ( ( (ch1 = *(str1->str + pos)) >= 'A') && (ch1 <= 'Z') ) {
-            ch1 += 0x20;
-        }
-        if ( ( (ch2 = *(str2->str + pos)) >= 'A') && (ch1 <= 'Z') ) {
-            ch2 += 0x20;
-        }
-        if( ch1 != ch2 ) {
-            return 1;
-        }
-    }
-
-    return 0;
+    return strncasecmp( str1->str, str2->str, len );
 }
 
 /*
  * 比较字符串 str1 和 str2
  * 大小写敏感
- * 相同返回 0，否则返回第一个不相等的字符的差值
+ * 相同返回 0，否则返回第一个不相等字符的差值
  */
-int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
-    int pos = 0;
+int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2) {
     int value, length;
 
     if( str1->len > str2->len ) {
@@ -125,11 +101,8 @@ int wbt_strcmp2( wbt_str_t *str1, wbt_str_t *str2) {
         length = str1->len;
     }
     
-    for( pos = 0; pos < length ; pos ++ ) {
-        value =  *(str1->str + pos) - *(str2->str + pos);
-
-        if(value != 0) return value;
-    }
+    value = wbt_strncmp( str1, str2, length );
+    if(value != 0) return value;
 
     if( str1->len > str2->len ) {
         value = *(str1->str + length);

@@ -27,6 +27,14 @@ wbt_msg_t * wbt_mq_msg_create() {
     if( msg ) {
         msg->msg_id = ++auto_inc_id;
         msg->create = wbt_cur_mtime;
+        
+        wbt_str_t msg_key;
+        wbt_variable_to_str(msg->msg_id, msg_key);
+        wbt_rbtree_node_t * msg_node = wbt_rbtree_insert(&wbt_mq_messages, &msg_key);
+        if( msg_node == NULL ) {
+            wbt_delete(msg);
+            return NULL;
+        }
     }
     
     return msg;
@@ -107,8 +115,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
             wbt_list_add_tail( &tmp_node->list, &subscriber->msg_list->list );
             
             // 投递成功后，将该订阅者移动到链表末尾
-            wbt_list_del(&subscriber_list->list);
-            wbt_list_add_tail(&subscriber_list->list, &channel->subscriber_list->list);
+            wbt_list_move_tail(&subscriber_list->list, &channel->subscriber_list->list);
         } else {
             // 内存不足，投递失败
             // TODO 需要记录该次投递失败

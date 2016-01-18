@@ -160,18 +160,19 @@ void wbt_rbtree_init(wbt_rbtree_t *rbt) {
 
 wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
     wbt_rbtree_node_t *tmp_node, *tail_node;
-    wbt_mem_t buf;
-    wbt_str_t tmp_str;
     int ret;
 
-    /* 创建一个新的节点 */
-    wbt_malloc(&buf, sizeof(wbt_rbtree_node_t));
-    wbt_memset(&buf, 0);
+    tmp_node = wbt_new(wbt_rbtree_node_t);
+    if( tmp_node == NULL ) {
+        return NULL;
+    }
 
-    tmp_node = (wbt_rbtree_node_t *)buf.ptr;
-    wbt_malloc(&tmp_node->key, key->len+1);
+    if( wbt_malloc(&tmp_node->key, key->len) != WBT_OK ) {
+        return NULL;
+    }
     wbt_memcpy(&tmp_node->key, (wbt_mem_t *)key, key->len);
-    *((char *)tmp_node->key.ptr+key->len) =  '\0';
+    //*((char *)tmp_node->key.ptr+key->len) =  '\0';
+
     tmp_node->left = tmp_node->right = wbt_rbtree_node_nil;
     tmp_node->parent = wbt_rbtree_node_nil;
     tmp_node->color = WBT_RBT_COLOR_RED;
@@ -181,10 +182,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
     } else {
         tail_node = rbt->root;
         while(1) {
-            tmp_str.len = tail_node->key.len-1;
-            tmp_str.str = tail_node->key.ptr;
-
-            ret = wbt_strcmp2(key, &tmp_str);
+            ret = wbt_strcmp(key, (wbt_str_t *)&tail_node->key);
             if( ret == 0 ) {
                 /* 键值已经存在 */
                 return NULL;
@@ -360,7 +358,7 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
         str.len = node->key.len;
         str.str = node->key.ptr;
 
-        ret = wbt_strcmp2(key, &str);
+        ret = wbt_strcmp(key, &str);
         if(ret == 0) {
             return node;
         } else if( ret > 0 ) {
