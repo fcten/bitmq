@@ -19,7 +19,6 @@ wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size) {
 
     p->max = max_size;
     p->size = 0;
-    wbt_memset( &p->heap, 0 ); /* 象征性初始化一下 */
     
     return WBT_OK;
 }
@@ -33,9 +32,9 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_heap_node_t * node) {
         {
             p->max *= 2;
             
-            wbt_log_add("heap resize to %u\n", p->max);
+            wbt_log_debug("heap resize to %u", p->max);
         } else {
-            wbt_log_add("heap overflow\n");
+            wbt_log_add("heap overflow at size %u\n", p->max);
 
             return WBT_ERROR;
         }
@@ -72,7 +71,7 @@ wbt_heap_node_t * wbt_heap_get(wbt_heap_t * p) {
 
 /* 删除堆顶元素 */
 wbt_status wbt_heap_delete(wbt_heap_t * p) {
-    if(p->size == 0) {
+    if( p->size == 0 ) {
         /* 堆是空的 */
         return WBT_ERROR;
     }
@@ -109,6 +108,15 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
     p_node[i].modified = last_node.modified;
     
     //wbt_log_debug("heap delete, %d nodes.", p->size);
+    // 删除元素后尝试释放空间
+    // 为每一个最小堆添加定时 GC 任务太复杂了，我认为目前的做法可以接受
+    if( p->max >= p->size * 4 && p->size >= 128 ) {
+        wbt_realloc( &p->heap, sizeof(wbt_heap_node_t) * p->max / 2 );
+
+        p->max /= 2;
+
+        wbt_log_debug("heap resize to %u", p->max);
+    }
     
     return WBT_OK;
 }

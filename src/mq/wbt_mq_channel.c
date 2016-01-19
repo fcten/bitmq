@@ -20,7 +20,7 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         channel->subscriber_list = wbt_new(wbt_subscriber_list_t);
         
         if( channel->subscriber_list ) {
-            wbt_list_init(&channel->subscriber_list->list);
+            wbt_list_init(&channel->subscriber_list->head);
         } else {
             wbt_mq_channel_destory(channel);
             return NULL;
@@ -60,9 +60,9 @@ void wbt_mq_channel_destory(wbt_channel_t *channel) {
 
     if( channel->subscriber_list ) {
         wbt_subscriber_list_t * pos;
-        while(!wbt_list_empty(&channel->subscriber_list->list)) {
-            pos = wbt_list_first_entry(&channel->subscriber_list->list, wbt_subscriber_list_t, list);
-            wbt_list_del(&pos->list);
+        while(!wbt_list_empty(&channel->subscriber_list->head)) {
+            pos = wbt_list_first_entry(&channel->subscriber_list->head, wbt_subscriber_list_t, head);
+            wbt_list_del(&pos->head);
             wbt_delete(pos);
         }
         wbt_delete(channel->subscriber_list);

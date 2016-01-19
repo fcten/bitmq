@@ -91,11 +91,9 @@ typedef struct wbt_msg_s {
 
 typedef struct wbt_msg_list_s {
     // 链表结构体
-    wbt_list_t list;
+    wbt_list_t head;
     // 消息指针
     wbt_msg_t * msg;
-    // 消息状态
-    unsigned int state:4;
 } wbt_msg_list_t;
 
 typedef struct wbt_subscriber_s {
@@ -114,7 +112,7 @@ typedef struct wbt_subscriber_s {
 
 typedef struct wbt_subscriber_list_s {
     // 链表结构体
-    wbt_list_t list;
+    wbt_list_t head;
     // 消息指针
     wbt_subscriber_t * subscriber;
 } wbt_subscriber_list_t;
@@ -136,20 +134,22 @@ typedef struct wbt_channel_s {
     struct wbt_subscriber_list_s * subscriber_list;
     // 已生效消息队列
     // 广播消息和未投递成功的负载均衡消息会保存在该队列中
-    // 广播消息会一直保存到消息过期，未获取过该消息的订阅者将在上线后获得该消息
+    // 广播消息会一直保存到消息过期，以供新上线的订阅者获得该消息
     // 负载均衡消息将保存到第一次投递成功，或者消息过期
-    
+    wbt_heap_t effective_heap;
     // 已投递消息队列
-    // 保存已投递但订阅者尚未处理完毕的消息
-    
+    // 保存已投递但订阅者尚未处理完毕的负载均衡消息
+    wbt_heap_t delivered_heap;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
     // 链表结构体
-    wbt_list_t list;
+    wbt_list_t head;
     // 消息指针
     wbt_channel_t * channel;
 } wbt_channel_list_t;
+
+wbt_status wbt_mq_init();
 
 #ifdef	__cplusplus
 }
