@@ -57,8 +57,13 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     }
 
     if( msg->expire <= wbt_cur_mtime ) {
-        // 不应当尝试投递已过期的消息
-        return WBT_ERROR;
+        // 投递的消息已经过期
+        
+        // 判断是否需要创建消息以通知生产者该消息失败
+        
+        // 销毁消息
+        
+        return WBT_OK;
     }
 
     wbt_heap_node_t * msg_node = wbt_new(wbt_heap_node_t);
@@ -135,12 +140,6 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
             return WBT_OK;
         }
 
-        // 保存该消息
-        if( wbt_heap_insert(&channel->delivered_heap, msg_node) != WBT_OK ) {
-            wbt_delete(msg_node);
-            return WBT_ERROR;
-        }
-
         if( wbt_list_empty(&subscriber->msg_list->head) &&
             subscriber->ev->on_timeout == NULL/* TODO */ ) {
             // TODO 添加 EPOLL_OUT 监听
@@ -156,16 +155,4 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     }
     
     return WBT_OK;
-}
-
-/**
- * 从最小堆定时器中删除掉超时消息
- * @param msg_heap
- */
-void wbt_mq_remove_timeout_msg(wbt_heap_t * msg_heap) {
-    wbt_heap_node_t * p = wbt_heap_get(msg_heap);
-    while( msg_heap->size > 0 && p->timeout <= wbt_cur_mtime ) {
-        wbt_heap_delete( msg_heap );
-        p = wbt_heap_get(msg_heap);
-    }
 }

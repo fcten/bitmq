@@ -107,7 +107,9 @@ typedef struct wbt_subscriber_s {
     wbt_event_t * ev;
     // 订阅频道列表
     struct wbt_channel_list_s * channel_list;
-    
+    // 已投递消息队列
+    // 保存已投递但订阅者尚未处理完毕的负载均衡消息
+    wbt_heap_t delivered_heap;
 } wbt_subscriber_t;
 
 typedef struct wbt_subscriber_list_s {
@@ -137,9 +139,6 @@ typedef struct wbt_channel_s {
     // 广播消息会一直保存到消息过期，以供新上线的订阅者获得该消息
     // 负载均衡消息将保存到第一次投递成功，或者消息过期
     wbt_heap_t effective_heap;
-    // 已投递消息队列
-    // 保存已投递但订阅者尚未处理完毕的负载均衡消息
-    wbt_heap_t delivered_heap;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
@@ -150,6 +149,14 @@ typedef struct wbt_channel_list_s {
 } wbt_channel_list_t;
 
 wbt_status wbt_mq_init();
+wbt_status wbt_mq_on_recv(wbt_event_t *ev);
+wbt_status wbt_mq_on_close(wbt_event_t *ev);
+
+wbt_status wbt_mq_login(wbt_event_t *ev);
+wbt_status wbt_mq_push(wbt_event_t *ev);
+wbt_status wbt_mq_pull(wbt_event_t *ev);
+wbt_status wbt_mq_pull_timeout(wbt_event_t *ev);
+wbt_status wbt_mq_ack(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }

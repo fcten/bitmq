@@ -128,3 +128,15 @@ wbt_status wbt_heap_destroy(wbt_heap_t * p) {
     p->size = 0;
     return WBT_OK;
 }
+
+/**
+ * 从最小堆定时器中删除掉超时事件
+ * @param p
+ */
+void wbt_heap_delete_timeout(wbt_heap_t * p) {
+    wbt_heap_node_t * node = wbt_heap_get(p);
+    while( p->size > 0 && node->timeout <= wbt_cur_mtime ) {
+        wbt_heap_delete(p);
+        node = wbt_heap_get(p);
+    }
+}
