@@ -6,16 +6,16 @@
  */
 
 #include "wbt_mq_msg.h"
-
-// 存储所有可用频道
-// 一个频道下有一个或多个消费者，如果所有消费者离开频道，该频道将会撤销
-extern wbt_rbtree_t wbt_mq_channels;
+#include "wbt_mq_channel.h"
 
 // 存储所有已接收到的消息
-wbt_rbtree_t wbt_mq_messages;
+static wbt_rbtree_t wbt_mq_messages;
 
-// 存储所有未生效的消息
-wbt_heap_t wbt_mq_message_delayed;
+wbt_status wbt_mq_msg_init() {
+    wbt_rbtree_init(&wbt_mq_messages);
+
+    return WBT_OK;
+}
 
 wbt_msg_t * wbt_mq_msg_create() {
     static wbt_mq_id auto_inc_id = 0;
@@ -32,13 +32,34 @@ wbt_msg_t * wbt_mq_msg_create() {
             wbt_delete(msg);
             return NULL;
         }
+        msg_node->value.ptr = msg;
+        msg_node->value.len = sizeof(msg);
     }
     
     return msg;
 }
 
 void wbt_mq_msg_destory(wbt_msg_t *msg) {
-    wbt_delete(msg);
+    if( msg == NULL ) {
+        return;
+    }
+
+    wbt_str_t msg_key;
+    wbt_variable_to_str(msg->msg_id, msg_key);
+    wbt_rbtree_node_t * msg_node = wbt_rbtree_get( &wbt_mq_messages, &msg_key );
+    if( msg_node ) {
+        wbt_rbtree_delete( &wbt_mq_messages, msg_node );
+    }
+}
+
+wbt_status wbt_mq_msg_delivery_delayed(wbt_event_t *ev) {
+    if( wbt_mq_msg_delivery( ev->ctx ) == WBT_OK ) {
+        return WBT_OK;
+    } else {
+        // 投递失败，该消息将会丢失。内存不足时可能出现该情况
+        wbt_mq_msg_destory( ev->ctx );
+        return WBT_ERROR;
+    }
 }
 
 /**
@@ -47,44 +68,37 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
  * @return wbt_status
  */
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
-    wbt_str_t channel_id;
-    wbt_variable_to_str(msg->consumer_id, channel_id);
-    wbt_channel_t * channel = wbt_rbtree_get_value(&wbt_mq_channels, &channel_id);
-    if( channel == NULL ) {
-        // 投递的频道不存在，投递失败
-        // TODO 新建频道？
-        return WBT_ERROR;
-    }
-
     if( msg->expire <= wbt_cur_mtime ) {
         // 投递的消息已经过期
-        
-        // 判断是否需要创建消息以通知生产者该消息失败
         
         // 销毁消息
         
         return WBT_OK;
+    } else if( msg->effect > wbt_cur_mtime ) {
+        // 未生效消息
+        wbt_event_t tmp_ev, *new_ev;
+        tmp_ev.on_timeout = wbt_mq_msg_delivery_delayed;
+        tmp_ev.fd = -1;
+        tmp_ev.timeout = msg->effect;
+        if((new_ev = wbt_event_add(&tmp_ev)) == NULL) {
+            return WBT_ERROR;
+        }
+        new_ev->ctx = msg;
+        return WBT_OK;
     }
 
+    wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
+    if( channel == NULL ) {
+        return WBT_ERROR;
+    }
+
+    // 已生效消息
     wbt_heap_node_t * msg_node = wbt_new(wbt_heap_node_t);
     if( msg_node == NULL ) {
         return WBT_ERROR;
     }
     msg_node->ptr = msg;
-    
-    if( msg->effect > wbt_cur_mtime ) {
-        // 未生效消息
-        msg_node->timeout = msg->effect;
-        // 保存该消息
-        if( wbt_heap_insert(&wbt_mq_message_delayed, msg_node) != WBT_OK ) {
-            wbt_delete(msg_node);
-            return WBT_ERROR;
-        }
-        return WBT_OK;
-    } else {
-        // 已生效消息
-        msg_node->timeout = msg->expire;
-    }
+    msg_node->timeout = msg->expire;
     
     if( msg->delivery_mode == MSG_BROADCAST ) {
         // 保存该消息

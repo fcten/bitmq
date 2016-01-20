@@ -165,6 +165,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     
     t->data.ptr = NULL;
     t->data.len = 0;
+    
+    t->ctx = NULL;
 
     /* 注册epoll事件 */
     if(t->fd >= 0) {

@@ -14,6 +14,7 @@ extern "C" {
 
 #include "wbt_mq.h"
 
+wbt_status wbt_mq_msg_init();
 wbt_msg_t * wbt_mq_msg_create();
 void wbt_mq_msg_destory(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg);

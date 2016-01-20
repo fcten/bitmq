@@ -30,21 +30,8 @@ enum {
 };
 
 enum {
-    MSG_BROADCAST,   // 广播模式
-    MSG_LOAD_BALANCE // 负载均衡模式
-};
-
-enum {
-    MSG_DELIVER_ONCE,  // 至少投递一次
-    MSG_CONSUME_ONCE,  // 至少消费一次
-    MSG_DELIVER_TWICE, // 至少投递两次
-    MSG_CONSUME_TWICE, // 至少消费两次
-    MSG_DELIVER_ALL,   // 全部投递完成
-    MSG_CONSUME_ALL,   // 全部消费完成
-};
-
-enum {
-    MSG_
+    MSG_BROADCAST = 1, // 广播模式
+    MSG_LOAD_BALANCE   // 负载均衡模式
 };
 
 typedef long long unsigned int wbt_mq_id;
@@ -62,21 +49,9 @@ typedef struct wbt_msg_s {
     time_t effect;
     // 过期时间
     time_t expire;
-    // 第一次投递时间
-    time_t deliver;
-    // 第一次消费时间
-    time_t consume;
     // 优先级
     // 数值较小的消息会被优先处理
     //unsigned int priority:4;
-    // 可靠性保证
-    // 1、消息投递给至少一个消费者后返回成功
-    // 2、消息被至少一个消费者处理后返回成功（默认）
-    // 3、消息投递给至少两个消费者后返回成功
-    // 4、消息被至少两个消费者处理后返回成功
-    // 5、消息投递给所有消费者后返回成功
-    // 6、消息被所有消费者处理后返回成功
-    unsigned int reliable:4;
     // 投递模式
     // 1、负载均衡模式：有多个消费者。消息以负载均衡的方式投递给某一个消费者。
     // 2、广播模式：有多个消费者。消息以广播的方式投递给所有消费者。
@@ -87,6 +62,8 @@ typedef struct wbt_msg_s {
     unsigned int consumption_count;
     // 引用次数
     unsigned int reference_count;
+    // 消息内容
+    wbt_mem_t data;
 } wbt_msg_t;
 
 typedef struct wbt_msg_list_s {
@@ -101,7 +78,7 @@ typedef struct wbt_subscriber_s {
     wbt_mq_id subscriber_id;
     // 创建时间
     time_t create;
-    // 消息队列缓存
+    // 消息队列
     struct wbt_msg_list_s * msg_list;
     // TCP 连接上下文
     wbt_event_t * ev;
@@ -124,21 +101,14 @@ typedef struct wbt_channel_s {
     wbt_mq_id channel_id;
     // 创建时间
     time_t create;
-    // 频道类型
-    // 1、临时频道
-    // 如果没有订阅者，将无法向该频道投递消息
-    // 如果没有订阅者并且所有消息过期，频道将会撤销。
-    // 2、固定频道
-    // 可以在任何时候投递消息
-    // 频道永远不会撤销
-    unsigned int type;
     // 订阅者
     struct wbt_subscriber_list_s * subscriber_list;
-    // 已生效消息队列
-    // 广播消息和未投递成功的负载均衡消息会保存在该队列中
+    // 广播消息队列
     // 广播消息会一直保存到消息过期，以供新上线的订阅者获得该消息
     // 负载均衡消息将保存到第一次投递成功，或者消息过期
     wbt_heap_t effective_heap;
+    // 负载均衡消息队列
+    struct wbt_msg_list_s * delivered_list;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
@@ -157,6 +127,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev);
 wbt_status wbt_mq_pull(wbt_event_t *ev);
 wbt_status wbt_mq_pull_timeout(wbt_event_t *ev);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
+wbt_status wbt_mq_status(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }

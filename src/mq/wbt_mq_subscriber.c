@@ -8,13 +8,20 @@
 #include "wbt_mq_subscriber.h"
 
 // 存储所有的订阅者
-wbt_rbtree_t wbt_mq_subscribers;
+static wbt_rbtree_t wbt_mq_subscribers;
 
-wbt_subscriber_t * wbt_mq_subscriber_create(wbt_mq_id subscriber_id) {
+wbt_status wbt_mq_subscriber_init() {
+    wbt_rbtree_init(&wbt_mq_subscribers);
+
+    return WBT_OK;
+}
+
+wbt_subscriber_t * wbt_mq_subscriber_create() {
+    static wbt_mq_id auto_inc_id = 0;
     wbt_subscriber_t * subscriber = wbt_new(wbt_subscriber_t);
     
     if( subscriber ) {
-        subscriber->subscriber_id = subscriber_id;
+        subscriber->subscriber_id = ++auto_inc_id;
         subscriber->create = wbt_cur_mtime;
         subscriber->msg_list = wbt_new(wbt_msg_list_t);
         subscriber->channel_list = wbt_new(wbt_channel_list_t);
@@ -34,6 +41,8 @@ wbt_subscriber_t * wbt_mq_subscriber_create(wbt_mq_id subscriber_id) {
             wbt_mq_subscriber_destory(subscriber);
             return NULL;
         }
+        subscriber_node->value.ptr = subscriber;
+        subscriber_node->value.len = sizeof(subscriber);
     }
     
     return subscriber;
@@ -79,5 +88,10 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         wbt_delete(subscriber->msg_list);
     }
 
-    wbt_delete(subscriber);
+    wbt_str_t subscriber_key;
+    wbt_variable_to_str(subscriber->subscriber_id, subscriber_key);
+    wbt_rbtree_node_t * subscriber_node = wbt_rbtree_get( &wbt_mq_subscribers, &subscriber_key );
+    if( subscriber_node ) {
+        wbt_rbtree_delete( &wbt_mq_subscribers, subscriber_node );
+    }
 }

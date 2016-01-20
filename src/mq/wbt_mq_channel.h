@@ -14,6 +14,7 @@ extern "C" {
 
 #include "wbt_mq.h"
 
+wbt_status wbt_mq_channel_init();
 wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id);
 wbt_channel_t * wbt_mq_channel_get(wbt_mq_id channel_id);
 void wbt_mq_channel_destory(wbt_channel_t *channel);

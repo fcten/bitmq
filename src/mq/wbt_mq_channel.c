@@ -8,8 +8,13 @@
 #include "wbt_mq_channel.h"
 
 // 存储所有可用频道
-// 一个频道下有一个或多个消费者，如果所有消费者离开频道，该频道将会撤销
-wbt_rbtree_t wbt_mq_channels;
+static wbt_rbtree_t wbt_mq_channels;
+
+wbt_status wbt_mq_channel_init() {
+    wbt_rbtree_init(&wbt_mq_channels);
+
+    return WBT_OK;
+}
 
 wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
     wbt_channel_t * channel = wbt_new(wbt_channel_t);
@@ -33,6 +38,8 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
             wbt_mq_channel_destory(channel);
             return NULL;
         }
+        channel_node->value.ptr = channel;
+        channel_node->value.len = sizeof(channel);
     }
     
     return channel;
@@ -68,5 +75,10 @@ void wbt_mq_channel_destory(wbt_channel_t *channel) {
         wbt_delete(channel->subscriber_list);
     }
 
-    wbt_delete(channel);
+    wbt_str_t channel_key;
+    wbt_variable_to_str(channel->channel_id, channel_key);
+    wbt_rbtree_node_t * channel_node = wbt_rbtree_get( &wbt_mq_channels, &channel_key );
+    if( channel_node ) {
+        wbt_rbtree_delete( &wbt_mq_channels, channel_node );
+    }
 }

@@ -44,8 +44,8 @@ wbt_status wbt_heap_destroy(wbt_heap_t * p);
 /* 删除超时元素 */
 void wbt_heap_delete_timeout(wbt_heap_t * p);
 
-#define wbt_heap_for_each(pos, ptr, root) \
-    for( pos=1, ptr=((wbt_heap_node_t *)root->heap.ptr)[pos] ; pos <= root->size ; pos++ )
+#define wbt_heap_for_each(pos, node, root) \
+    for( pos=1, node=((wbt_heap_node_t *)(root)->heap.ptr)+pos ; pos <= (root)->size ; pos++ )
 
 #ifdef	__cplusplus
 }

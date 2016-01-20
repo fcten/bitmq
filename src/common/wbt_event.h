@@ -40,6 +40,7 @@ typedef struct wbt_event_s {
     unsigned int modified;                          /* 事件版本 */
     wbt_mem_t buff;                                 /* 事件数据缓存 */
     wbt_mem_t data;                                 /* 供模块使用的自定义指针 */
+    void *ctx;
 } wbt_event_t;
 
 typedef struct wbt_event_pool_node_s {
