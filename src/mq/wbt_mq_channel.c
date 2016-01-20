@@ -22,8 +22,8 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
     if( channel ) {
         channel->channel_id = channel_id;
         channel->create = wbt_cur_mtime;
+
         channel->subscriber_list = wbt_new(wbt_subscriber_list_t);
-        
         if( channel->subscriber_list ) {
             wbt_list_init(&channel->subscriber_list->head);
         } else {
@@ -31,6 +31,11 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
             return NULL;
         }
 
+        if( wbt_heap_init( &channel->effective_heap, 128 ) != WBT_OK ) {
+            wbt_mq_channel_destory(channel);
+            return NULL;
+        }
+        
         wbt_str_t channel_key;
         wbt_variable_to_str(channel->channel_id, channel_key);
         wbt_rbtree_node_t * channel_node = wbt_rbtree_insert(&wbt_mq_channels, &channel_key);
@@ -74,6 +79,8 @@ void wbt_mq_channel_destory(wbt_channel_t *channel) {
         }
         wbt_delete(channel->subscriber_list);
     }
+    
+    wbt_heap_destroy( &channel->effective_heap );
 
     wbt_str_t channel_key;
     wbt_variable_to_str(channel->channel_id, channel_key);

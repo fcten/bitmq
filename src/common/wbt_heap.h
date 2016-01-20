@@ -45,7 +45,9 @@ wbt_status wbt_heap_destroy(wbt_heap_t * p);
 void wbt_heap_delete_timeout(wbt_heap_t * p);
 
 #define wbt_heap_for_each(pos, node, root) \
-    for( pos=1, node=((wbt_heap_node_t *)(root)->heap.ptr)+pos ; pos <= (root)->size ; pos++ )
+    for( pos=1, node=((wbt_heap_node_t *)(root)->heap.ptr)+pos ; \
+         pos <= (root)->size ; \
+         pos++, node=((wbt_heap_node_t *)(root)->heap.ptr)+pos )
 
 #ifdef	__cplusplus
 }

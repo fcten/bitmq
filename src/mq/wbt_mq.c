@@ -6,7 +6,6 @@
  */
 
 #include "wbt_mq.h"
-#include "../common/wbt_module.h"
 #include "wbt_mq_channel.h"
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
@@ -124,6 +123,7 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
         return WBT_OK;
     }
     
+    subscriber->ev = ev;
     ev->ctx = subscriber;
     
     // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
@@ -194,15 +194,25 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     wbt_msg_t * msg = wbt_mq_msg_create();
     if( msg == NULL ) {
         // 返回投递失败
+        http->status = STATUS_503;
         return WBT_OK;
     }
     msg->consumer_id = channel_id;
     msg->effect = msg->create;
     msg->expire = msg->create + 3600 * 1000;
     msg->delivery_mode = MSG_BROADCAST;
+    if( wbt_malloc( &msg->data, data.len ) != WBT_OK ) {
+        wbt_mq_msg_destory( msg );
+        
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+    wbt_memcpy( &msg->data, (wbt_mem_t *)&data, data.len );
     
     // 投递消息
     if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
+        wbt_mq_msg_destory( msg );
+        
         http->status = STATUS_403;
         return WBT_OK;
     }
@@ -213,20 +223,85 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_pull(wbt_event_t *ev) {
-    wbt_subscriber_t *subscriber = ev->ctx;
+wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
+    // 固定返回一个空的响应，通知客户端重新发起 pull 请求
+    wbt_str_t resp = wbt_string("{\"status\":0}");
     
-    // 从订阅者的 msg_list 中取出第一条消息
-    // 将该消息移动到 delivered_heap 中，并返回该消息
+    wbt_mem_t tmp;
+    wbt_malloc(&tmp, resp.len);
+    wbt_memcpy(&tmp, (wbt_mem_t *)&resp, resp.len);
     
-    // 如果没有可发送的消息，则挂起请求，设定新的超时时间和超时处理函数
+    wbt_http_t * http = ev->data.ptr;
     
+    http->state = STATE_SENDING;
+    http->status = STATUS_200;
+    http->file.ptr = tmp.ptr;
+    http->file.size = tmp.len;
+
+    if( wbt_http_process(ev) != WBT_OK ) {
+        wbt_conn_close(ev);
+    } else {
+        /* 等待socket可写 */
+        ev->on_timeout = wbt_conn_close;
+        ev->on_send = wbt_on_send;
+        ev->events = EPOLLOUT | EPOLLET;
+        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    }
+
     return WBT_OK;
 }
 
-wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
-    // 固定返回一个空的响应，通知客户端重新发起 pull 请求
+wbt_status wbt_mq_pull(wbt_event_t *ev) {
+    wbt_http_t * http = ev->data.ptr;
+    wbt_subscriber_t *subscriber = ev->ctx;
     
+    if( ev->ctx == NULL ) {
+        http->status = STATUS_404;
+        return WBT_OK;
+    }
+    
+    // 从订阅者的 msg_list 中取出第一条消息
+    if( !wbt_list_empty( &subscriber->msg_list->head ) ) {
+        wbt_msg_list_t *msg_node = wbt_list_first_entry( &subscriber->msg_list->head, wbt_msg_list_t, head );
+        wbt_msg_t *msg = msg_node->msg;
+        
+        // 从 msg_list 中删除该消息
+        wbt_list_del( &msg_node->head );
+
+        // 如果是负载均衡消息，将该消息移动到 delivered_heap 中
+        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+
+        }
+
+        wbt_mem_t tmp;
+        wbt_malloc(&tmp, msg->data.len);
+        wbt_memcpy(&tmp, &msg->data, msg->data.len);
+
+        http->status = STATUS_200;
+        http->file.ptr = tmp.ptr;
+        http->file.size = tmp.len;
+
+        wbt_delete(msg_node);
+        // TODO 在发送确实成功后删除该消息，否则重新加入 msg_list
+        //wbt_delete(msg);
+
+        return WBT_OK;
+    }
+    
+    // 如果没有可发送的消息，则挂起请求，设定新的超时时间和超时处理函数
+    http->state = STATE_BLOCKING;
+
+    ev->timeout = wbt_cur_mtime + 30000;
+    ev->on_timeout = wbt_mq_pull_timeout;
+
+    if(wbt_event_mod(ev) != WBT_OK) {
+        return WBT_ERROR;
+    }
+
     return WBT_OK;
 }
 
