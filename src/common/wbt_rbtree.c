@@ -327,6 +327,8 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
         
         y->key.ptr = NULL;
         y->key.len = 0;
+        y->value.ptr = NULL;
+        y->value.len = 0;
     }
 
     if( y->color == WBT_RBT_COLOR_BLACK ) {
@@ -335,11 +337,9 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     }
 
     /* 删除 y */
-    wbt_mem_t tmp;
-    tmp.ptr = y;
-    tmp.len = sizeof(wbt_rbtree_node_t);
-    wbt_free( &y->key );
-    wbt_free( &tmp );
+    wbt_free(&y->key);
+    wbt_free(&y->value);
+    wbt_delete(y);
 
     rbt->size --;
     

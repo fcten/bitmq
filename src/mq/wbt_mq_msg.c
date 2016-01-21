@@ -33,7 +33,7 @@ wbt_msg_t * wbt_mq_msg_create() {
             return NULL;
         }
         msg_node->value.ptr = msg;
-        msg_node->value.len = sizeof(msg);
+        msg_node->value.len = sizeof(wbt_msg_t);
     }
     
     return msg;
@@ -91,19 +91,15 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     }
 
     // 已生效消息
-    wbt_heap_node_t * msg_node = wbt_new(wbt_heap_node_t);
+    wbt_msg_list_t * msg_node = wbt_new(wbt_msg_list_t);
     if( msg_node == NULL ) {
         return WBT_ERROR;
     }
-    msg_node->ptr = msg;
-    msg_node->timeout = msg->expire;
+    msg_node->msg = msg;
     
     if( msg->delivery_mode == MSG_BROADCAST ) {
         // 保存该消息
-        if( wbt_heap_insert(&channel->effective_heap, msg_node) != WBT_OK ) {
-            wbt_delete(msg_node);
-            return WBT_ERROR;
-        }
+        wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
 
         // 广播模式，消息将投递给该频道下所有的订阅者
         wbt_subscriber_list_t * subscriber_node;
@@ -152,10 +148,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     } else if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
         if( wbt_list_empty( &channel->subscriber_list->head ) ) {
             // 频道没有任何订阅者
-            if( wbt_heap_insert(&channel->effective_heap, msg_node) != WBT_OK ) {
-                wbt_delete(msg_node);
-                return WBT_ERROR;
-            }
+            wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
             return WBT_OK;
         }
         
@@ -168,10 +161,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
         if( tmp_node == NULL ) {
             // 内存不足，暂时无法投递
-            if( wbt_heap_insert(&channel->effective_heap, msg_node) != WBT_OK ) {
-                wbt_delete(msg_node);
-                return WBT_ERROR;
-            }
+            wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
             return WBT_OK;
         }
 

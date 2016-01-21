@@ -30,7 +30,9 @@ wbt_subscriber_t * wbt_mq_subscriber_create() {
             wbt_list_init(&subscriber->msg_list->head);
             wbt_list_init(&subscriber->channel_list->head);
         } else {
-            wbt_mq_subscriber_destory(subscriber);
+            wbt_delete(subscriber->msg_list);
+            wbt_delete(subscriber->channel_list);
+            wbt_delete(subscriber);
             return NULL;
         }
 
@@ -38,11 +40,13 @@ wbt_subscriber_t * wbt_mq_subscriber_create() {
         wbt_variable_to_str(subscriber->subscriber_id, subscriber_key);
         wbt_rbtree_node_t * subscriber_node = wbt_rbtree_insert(&wbt_mq_subscribers, &subscriber_key);
         if( subscriber_node == NULL ) {
-            wbt_mq_subscriber_destory(subscriber);
+            wbt_delete(subscriber->msg_list);
+            wbt_delete(subscriber->channel_list);
+            wbt_delete(subscriber);
             return NULL;
         }
         subscriber_node->value.ptr = subscriber;
-        subscriber_node->value.len = sizeof(subscriber);
+        subscriber_node->value.len = sizeof(wbt_subscriber_t);
     }
     
     return subscriber;
@@ -94,4 +98,15 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
     if( subscriber_node ) {
         wbt_rbtree_delete( &wbt_mq_subscribers, subscriber_node );
     }
+}
+
+wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_channel_t *channel) {
+    wbt_channel_list_t *channel_node = wbt_new(wbt_channel_list_t);
+    if( channel_node == NULL ) {
+        return WBT_ERROR;
+    }
+    channel_node->channel = channel;
+    wbt_list_add(&channel_node->head, &subscriber->channel_list->head);
+    
+    return WBT_OK;
 }

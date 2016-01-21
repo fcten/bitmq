@@ -88,7 +88,7 @@ typedef struct wbt_subscriber_s {
     // 订阅频道列表
     struct wbt_channel_list_s * channel_list;
     // 已投递消息队列
-    // 保存已投递但订阅者尚未处理完毕的负载均衡消息
+    // 保存已投递但尚未返回 ACK 响应的负载均衡消息
     wbt_heap_t delivered_heap;
 } wbt_subscriber_t;
 
@@ -106,12 +106,8 @@ typedef struct wbt_channel_s {
     time_t create;
     // 订阅者
     struct wbt_subscriber_list_s * subscriber_list;
-    // 广播消息队列
-    // 广播消息会一直保存到消息过期，以供新上线的订阅者获得该消息
-    // 负载均衡消息将保存到第一次投递成功，或者消息过期
-    wbt_heap_t effective_heap;
-    // 负载均衡消息队列
-    struct wbt_msg_list_s * delivered_list;
+    // 消息队列
+    struct wbt_msg_list_s * msg_list;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
