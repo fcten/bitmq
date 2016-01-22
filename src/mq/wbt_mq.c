@@ -17,7 +17,8 @@ wbt_module_t wbt_module_mq = {
     NULL, // on_conn
     wbt_mq_on_recv, // on_recv
     NULL, // on_send
-    wbt_mq_on_close  // on_close
+    wbt_mq_on_close,  // on_close
+    wbt_mq_on_success
 };
 
 wbt_status wbt_mq_init() {
@@ -71,6 +72,11 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
         wbt_mq_channel_del_subscriber(channel_node->channel, subscriber);
     }
 
+    // 重新投递发送失败的负载均衡消息
+    if( subscriber->msg && subscriber->msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        wbt_mq_msg_delivery(subscriber->msg);
+    }
+
     wbt_msg_list_t *msg_node;
     // 遍历所有未投递的消息，重新投递负载均衡消息
     wbt_list_for_each_entry(msg_node, &subscriber->msg_list->head, head) {
@@ -78,13 +84,34 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
             wbt_mq_msg_delivery(msg_node->msg);
         }
     }
-    // 遍历所有尚未返回 ACK 响应的负载均衡消息
+    // 重新投递尚未返回 ACK 响应的负载均衡消息
     wbt_list_for_each_entry(msg_node, &subscriber->delivered_list->head, head) {
         wbt_mq_msg_delivery(msg_node->msg);
     }
 
     // 删除该订阅者
     wbt_mq_subscriber_destory(subscriber);
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_mq_on_success(wbt_event_t *ev) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    if( subscriber == NULL ) {
+        return WBT_OK;
+    }
+
+    // 如果是负载均衡消息，将该消息移动到 delivered_list 中
+    if( subscriber->msg && subscriber->msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        wbt_msg_list_t *msg_node = wbt_new(wbt_msg_list_t);
+        if( msg_node == NULL ) {
+            return WBT_ERROR;
+        }
+        msg_node->msg = subscriber->msg;
+        wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
+    }
+    
+    subscriber->msg = NULL;
     
     return WBT_OK;
 }
@@ -209,7 +236,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
         return WBT_OK;
     }
     msg->consumer_id = channel_id;
-    msg->effect = msg->create + 10 * 1000;
+    msg->effect = msg->create + 0 * 1000;
     msg->expire = msg->create + 20 * 1000;
     msg->delivery_mode = MSG_LOAD_BALANCE;//MSG_BROADCAST;
     if( wbt_malloc( &msg->data, data.len ) != WBT_OK ) {
@@ -288,22 +315,19 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         if( msg->delivery_mode == MSG_BROADCAST && msg->expire <= wbt_cur_mtime ) {
             continue;
         }
-        
-        // 如果是负载均衡消息，将该消息移动到 delivered_list 中
-        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
-            wbt_list_del( &msg_node->head );
-            wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
-        }
 
         wbt_mem_t tmp;
-        wbt_malloc(&tmp, msg->data.len);
+        if( wbt_malloc(&tmp, msg->data.len) != WBT_OK ) {
+            continue;
+        }
         wbt_memcpy(&tmp, &msg->data, msg->data.len);
 
         http->status = STATUS_200;
         http->file.ptr = tmp.ptr;
         http->file.size = tmp.len;
 
-        // TODO 如果发送失败，重新加入 msg_list
+        // 保存当前正在处理的消息指针
+        subscriber->msg = msg;
 
         return WBT_OK;
     }

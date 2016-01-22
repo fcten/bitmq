@@ -128,9 +128,17 @@ wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_chann
     return WBT_OK;
 }
 
+/**
+ * 向一个正处于 pull 阻塞状态的订阅者发送消息
+ * @param subscriber
+ * @param msg
+ * @return 
+ */
 wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *msg) {
     wbt_mem_t tmp;
-    wbt_malloc(&tmp, msg->data.len);
+    if( wbt_malloc(&tmp, msg->data.len) != WBT_OK ) {
+        return WBT_ERROR;
+    }
     wbt_memcpy(&tmp, &msg->data, msg->data.len);
 
     wbt_http_t * tmp_http = subscriber->ev->data.ptr;
@@ -141,6 +149,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
 
     if( wbt_http_process(subscriber->ev) != WBT_OK ) {
         // 内存不足，投递失败
+        wbt_conn_close(subscriber->ev);
         return WBT_ERROR;
     } else {
         tmp_http->state = STATE_SENDING;
@@ -154,6 +163,8 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
         if(wbt_event_mod(subscriber->ev) != WBT_OK) {
             return WBT_ERROR;
         }
+        
+        subscriber->msg = msg;
     }
 
     return WBT_OK;

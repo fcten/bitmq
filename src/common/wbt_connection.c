@@ -225,6 +225,8 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
         wbt_conn_close(ev);
         return WBT_OK;
     }
+    
+    wbt_module_on_success(ev);
 
     return WBT_OK;
 }

@@ -81,12 +81,14 @@ typedef struct wbt_subscriber_s {
     wbt_mq_id subscriber_id;
     // 创建时间
     time_t create;
-    // 消息队列
-    struct wbt_msg_list_s * msg_list;
     // TCP 连接上下文
     wbt_event_t * ev;
     // 订阅频道列表
     struct wbt_channel_list_s * channel_list;
+    // 可投递消息队列
+    struct wbt_msg_list_s * msg_list;
+    // 当前正在处理的消息指针
+    struct wbt_msg_s * msg;
     // 已投递消息队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
     struct wbt_msg_list_s * delivered_list;
@@ -120,6 +122,7 @@ typedef struct wbt_channel_list_s {
 wbt_status wbt_mq_init();
 wbt_status wbt_mq_on_recv(wbt_event_t *ev);
 wbt_status wbt_mq_on_close(wbt_event_t *ev);
+wbt_status wbt_mq_on_success(wbt_event_t *ev);
 
 wbt_status wbt_mq_login(wbt_event_t *ev);
 wbt_status wbt_mq_push(wbt_event_t *ev);
