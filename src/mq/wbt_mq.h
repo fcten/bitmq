@@ -89,7 +89,7 @@ typedef struct wbt_subscriber_s {
     struct wbt_channel_list_s * channel_list;
     // 已投递消息队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
-    wbt_heap_t delivered_heap;
+    struct wbt_msg_list_s * delivered_list;
 } wbt_subscriber_t;
 
 typedef struct wbt_subscriber_list_s {

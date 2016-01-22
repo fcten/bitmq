@@ -7,6 +7,7 @@
 
 #include "wbt_mq_msg.h"
 #include "wbt_mq_channel.h"
+#include "wbt_mq_subscriber.h"
 
 // 存储所有已接收到的消息
 static wbt_rbtree_t wbt_mq_messages;
@@ -109,30 +110,8 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
 
             if( wbt_list_empty(&subscriber->msg_list->head) &&
                 subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
-                wbt_mem_t tmp;
-                wbt_malloc(&tmp, msg->data.len);
-                wbt_memcpy(&tmp, &msg->data, msg->data.len);
-
-                wbt_http_t * tmp_http = subscriber->ev->data.ptr;
-
-                tmp_http->status = STATUS_200;
-                tmp_http->file.ptr = tmp.ptr;
-                tmp_http->file.size = tmp.len;
-
-                if( wbt_http_process(subscriber->ev) != WBT_OK ) {
-                    // 内存不足，投递失败
-                } else {
-                    tmp_http->state = STATE_SENDING;
-
-                    /* 等待socket可写 */
-                    subscriber->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
-                    subscriber->ev->on_send = wbt_on_send;
-                    subscriber->ev->events = EPOLLOUT | EPOLLET;
-                    subscriber->ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
-
-                    if(wbt_event_mod(subscriber->ev) != WBT_OK) {
-                        return WBT_ERROR;
-                    }
+                if( wbt_mq_subscriber_send_msg(subscriber, msg) != WBT_OK ) {
+                    // TODO 记录投递失败
                 }
             } else {
                 wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
@@ -158,23 +137,26 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         subscriber_list = wbt_list_first_entry(&channel->subscriber_list->head, wbt_subscriber_list_t, head);
         subscriber = subscriber_list->subscriber;
 
-        wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
-        if( tmp_node == NULL ) {
-            // 内存不足，暂时无法投递
-            wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
-            return WBT_OK;
-        }
-
         if( wbt_list_empty(&subscriber->msg_list->head) &&
             subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
-            // TODO 添加 EPOLL_OUT 监听
+            if( wbt_mq_subscriber_send_msg(subscriber, msg) != WBT_OK ) {
+                //  投递失败
+                wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
+                return WBT_OK;
+            }
+        } else {
+            wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
+            if( tmp_node == NULL ) {
+                // 内存不足，暂时无法投递
+                wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
+                return WBT_OK;
+            }
+            tmp_node->msg = msg;
+            wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
         }
-
-        tmp_node->msg = msg;
-        wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
-
         // 投递成功后，将该订阅者移动到链表末尾
         wbt_list_move_tail(&subscriber_list->head, &channel->subscriber_list->head);
+        wbt_delete(msg_node);
     } else {
         return WBT_ERROR;
     }

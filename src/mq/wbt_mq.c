@@ -71,13 +71,16 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
         wbt_mq_channel_del_subscriber(channel_node->channel, subscriber);
     }
 
-    // 遍历所有尚未处理完毕的负载均衡消息，将消息重新进行投递
-    // 广播消息可以直接忽略，无需处理
-    wbt_heap_node_t *msg_node;
-    int i;
-    wbt_heap_for_each(i, msg_node, &subscriber->delivered_heap) {
-        wbt_msg_t * msg = msg_node->ptr;
-        wbt_mq_msg_delivery(msg);
+    wbt_msg_list_t *msg_node;
+    // 遍历所有未投递的消息，重新投递负载均衡消息
+    wbt_list_for_each_entry(msg_node, &subscriber->msg_list->head, head) {
+        if( msg_node->msg->delivery_mode == MSG_LOAD_BALANCE ) {
+            wbt_mq_msg_delivery(msg_node->msg);
+        }
+    }
+    // 遍历所有尚未返回 ACK 响应的负载均衡消息
+    wbt_list_for_each_entry(msg_node, &subscriber->delivered_list->head, head) {
+        wbt_mq_msg_delivery(msg_node->msg);
     }
 
     // 删除该订阅者
@@ -206,9 +209,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
         return WBT_OK;
     }
     msg->consumer_id = channel_id;
-    msg->effect = msg->create;
-    msg->expire = msg->create + 10 * 1000;
-    msg->delivery_mode = MSG_BROADCAST;
+    msg->effect = msg->create + 10 * 1000;
+    msg->expire = msg->create + 20 * 1000;
+    msg->delivery_mode = MSG_LOAD_BALANCE;//MSG_BROADCAST;
     if( wbt_malloc( &msg->data, data.len ) != WBT_OK ) {
         wbt_mq_msg_destory( msg );
         
@@ -286,9 +289,10 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
             continue;
         }
         
-        // 如果是负载均衡消息，将该消息移动到 delivered_heap 中
+        // 如果是负载均衡消息，将该消息移动到 delivered_list 中
         if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
-
+            wbt_list_del( &msg_node->head );
+            wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
         }
 
         wbt_mem_t tmp;
