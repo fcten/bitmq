@@ -81,15 +81,14 @@ wbt_status wbt_event_init() {
 /* 程序退出前执行所有尚未触发的超时事件 */
 wbt_status wbt_event_exit() {
     if(timeout_events.size > 0) {
-        wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
+        wbt_event_t *p = wbt_heap_get(&timeout_events);
         while(timeout_events.size > 0) {
-            /* 尝试调用回调函数 */
-            if(p->modified == ((wbt_event_t *)(p->ptr))->modified
-                    && ((wbt_event_t *)(p->ptr))->on_timeout != NULL) {
-                ((wbt_event_t *)(p->ptr))->on_timeout(p->ptr);
-            }
             /* 移除超时事件 */
             wbt_heap_delete(&timeout_events);
+            /* 尝试调用回调函数 */
+            if( p->on_timeout != NULL ) {
+                p->on_timeout(p);
+            }
             p = wbt_heap_get(&timeout_events);
         }
     }
@@ -158,8 +157,6 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     t->timeout    = ev->timeout;
     t->events     = ev->events;
 
-    t->modified ++;
-
     t->buff.ptr = NULL;
     t->buff.len = 0;
     
@@ -181,12 +178,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     }
     
     /* 如果存在超时时间，添加到超时队列中 */
-    if(t->timeout > 0) {
-        wbt_heap_node_t timeout_ev;
-        timeout_ev.ptr = t;
-        timeout_ev.timeout = t->timeout;
-        timeout_ev.modified = t->modified;
-        if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
+    if(t->timeout > wbt_cur_mtime) {
+        if(wbt_heap_insert(&timeout_events, t) != WBT_OK) {
             return NULL;
         }
     }
@@ -210,8 +203,10 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     wbt_events.top ++;
     tmp_ev[wbt_events.top] = ev;
 
-    /* 使超时队列中的事件过期 */
-    ev->modified ++;
+    /* 删除超时事件 */
+    if( ev->heap_idx ) {
+        wbt_heap_remove(&timeout_events, ev->heap_idx);
+    }
     
     /* 释放可能存在的事件数据缓存 */
     wbt_free(&ev->buff);
@@ -245,23 +240,14 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
         }
     }
     
-    /* 使超时队列中的事件过期 */
-    /* 采用这样的设计，而不是从超时队列中删除对应事件，是因为从最小堆中删除特定事件
-     * 需要首先知道该事件的位置，而由于最小堆中元素的位置在频繁地变化，我们将不得不
-     * 在每次删除前搜索整个堆。
-     * 不过，这样做的坏处是，每一个请求都会产生数个超时事件并残留在超时队列中 15 秒
-     * （默认的 event_timeout 设定），对于一个繁忙的服务器，这意味着数百万个已失效的
-     * 超时事件会残留在超时队列中，使得插入操作花费额外的时间，并占用额外的服务器内
-     * 存。 */
-    ev->modified ++;
+    /* 删除超时事件 */
+    if( ev->heap_idx ) {
+        wbt_heap_remove(&timeout_events, ev->heap_idx);
+    }
 
     /* 如果存在超时时间，重新添加到超时队列中 */
-    if(ev->timeout >0) {
-        wbt_heap_node_t timeout_ev;
-        timeout_ev.ptr = ev;
-        timeout_ev.timeout  = ev->timeout;
-        timeout_ev.modified = ev->modified;
-        if(wbt_heap_insert(&timeout_events, &timeout_ev) != WBT_OK) {
+    if(ev->timeout > wbt_cur_mtime) {
+        if(wbt_heap_insert(&timeout_events, ev) != WBT_OK) {
             return WBT_ERROR;
         }
     }
@@ -402,15 +388,14 @@ wbt_status wbt_event_dispatch() {;
         
         /* 删除超时事件 */
         if(timeout_events.size > 0) {
-            wbt_heap_node_t *p = wbt_heap_get(&timeout_events);
-            while(timeout_events.size > 0 &&
-                    (p->timeout <= wbt_cur_mtime || p->modified != ((wbt_event_t *)(p->ptr))->modified)) {
-                /* 尝试调用回调函数 */
-                if(p->modified == ((wbt_event_t *)(p->ptr))->modified && ((wbt_event_t *)(p->ptr))->on_timeout != NULL) {
-                    ((wbt_event_t *)(p->ptr))->on_timeout(p->ptr);
-                }
+            wbt_event_t *p = wbt_heap_get(&timeout_events);
+            while(p && p->timeout <= wbt_cur_mtime ) {
                 /* 移除超时事件 */
                 wbt_heap_delete(&timeout_events);
+                /* 尝试调用回调函数 */
+                if(p->on_timeout != NULL) {
+                    p->on_timeout(p);
+                }
                 p = wbt_heap_get(&timeout_events);
             }
             if(timeout_events.size > 0) {

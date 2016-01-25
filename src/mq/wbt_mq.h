@@ -24,7 +24,6 @@ extern "C" {
 #include "../common/wbt_config.h"
     
 enum {
-    MSG_UNKNOWN,
     MSG_CREATED,   // 已创建
     MSG_EFFECTIVE, // 已生效
     MSG_DELIVERED, // 已投递
@@ -33,7 +32,7 @@ enum {
 };
 
 enum {
-    MSG_BROADCAST = 1, // 广播模式
+    MSG_BROADCAST, // 广播模式
     MSG_LOAD_BALANCE   // 负载均衡模式
 };
 

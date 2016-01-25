@@ -247,6 +247,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     }
     wbt_memcpy( &msg->data, (wbt_mem_t *)&data, data.len );
     
+    // TODO 持久化该消息
+    
     // 投递消息
     if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
         wbt_mq_msg_destory( msg );
@@ -332,17 +334,22 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    // 如果没有可发送的消息，则挂起请求，设定新的超时时间和超时处理函数
-    http->state = STATE_BLOCKING;
+    if(1) {
+        // 如果没有可发送的消息，挂起请求
+        http->state = STATE_BLOCKING;
 
-    ev->timeout = wbt_cur_mtime + 30000;
-    ev->on_timeout = wbt_mq_pull_timeout;
+        ev->timeout = wbt_cur_mtime + 30000;
+        ev->on_timeout = wbt_mq_pull_timeout;
 
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+
+        return WBT_OK;
+    } else {
+        // 如果没有可发送的消息，直接返回
+        return wbt_mq_pull_timeout(ev);
     }
-
-    return WBT_OK;
 }
 
 wbt_status wbt_mq_ack(wbt_event_t *ev) {

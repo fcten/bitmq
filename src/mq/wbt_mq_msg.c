@@ -44,6 +44,8 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     if( msg == NULL ) {
         return;
     }
+    
+    wbt_free(&msg->data);
 
     wbt_str_t msg_key;
     wbt_variable_to_str(msg->msg_id, msg_key);

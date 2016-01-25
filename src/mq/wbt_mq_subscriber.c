@@ -155,7 +155,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
         tmp_http->state = STATE_SENDING;
 
         /* 等待socket可写 */
-        subscriber->ev->on_timeout = wbt_conn_close; // TODO 这个事件超时或发送失败意味着消息会丢失
+        subscriber->ev->on_timeout = wbt_conn_close;
         subscriber->ev->on_send = wbt_on_send;
         subscriber->ev->events = EPOLLOUT | EPOLLET;
         subscriber->ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;

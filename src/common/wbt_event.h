@@ -36,8 +36,8 @@ typedef struct wbt_event_s {
     wbt_status (*on_recv)(struct wbt_event_s *);    /* 触发回调函数 */
     wbt_status (*on_send)(struct wbt_event_s *);    /* 触发回调函数 */
     time_t timeout;                                 /* 事件超时时间 */
+    unsigned int heap_idx;                          /* 在超时队列中的位置 */
     unsigned int events;                            /* 事件类型 */
-    unsigned int modified;                          /* 事件版本 */
     wbt_mem_t buff;                                 /* 事件数据缓存 */
     wbt_mem_t data;                                 /* 供模块使用的自定义指针 */
     void *ctx;
