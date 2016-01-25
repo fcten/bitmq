@@ -213,7 +213,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
     
     rbt->size ++;
 
-    wbt_log_debug("rbtree insert");
+    //wbt_log_debug("rbtree insert");
     
     return tmp_node;
 }
@@ -344,7 +344,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     rbt->size --;
     
     wbt_rbtree_print(rbt->root);
-    wbt_log_debug("rbtree delete");
+    //wbt_log_debug("rbtree delete");
 } 
 
 wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {

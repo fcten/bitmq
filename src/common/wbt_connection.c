@@ -89,7 +89,7 @@ wbt_status wbt_conn_cleanup() {
 }
 
 wbt_status wbt_conn_close(wbt_event_t *ev) {
-    wbt_log_debug("connection %d close.",ev->fd);
+    //wbt_log_debug("connection %d close.",ev->fd);
     
     if( wbt_module_on_close(ev) != WBT_OK ) {
         // 似乎并不能做什么
@@ -150,7 +150,7 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 有新的数据到达 */
     int fd = ev->fd;
-    wbt_log_debug("recv data of connection %d.", fd);
+    //wbt_log_debug("recv data of connection %d.", fd);
     
     int nread;
     int bReadOk = 0;
@@ -219,7 +219,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
 wbt_status wbt_on_send(wbt_event_t *ev) {
     /* 数据发送已经就绪 */
-    wbt_log_debug("send data to connection %d.", ev->fd);
+    //wbt_log_debug("send data to connection %d.", ev->fd);
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
         wbt_conn_close(ev);

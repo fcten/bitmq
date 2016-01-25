@@ -101,17 +101,22 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    // 如果是负载均衡消息，将该消息移动到 delivered_list 中
-    if( subscriber->msg && subscriber->msg->delivery_mode == MSG_LOAD_BALANCE ) {
-        wbt_msg_list_t *msg_node = wbt_new(wbt_msg_list_t);
-        if( msg_node == NULL ) {
-            return WBT_ERROR;
+    if( subscriber->msg ) {
+        // 如果是负载均衡消息，将该消息移动到 delivered_list 中
+        if( subscriber->msg->delivery_mode == MSG_LOAD_BALANCE ) {
+            wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(subscriber->msg);
+            if( msg_node == NULL ) {
+                return WBT_ERROR;
+            }
+            wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
         }
-        msg_node->msg = subscriber->msg;
-        wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
+        
+        wbt_mq_msg_dec_refer(subscriber->msg);
+        if( subscriber->msg->reference_count == 0 && subscriber->msg->expire <= wbt_cur_mtime ) {
+            wbt_mq_msg_destory(subscriber->msg);
+        }
+        subscriber->msg = NULL;
     }
-    
-    subscriber->msg = NULL;
     
     return WBT_OK;
 }
@@ -176,24 +181,22 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
                 if( msg_node->msg->expire <= wbt_cur_mtime ) {
                     // 消息已过期
                     wbt_list_del(&msg_node->head);
-                    wbt_delete(msg_node);
-                    // TODO 这里需要判断是否所有频道都释放了该消息
+                    wbt_mq_msg_destory_node(msg_node);
                     continue;
                 }
 
                 // 复制该消息到订阅者的 msg_list 中
-                wbt_msg_list_t *tmp_node = wbt_new(wbt_msg_list_t);
+                wbt_msg_list_t *tmp_node = wbt_mq_msg_create_node(msg_node->msg);
                 if( tmp_node == NULL ) {
                     // 内存不足，操作失败
                     continue;
                 }
-                tmp_node->msg = msg_node->msg;
                 wbt_list_add_tail(&tmp_node->head, &subscriber->msg_list->head);
 
                 // 如果是负载均衡消息，则从 msg_list 中移除该消息
                 if( msg_node->msg->delivery_mode == MSG_LOAD_BALANCE ) {
                     wbt_list_del(&msg_node->head);
-                    wbt_delete(msg_node);
+                    wbt_mq_msg_destory_node(msg_node);
                 }
             } while(next_node != channel->msg_list);
         }
@@ -238,7 +241,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     msg->consumer_id = channel_id;
     msg->effect = msg->create + 0 * 1000;
     msg->expire = msg->create + 20 * 1000;
-    msg->delivery_mode = MSG_LOAD_BALANCE;//MSG_BROADCAST;
+    msg->delivery_mode = MSG_BROADCAST;//MSG_BROADCAST | MSG_LOAD_BALANCE;
     if( wbt_malloc( &msg->data, data.len ) != WBT_OK ) {
         wbt_mq_msg_destory( msg );
         
@@ -309,15 +312,18 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         wbt_msg_list_t *msg_node = wbt_list_first_entry( &subscriber->msg_list->head, wbt_msg_list_t, head );
         wbt_msg_t *msg = msg_node->msg;
         
-        // 从 msg_list 中删除该消息
-        wbt_list_del( &msg_node->head );
-        wbt_delete(msg_node);
-        
         // 如果消息已过期，则忽略
         if( msg->delivery_mode == MSG_BROADCAST && msg->expire <= wbt_cur_mtime ) {
+            // 从 msg_list 中删除该消息
+            wbt_list_del( &msg_node->head );
+            wbt_mq_msg_destory_node(msg_node);
             continue;
         }
 
+        // 从 msg_list 中删除该消息
+        wbt_list_del( &msg_node->head );
+        wbt_mq_msg_destory_node(msg_node);
+        
         wbt_mem_t tmp;
         if( wbt_malloc(&tmp, msg->data.len) != WBT_OK ) {
             continue;
@@ -330,6 +336,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
 
         // 保存当前正在处理的消息指针
         subscriber->msg = msg;
+        wbt_mq_msg_inc_refer(subscriber->msg);
 
         return WBT_OK;
     }

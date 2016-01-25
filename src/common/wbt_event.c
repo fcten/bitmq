@@ -144,7 +144,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    wbt_log_debug("event add, fd %d, addr %p, %u events.", ev->fd ,ev, wbt_events.max-wbt_events.top);
+    //wbt_log_debug("event add, fd %d, addr %p, %u events.", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
     wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
@@ -283,7 +283,7 @@ wbt_status wbt_event_dispatch() {;
     listen_ev.timeout = 0;
     
     if( wbt_conf.process == 1 ) {
-        wbt_log_debug("add listen event");
+        //wbt_log_debug("add listen event");
         if(wbt_event_add(&listen_ev) == NULL) {
             return WBT_ERROR;
         }
@@ -308,7 +308,7 @@ wbt_status wbt_event_dispatch() {;
             }
 
             if( is_accept_lock ) {
-                wbt_log_debug("add listen event");
+                //wbt_log_debug("add listen event");
                 if(wbt_event_add(&listen_ev) == NULL) {
                     return WBT_ERROR;
                 }
@@ -333,7 +333,7 @@ wbt_status wbt_event_dispatch() {;
                 return WBT_ERROR;
             }
         }
-        wbt_log_debug("%d event happened.",nfds);
+        //wbt_log_debug("%d event happened.",nfds);
         
         /* 更新当前时间 */
         wbt_time_update();
@@ -352,7 +352,7 @@ wbt_status wbt_event_dispatch() {;
                     }
 
                     if( is_accept_lock || wbt_wating_to_exit ) {
-                        wbt_log_debug("del listen event");
+                        //wbt_log_debug("del listen event");
                         if( wbt_event_del(ev) != WBT_OK ) {
                             return WBT_ERROR;
                         }

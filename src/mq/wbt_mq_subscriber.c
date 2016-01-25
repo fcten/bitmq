@@ -94,7 +94,7 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         while(!wbt_list_empty(&subscriber->msg_list->head)) {
             pos = wbt_list_first_entry(&subscriber->msg_list->head, wbt_msg_list_t, head);
             wbt_list_del(&pos->head);
-            wbt_delete(pos);
+            wbt_mq_msg_destory_node(pos);
         }
         wbt_delete(subscriber->msg_list);
     }
@@ -104,7 +104,7 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         while(!wbt_list_empty(&subscriber->delivered_list->head)) {
             pos = wbt_list_first_entry(&subscriber->delivered_list->head, wbt_msg_list_t, head);
             wbt_list_del(&pos->head);
-            wbt_delete(pos);
+            wbt_mq_msg_destory_node(pos);
         }
         wbt_delete(subscriber->delivered_list);
     }
@@ -165,6 +165,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
         }
         
         subscriber->msg = msg;
+        wbt_mq_msg_inc_refer(subscriber->msg);
     }
 
     return WBT_OK;

@@ -45,11 +45,11 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
 }
 
 wbt_status wbt_file_cleanup(wbt_event_t *ev) {
-    wbt_log_debug("opened fd before cleanup: %d", wbt_file_rbtree.size);
+    //wbt_log_debug("opened fd before cleanup: %d", wbt_file_rbtree.size);
     
     wbt_file_cleanup_recursive(wbt_file_rbtree.root);
     
-    wbt_log_debug("opened fd after cleanup: %d", wbt_file_rbtree.size);
+    //wbt_log_debug("opened fd after cleanup: %d", wbt_file_rbtree.size);
 
     if(!wbt_wating_to_exit) {
         /* 重新注册定时事件 */
@@ -86,7 +86,7 @@ wbt_status wbt_file_init() {
 }
 
 wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {    
-    wbt_log_debug("try to open: %.*s", file_path->len, file_path->str);
+    //wbt_log_debug("try to open: %.*s", file_path->len, file_path->str);
     /* TODO 不存在的文件也可以考虑放入文件树内
      * 如果发生大量的 404 请求，可以提高性能
      */
@@ -114,7 +114,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
             } else {
                 tmp.fd   = -2;  /* 权限不足或者其他错误 */
             }
-            wbt_log_debug("stat: %s", strerror(errno));
+            //wbt_log_debug("stat: %s", strerror(errno));
         }else{  
             if( S_ISDIR(statbuff.st_mode) ) {
                  /* 尝试打开的是目录 */
@@ -137,7 +137,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                     tmp_file->size = tmp.size;
                     tmp_file->last_modified = tmp.last_modified;
 
-                    wbt_log_debug("open file: %d %zd", tmp.fd, tmp.size);
+                    //wbt_log_debug("open file: %d %zd", tmp.fd, tmp.size);
                 } else {
                     tmp.size = 0;
                     if( errno == EACCES ) {
@@ -161,7 +161,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
 }
 
 wbt_status wbt_file_close( wbt_str_t * file_path ) {
-    wbt_log_debug("try to close: %.*s", file_path->len, file_path->str);
+    //wbt_log_debug("try to close: %.*s", file_path->len, file_path->str);
     /* TODO 目前这个函数需要执行一次额外的搜索操作，因为搜索已经在 open 的时候做过了 */
     wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
 

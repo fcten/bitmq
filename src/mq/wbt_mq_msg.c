@@ -35,6 +35,8 @@ wbt_msg_t * wbt_mq_msg_create() {
         }
         msg_node->value.ptr = msg;
         msg_node->value.len = sizeof(wbt_msg_t);
+        
+        wbt_log_debug("msg %lld create", msg->msg_id);
     }
     
     return msg;
@@ -44,6 +46,8 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     if( msg == NULL ) {
         return;
     }
+    
+    wbt_log_debug("msg %lld deleted", msg->msg_id);
     
     wbt_free(&msg->data);
 
@@ -94,11 +98,10 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     }
 
     // 已生效消息
-    wbt_msg_list_t * msg_node = wbt_new(wbt_msg_list_t);
+    wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg);
     if( msg_node == NULL ) {
         return WBT_ERROR;
     }
-    msg_node->msg = msg;
     
     if( msg->delivery_mode == MSG_BROADCAST ) {
         // 保存该消息
@@ -116,12 +119,11 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
                     // TODO 记录投递失败
                 }
             } else {
-                wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
+                wbt_msg_list_t * tmp_node = wbt_mq_msg_create_node(msg);
                 if( tmp_node == NULL ) {
                     // 内存不足，投递失败
                     // TODO 需要记录该次投递失败
                 } else {
-                    tmp_node->msg = msg;
                     wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
                 }
             }
@@ -146,22 +148,34 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
                 wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
                 return WBT_OK;
             }
+            wbt_mq_msg_destory_node(msg_node);
         } else {
-            wbt_msg_list_t * tmp_node = wbt_new(wbt_msg_list_t);
-            if( tmp_node == NULL ) {
-                // 内存不足，暂时无法投递
-                wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
-                return WBT_OK;
-            }
-            tmp_node->msg = msg;
-            wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
+            wbt_list_add_tail( &msg_node->head, &subscriber->msg_list->head );
         }
         // 投递成功后，将该订阅者移动到链表末尾
         wbt_list_move_tail(&subscriber_list->head, &channel->subscriber_list->head);
-        wbt_delete(msg_node);
     } else {
         return WBT_ERROR;
     }
     
     return WBT_OK;
+}
+
+wbt_msg_list_t * wbt_mq_msg_create_node(wbt_msg_t *msg) {
+    wbt_msg_list_t * msg_node = wbt_new(wbt_msg_list_t);
+    if( msg_node == NULL ) {
+        return NULL;
+    }
+    wbt_mq_msg_inc_refer(msg);
+    msg_node->msg = msg;
+
+    return msg_node;
+}
+
+void wbt_mq_msg_destory_node(wbt_msg_list_t *node) {
+    wbt_mq_msg_dec_refer(node->msg);
+    if( node->msg->reference_count == 0 && node->msg->expire <= wbt_cur_mtime ) {
+        wbt_mq_msg_destory(node->msg);
+    }
+    wbt_delete(node);
 }

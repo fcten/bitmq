@@ -122,7 +122,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
 
         http->resp_offset += nwrite;
 
-        wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
+        //wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
         if( http->response.len > http->resp_offset ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
@@ -174,7 +174,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             return WBT_OK;
         }
 
-        wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
+        //wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
         if( n > nwrite ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
@@ -487,15 +487,15 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
         return WBT_ERROR;
     }
 
-    wbt_log_debug(" METHOD: [%.*s]",
-            REQUEST_METHOD[http->method].len,
-            REQUEST_METHOD[http->method].str );
-    wbt_log_debug("    URI: [%.*s]",
-            http->uri.len,
-            (char *)ev->buff.ptr + http->uri.start );
-    wbt_log_debug("VERSION: [%.*s]",
-            http->version.len,
-            (char *)ev->buff.ptr + http->version.start );
+    //wbt_log_debug(" METHOD: [%.*s]",
+    //        REQUEST_METHOD[http->method].len,
+    //        REQUEST_METHOD[http->method].str );
+    //wbt_log_debug("    URI: [%.*s]",
+    //        http->uri.len,
+    //        (char *)ev->buff.ptr + http->uri.start );
+    //wbt_log_debug("VERSION: [%.*s]",
+    //        http->version.len,
+    //        (char *)ev->buff.ptr + http->version.start );
 
     /* 检查 URI 长度 */
     if( http->uri.len >= 512 ) {
@@ -649,7 +649,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     wbt_strcat( &dest, &crlf, mem_len );
     wbt_strcat( &dest, &http->resp_body, mem_len );
     
-    wbt_log_debug("malloc: %d, use: %d", mem_len, dest.len );
+    //wbt_log_debug("malloc: %d, use: %d", mem_len, dest.len );
     
     return WBT_OK;
 }
@@ -865,7 +865,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         return WBT_ERROR;
         
     }
-    wbt_log_debug("%.*s", http->response.len, (char *)http->response.ptr);
+    //wbt_log_debug("%.*s", http->response.len, (char *)http->response.ptr);
     
     return WBT_OK;
 }

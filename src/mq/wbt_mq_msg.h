@@ -19,6 +19,19 @@ wbt_msg_t * wbt_mq_msg_create();
 void wbt_mq_msg_destory(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg);
 
+wbt_msg_list_t * wbt_mq_msg_create_node(wbt_msg_t *msg);
+void wbt_mq_msg_destory_node(wbt_msg_list_t *node);
+
+static inline void wbt_mq_msg_inc_refer(wbt_msg_t *msg) {
+    msg->reference_count ++;
+    wbt_log_debug("msg %lld, refer inc, %d", msg->msg_id, msg->reference_count);
+}
+
+static inline void wbt_mq_msg_dec_refer(wbt_msg_t *msg) {
+    msg->reference_count --;
+    wbt_log_debug("msg %lld, refer dec, %d", msg->msg_id, msg->reference_count);
+}
+
 #ifdef	__cplusplus
 }
 #endif

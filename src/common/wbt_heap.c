@@ -48,7 +48,7 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_event_t * node) {
     p->heap[i] = node;
     p->heap[i]->heap_idx = i;
     
-    wbt_log_debug("heap insert, %d nodes.", p->size);
+    //wbt_log_debug("heap insert, %d nodes.", p->size);
     
     return WBT_OK;
 }
@@ -96,7 +96,7 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
         p->heap[current] = last_node;
     }
     
-    wbt_log_debug("heap remove, %d nodes.", p->size);
+    //wbt_log_debug("heap remove, %d nodes.", p->size);
 
     // 删除元素后尝试释放空间
     // 为每一个最小堆添加定时 GC 任务太复杂了，我认为目前的做法可以接受
