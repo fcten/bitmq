@@ -124,3 +124,75 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
     }
     return WBT_OK;
 }
+
+extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
+void wbt_mq_print_channels_r(wbt_rbtree_node_t *node, wbt_str_t *resp, int maxlen) {
+    wbt_mem_t tmp;
+    wbt_malloc(&tmp, 1024);
+
+    if(node != wbt_rbtree_node_nil) {
+        wbt_mq_print_channels_r(node->left, resp, maxlen);
+        
+        wbt_channel_t *channel = node->value.ptr;
+        wbt_str_t channel_info = wbt_sprintf(&tmp, "%016llX\n", channel->channel_id);
+        wbt_strcat(resp, &channel_info, maxlen);
+        
+        wbt_mq_print_channels_r(node->right, resp, maxlen);
+    }
+    
+    wbt_free(&tmp);
+}
+
+void wbt_mq_print_channels(wbt_str_t *resp, int maxlen) {
+    wbt_mem_t tmp;
+    wbt_malloc(&tmp, 1024);
+    wbt_str_t channel_count = wbt_sprintf(&tmp, "%u channels\n", wbt_mq_channels.size);
+    wbt_strcat(resp, &channel_count, maxlen);
+    wbt_free(&tmp);
+    wbt_mq_print_channels_r(wbt_mq_channels.root, resp, maxlen);
+}
+
+void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen) {
+    wbt_channel_t *channel = wbt_mq_channel_get(channel_id);
+    if(channel == NULL) {
+        return;
+    }
+    
+    wbt_mem_t tmp;
+    wbt_malloc(&tmp, 1024);
+
+    wbt_str_t channel_info = wbt_sprintf(&tmp, "channel: %016llX\n", channel->channel_id);
+    wbt_strcat(resp, &channel_info, maxlen);
+
+    channel_info = wbt_sprintf(&tmp, "\nsubscriber_list:\n", channel->channel_id);
+    wbt_strcat(resp, &channel_info, maxlen);
+    if( channel->subscriber_list ) {
+        wbt_subscriber_t * subscriber;
+        wbt_subscriber_list_t * subscriber_node;
+        wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
+            subscriber = subscriber_node->subscriber;
+            channel_info = wbt_sprintf(&tmp, "%016llX\n", subscriber->subscriber_id);
+            wbt_strcat(resp, &channel_info, maxlen);
+        }
+    }
+    
+    channel_info = wbt_sprintf(&tmp, "\nmsg_list:\n", channel->channel_id);
+    wbt_strcat(resp, &channel_info, maxlen);
+    if( channel->msg_list ) {
+        wbt_msg_t * msg;
+        wbt_msg_list_t * msg_node;
+        wbt_list_for_each_entry( msg_node, &channel->msg_list->head, head ) {
+            msg = msg_node->msg;
+            if(msg_node->expire <= wbt_cur_mtime) {
+                channel_info = wbt_sprintf(&tmp, "expired msg\n");
+            } else {
+                channel_info = wbt_sprintf(&tmp, "%016llX %5u %5u %.*s\n",
+                        msg->msg_id, msg->consumption_count, msg->delivery_count,
+                        msg->data.len>10?10:msg->data.len, (char *)msg->data.ptr);
+            }
+            wbt_strcat(resp, &channel_info, maxlen);
+        }
+    }
+    
+    wbt_free(&tmp);
+}

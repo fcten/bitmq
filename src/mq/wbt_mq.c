@@ -9,6 +9,7 @@
 #include "wbt_mq_channel.h"
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
+#include "../json/wbt_json.h"
 
 wbt_module_t wbt_module_mq = {
     wbt_string("mq"),
@@ -109,12 +110,11 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev) {
                 return WBT_ERROR;
             }
             wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list->head );
+            wbt_mq_msg_inc_refer(subscriber->msg);
         }
         
+        wbt_mq_msg_inc_delivery(subscriber->msg);
         wbt_mq_msg_dec_refer(subscriber->msg);
-        if( subscriber->msg->reference_count == 0 && subscriber->msg->expire <= wbt_cur_mtime ) {
-            wbt_mq_msg_destory(subscriber->msg);
-        }
         subscriber->msg = NULL;
     }
     
@@ -178,7 +178,7 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
                 msg_node = next_node;
                 next_node = wbt_list_next_entry(next_node, head);
                 
-                if( msg_node->msg->expire <= wbt_cur_mtime ) {
+                if( msg_node->expire <= wbt_cur_mtime ) {
                     // 消息已过期
                     wbt_list_del(&msg_node->head);
                     wbt_mq_msg_destory_node(msg_node);
@@ -206,6 +206,49 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     return WBT_OK;
 }
 
+wbt_msg_t wbt_msg_parser_buf;
+
+wbt_str_t wbt_mq_str_consumer_id   = wbt_string("consumer_id");
+wbt_str_t wbt_mq_str_effect        = wbt_string("effect");
+wbt_str_t wbt_mq_str_expire        = wbt_string("expire");
+wbt_str_t wbt_mq_str_delivery_mode = wbt_string("delivery_mode");
+wbt_str_t wbt_mq_str_data          = wbt_string("data");
+
+void wbt_mq_parser( json_task_t * task, json_object_t * node ) {
+    wbt_str_t key;
+    key.str = node->key;
+    key.len = node->key_len;
+    if( node->next == NULL ) {
+        switch( node->value_type ) {
+            case JSON_LONGLONG:
+                if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0 ) {
+                    wbt_msg_parser_buf.consumer_id = node->value.l;
+                } else if ( wbt_strcmp(&key, &wbt_mq_str_effect) == 0 ) {
+                    if( node->value.l >= 0 && node->value.l <= 2592000 ) {
+                        wbt_msg_parser_buf.effect = (unsigned int)node->value.l;
+                    }
+                } else if ( wbt_strcmp(&key, &wbt_mq_str_expire) == 0 ) {
+                    if( node->value.l >= 0 && node->value.l <= 2592000 ) {
+                        wbt_msg_parser_buf.expire = (unsigned int)node->value.l;
+                    }
+                } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
+                    if(node->value.l == MSG_BROADCAST ) {
+                        wbt_msg_parser_buf.delivery_mode = MSG_BROADCAST;
+                    } else if ( node->value.l == MSG_LOAD_BALANCE ) {
+                        wbt_msg_parser_buf.delivery_mode = MSG_LOAD_BALANCE;
+                    }
+                }
+                break;
+            case JSON_STRING:
+                if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
+                    wbt_msg_parser_buf.data.ptr = node->value.s;
+                    wbt_msg_parser_buf.data.len = node->value_len;
+                }
+        }
+
+    }
+}
+
 wbt_status wbt_mq_push(wbt_event_t *ev) {
     // 解析请求
     wbt_http_t * http = ev->data.ptr;
@@ -216,20 +259,27 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    // 处理 body
-    // 前 16 位作为 ID，后面的作为 push 的数据
-    if( http->body.len <= 16 ) {
-        http->status = STATUS_413;
+    // 解析请求
+    wbt_str_t data;
+    wbt_offset_to_str(http->body, data, ev->buff.ptr);
+
+    json_task_t t;
+    t.str = data.str;
+    t.len = data.len;
+    t.callback = wbt_mq_parser;
+
+    memset(&wbt_msg_parser_buf, 0, sizeof(wbt_msg_t));
+    if( json_parser(&t) != 0 ) {
+        http->status = STATUS_403;
         return WBT_OK;
     }
     
-    wbt_str_t channel_ids, data;
-    wbt_offset_to_str(http->body, channel_ids, ev->buff.ptr);
-    channel_ids.len = 16;
-    data.str = channel_ids.str + 16;
-    data.len = http->body.len - 16;
-    
-    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
+    if( !wbt_msg_parser_buf.consumer_id
+            || !wbt_msg_parser_buf.delivery_mode
+            || !wbt_msg_parser_buf.data.len ) {
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
 
     // 创建消息并初始化
     wbt_msg_t * msg = wbt_mq_msg_create();
@@ -238,17 +288,17 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
         http->status = STATUS_503;
         return WBT_OK;
     }
-    msg->consumer_id = channel_id;
-    msg->effect = msg->create + 0 * 1000;
-    msg->expire = msg->create + 20 * 1000;
-    msg->delivery_mode = MSG_BROADCAST;//MSG_BROADCAST | MSG_LOAD_BALANCE;
-    if( wbt_malloc( &msg->data, data.len ) != WBT_OK ) {
+    msg->consumer_id = wbt_msg_parser_buf.consumer_id;
+    msg->effect = msg->create + wbt_msg_parser_buf.effect * 1000;
+    msg->expire = msg->effect + wbt_msg_parser_buf.expire * 1000;
+    msg->delivery_mode = wbt_msg_parser_buf.delivery_mode;
+    if( wbt_malloc( &msg->data, wbt_msg_parser_buf.data.len ) != WBT_OK ) {
         wbt_mq_msg_destory( msg );
         
         http->status = STATUS_503;
         return WBT_OK;
     }
-    wbt_memcpy( &msg->data, (wbt_mem_t *)&data, data.len );
+    wbt_memcpy( &msg->data, &wbt_msg_parser_buf.data, wbt_msg_parser_buf.data.len );
     
     // TODO 持久化该消息
     
@@ -313,7 +363,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         wbt_msg_t *msg = msg_node->msg;
         
         // 如果消息已过期，则忽略
-        if( msg->delivery_mode == MSG_BROADCAST && msg->expire <= wbt_cur_mtime ) {
+        if( msg_node->expire <= wbt_cur_mtime ) {
             // 从 msg_list 中删除该消息
             wbt_list_del( &msg_node->head );
             wbt_mq_msg_destory_node(msg_node);
@@ -379,24 +429,6 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
         http->status = STATUS_405;
         return WBT_OK;
     }
-
-    wbt_str_t http_uri;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
-    
-    wbt_str_t channel_ids;
-    channel_ids.str = http_uri.str + 11;
-    channel_ids.len = http_uri.len - 11;
-    if( channel_ids.len != 16 ) {
-        http->status = STATUS_413;
-        return WBT_OK;
-    }
-    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
-    
-    wbt_channel_t * channel = wbt_mq_channel_get(channel_id);
-    if( channel == NULL ) {
-        http->status = STATUS_404;
-        return WBT_OK;
-    }
     
     wbt_mem_t tmp;
     wbt_malloc(&tmp, 10240);
@@ -404,11 +436,23 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
     wbt_str_t resp;
     resp.len = 0;
     resp.str = tmp.ptr;
-
-    wbt_str_t online = wbt_string("test");
-    wbt_strcat(&resp, &online, tmp.len);
-    wbt_realloc(&tmp, resp.len);
     
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+    
+    wbt_str_t channel_ids;
+    channel_ids.str = http_uri.str + 11;
+    channel_ids.len = http_uri.len - 11;
+    if( channel_ids.len != 16 ) {
+        wbt_mq_print_channels(&resp, tmp.len);
+        wbt_realloc(&tmp, resp.len);
+    } else {
+        wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
+
+        wbt_mq_print_channel(channel_id, &resp, tmp.len);
+        wbt_realloc(&tmp, resp.len);
+    }
+
     http->status = STATUS_200;
     http->file.ptr = tmp.ptr;
     http->file.size = tmp.len;

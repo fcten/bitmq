@@ -51,6 +51,8 @@ typedef struct wbt_msg_s {
     time_t effect;
     // 过期时间
     time_t expire;
+    // 超时事件
+    wbt_event_t *timeout_ev;
     // 优先级
     // 数值较小的消息会被优先处理
     //unsigned int priority:4;
@@ -63,6 +65,7 @@ typedef struct wbt_msg_s {
     // 消费次数
     unsigned int consumption_count;
     // 引用次数
+    // 如果该消息正在被发送，或者正在等待 ACK 响应，则不能被释放
     unsigned int reference_count;
     // 消息内容
     wbt_mem_t data;
@@ -73,6 +76,8 @@ typedef struct wbt_msg_list_s {
     wbt_list_t head;
     // 消息指针
     wbt_msg_t * msg;
+    // 过期时间
+    time_t expire;
 } wbt_msg_list_t;
 
 typedef struct wbt_subscriber_s {

@@ -18,12 +18,14 @@ wbt_status wbt_mq_msg_init() {
     return WBT_OK;
 }
 
+wbt_mq_id wbt_msg_create_count = 0;
+wbt_mq_id wbt_msg_delete_count = 0;
+
 wbt_msg_t * wbt_mq_msg_create() {
-    static wbt_mq_id auto_inc_id = 0;
     wbt_msg_t * msg = wbt_new(wbt_msg_t);
     
     if( msg ) {
-        msg->msg_id = ++auto_inc_id;
+        msg->msg_id = ++wbt_msg_create_count;
         msg->create = wbt_cur_mtime;
         
         wbt_str_t msg_key;
@@ -49,6 +51,10 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     
     wbt_log_debug("msg %lld deleted", msg->msg_id);
     
+    if( msg->timeout_ev ) {
+        wbt_event_del( msg->timeout_ev );
+    }
+    
     wbt_free(&msg->data);
 
     wbt_str_t msg_key;
@@ -57,14 +63,38 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     if( msg_node ) {
         wbt_rbtree_delete( &wbt_mq_messages, msg_node );
     }
+    
+    wbt_msg_delete_count ++;
+}
+
+wbt_status wbt_mq_msg_destory_expired(wbt_event_t *ev) {
+    wbt_msg_t *msg = ev->ctx;
+    
+    if( msg->reference_count == 0 ) {
+        wbt_mq_msg_destory( msg );
+    } else {
+        msg->timeout_ev->timeout = wbt_cur_mtime + 10000;
+
+        if(wbt_event_mod(msg->timeout_ev) != WBT_OK) {
+            // 重新注册超时事件失败，该消息将无法得到释放。
+            return WBT_ERROR;
+        }
+    }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_msg_delivery_delayed(wbt_event_t *ev) {
-    if( wbt_mq_msg_delivery( ev->ctx ) == WBT_OK ) {
+    wbt_msg_t *msg = ev->ctx;
+    
+    wbt_event_del( msg->timeout_ev );
+    msg->timeout_ev = NULL;
+    
+    if( wbt_mq_msg_delivery( msg ) == WBT_OK ) {
         return WBT_OK;
     } else {
         // 投递失败，该消息将会丢失。内存不足时可能出现该情况
-        wbt_mq_msg_destory( ev->ctx );
+        wbt_mq_msg_destory( msg );
         return WBT_ERROR;
     }
 }
@@ -81,15 +111,27 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         return WBT_OK;
     } else if( msg->effect > wbt_cur_mtime ) {
         // 未生效消息
-        wbt_event_t tmp_ev, *new_ev;
+        wbt_event_t tmp_ev;
         tmp_ev.on_timeout = wbt_mq_msg_delivery_delayed;
         tmp_ev.fd = -1;
         tmp_ev.timeout = msg->effect;
-        if((new_ev = wbt_event_add(&tmp_ev)) == NULL) {
+        if((msg->timeout_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;
         }
-        new_ev->ctx = msg;
+        msg->timeout_ev->ctx = msg;
         return WBT_OK;
+    } else {
+        // 已生效消息
+        if( !msg->timeout_ev ) {
+            wbt_event_t tmp_ev;
+            tmp_ev.on_timeout = wbt_mq_msg_destory_expired;
+            tmp_ev.fd = -1;
+            tmp_ev.timeout = msg->expire;
+            if((msg->timeout_ev = wbt_event_add(&tmp_ev)) == NULL) {
+                return WBT_ERROR;
+            }
+            msg->timeout_ev->ctx = msg;
+        }
     }
 
     wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
@@ -166,16 +208,12 @@ wbt_msg_list_t * wbt_mq_msg_create_node(wbt_msg_t *msg) {
     if( msg_node == NULL ) {
         return NULL;
     }
-    wbt_mq_msg_inc_refer(msg);
     msg_node->msg = msg;
+    msg_node->expire = msg->expire;
 
     return msg_node;
 }
 
 void wbt_mq_msg_destory_node(wbt_msg_list_t *node) {
-    wbt_mq_msg_dec_refer(node->msg);
-    if( node->msg->reference_count == 0 && node->msg->expire <= wbt_cur_mtime ) {
-        wbt_mq_msg_destory(node->msg);
-    }
     wbt_delete(node);
 }
