@@ -648,146 +648,213 @@ json_object_t * json_append(json_object_t * obj, const char * key, size_t key_le
     return obj;
 }
 
-void json_print_longlong(long long l) {
-    printf("%lld", l);
+void json_print_longlong(long long l, char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "%lld", l);
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_float(float f) {
-    printf("%f", f);
+void json_print_float(float f, char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "%f", f);
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_integer(int i) {
-    printf("%d", i);
+void json_print_integer(int i, char **buf, size_t *buf_len) {
+    size_t si = snprintf(*buf, *buf_len, "%d", i);
+    if( si > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += si;
+        *buf_len -= si;
+    }
 }
 
-void json_print_double(double d) {
-    printf("%lf", d);
+void json_print_double(double d, char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "%lf", d);
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_string(const char * str, size_t len) {
-    printf("\"");
+void json_print_char(char c, char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "%c", c);
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
+}
+
+void json_print_string(const char * str, size_t len, char **buf, size_t *buf_len) {
+    json_print_char('\"', buf, buf_len);
     int i;
     for(i = 0 ; i < len ; i++) {
         switch(str[i]) {
             case '\\':
                 if( i < len - 1) {
-                    printf("\\");
-                    printf("%c", str[++i]);
+                    json_print_char('\\', buf, buf_len);
+                    json_print_char(str[++i], buf, buf_len);
                 } else {
-                    printf("\\\\");
+                    json_print_char('\\', buf, buf_len);
+                    json_print_char('\\', buf, buf_len);
                 }
                 break;
             case '\"':
-                printf("\\\"");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('\"', buf, buf_len);
                 break;
             case '\b':
-                printf("\\b");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('b', buf, buf_len);
                 break;
             case '\f':
-                printf("\\f");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('f', buf, buf_len);
                 break;
             case '\n':
-                printf("\\n");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('n', buf, buf_len);
                 break;
             case '\r':
-                printf("\\r");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('r', buf, buf_len);
                 break;
             case '\t':
-                printf("\\t");
+                json_print_char('\\', buf, buf_len);
+                json_print_char('t', buf, buf_len);
                 break;
             default:
-                printf("%c", str[i]);
+                json_print_char(str[i], buf, buf_len);
         }
     }
-    printf("\"");
+    json_print_char('\"', buf, buf_len);
 }
 
-void json_print_true() {
-    printf("true");
+void json_print_true(char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "true");
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_false() {
-    printf("false");
+void json_print_false(char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "false");
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_null() {
-    printf("null");
+void json_print_null(char **buf, size_t *buf_len) {
+    size_t i = snprintf(*buf, *buf_len, "null");
+    if( i > *buf_len ) {
+        *buf += *buf_len;
+        *buf_len = 0;
+    } else {
+        *buf += i;
+        *buf_len -= i;
+    }
 }
 
-void json_print_object(json_object_t * obj) {
-    printf("{");
+void json_print_object(json_object_t * obj, char **buf, size_t *buf_len) {
+    json_print_char('{', buf, buf_len);
     while(obj) {
-        json_print_string(obj->key, obj->key_len);
-        printf(":");
-        json_print_value(obj);
+        json_print_string(obj->key, obj->key_len, buf, buf_len);
+        json_print_char(':', buf, buf_len);
+        json_print_value(obj, buf, buf_len);
         
         obj = obj->next;
         
         if(obj) {
-            printf(",");
+            json_print_char(',', buf, buf_len);
         }
     }
-    printf("}");
+    json_print_char('}', buf, buf_len);
 }
 
-void json_print_array(json_object_t * obj) {
-    printf("[");
+void json_print_array(json_object_t * obj, char **buf, size_t *buf_len) {
+    json_print_char('[', buf, buf_len);
     while(obj) {
-        json_print_value(obj);
+        json_print_value(obj, buf, buf_len);
         
         obj = obj->next;
         
         if(obj) {
-            printf(",");
+            json_print_char(',', buf, buf_len);
         }
     }
-    printf("]");
+    json_print_char(']', buf, buf_len);
 }
 
-void json_print_value(json_object_t * obj) {
+void json_print_value(json_object_t * obj, char **buf, size_t *buf_len) {
     switch(obj->value_type) {
         case JSON_OBJECT:
-            json_print_object(obj->value.p);
+            json_print_object(obj->value.p, buf, buf_len);
             break;
         case JSON_ARRAY:
-            json_print_array(obj->value.p);
+            json_print_array(obj->value.p, buf, buf_len);
             break;
         case JSON_STRING:
-            json_print_string(obj->value.s, obj->value_len);
+            json_print_string(obj->value.s, obj->value_len, buf, buf_len);
             break;
         case JSON_DOUBLE:
-            json_print_double(obj->value.d);
+            json_print_double(obj->value.d, buf, buf_len);
             break;
         case JSON_INTEGER:
-            json_print_integer(obj->value.i);
+            json_print_integer(obj->value.i, buf, buf_len);
             break;
         case JSON_FLOAT:
-            json_print_float(obj->value.f);
+            json_print_float(obj->value.f, buf, buf_len);
             break;
         case JSON_LONGLONG:
-            json_print_longlong(obj->value.l);
+            json_print_longlong(obj->value.l, buf, buf_len);
             break;
         case JSON_TRUE:
-            json_print_true();
+            json_print_true(buf, buf_len);
             break;
         case JSON_FALSE:
-            json_print_false();
+            json_print_false(buf, buf_len);
             break;
         case JSON_NULL:
-            json_print_null();
+            json_print_null(buf, buf_len);
             break;
         default:
             break;
     }
 }
 
-void json_print(json_object_t * obj) {
+void json_print(json_object_t * obj, char **buf, size_t *buf_len) {
     switch(obj->object_type) {
         case JSON_OBJECT:
-            json_print_object(obj);
+            json_print_object(obj, buf, buf_len);
             break;
         case JSON_ARRAY:
-            json_print_array(obj);
+            json_print_array(obj, buf, buf_len);
             break;
         default:
             // JSON 对象必须以对象或者数组为顶层元素

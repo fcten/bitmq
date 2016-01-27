@@ -85,8 +85,8 @@ json_object_t * json_create_array();
 
 void json_delete_object(json_object_t * obj);
 
-void json_print_value(json_object_t * obj);
-void json_print(json_object_t * obj);
+void json_print_value(json_object_t * obj, char **buf, size_t *buf_len);
+void json_print(json_object_t * obj, char **buf, size_t *buf_len);
 
 #ifdef	__cplusplus
 }

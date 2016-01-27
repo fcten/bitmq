@@ -188,7 +188,7 @@ void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen) {
             } else {
                 channel_info = wbt_sprintf(&tmp, "%016llX %5u %5u %.*s\n",
                         msg->msg_id, msg->consumption_count, msg->delivery_count,
-                        msg->data.len>10?10:msg->data.len, (char *)msg->data.ptr);
+                        msg->data.len>100?100:msg->data.len, (char *)msg->data.ptr);
             }
             wbt_strcat(resp, &channel_info, maxlen);
         }

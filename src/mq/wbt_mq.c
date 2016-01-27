@@ -206,47 +206,73 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_msg_t wbt_msg_parser_buf;
-
 wbt_str_t wbt_mq_str_consumer_id   = wbt_string("consumer_id");
 wbt_str_t wbt_mq_str_effect        = wbt_string("effect");
 wbt_str_t wbt_mq_str_expire        = wbt_string("expire");
 wbt_str_t wbt_mq_str_delivery_mode = wbt_string("delivery_mode");
 wbt_str_t wbt_mq_str_data          = wbt_string("data");
 
-void wbt_mq_parser( json_task_t * task, json_object_t * node ) {
+wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
+    json_object_t * node = task->root;
     wbt_str_t key;
-    key.str = node->key;
-    key.len = node->key_len;
-    if( node->next == NULL ) {
+    
+    while( node && node->object_type == JSON_OBJECT ) {
+        key.str = node->key;
+        key.len = node->key_len;
         switch( node->value_type ) {
             case JSON_LONGLONG:
                 if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0 ) {
-                    wbt_msg_parser_buf.consumer_id = node->value.l;
+                    msg->consumer_id = node->value.l;
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_effect) == 0 ) {
                     if( node->value.l >= 0 && node->value.l <= 2592000 ) {
-                        wbt_msg_parser_buf.effect = (unsigned int)node->value.l;
+                        msg->effect = (unsigned int)node->value.l;
                     }
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_expire) == 0 ) {
                     if( node->value.l >= 0 && node->value.l <= 2592000 ) {
-                        wbt_msg_parser_buf.expire = (unsigned int)node->value.l;
+                        msg->expire = (unsigned int)node->value.l;
                     }
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
                     if(node->value.l == MSG_BROADCAST ) {
-                        wbt_msg_parser_buf.delivery_mode = MSG_BROADCAST;
+                        msg->delivery_mode = MSG_BROADCAST;
                     } else if ( node->value.l == MSG_LOAD_BALANCE ) {
-                        wbt_msg_parser_buf.delivery_mode = MSG_LOAD_BALANCE;
+                        msg->delivery_mode = MSG_LOAD_BALANCE;
                     }
                 }
                 break;
             case JSON_STRING:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    wbt_msg_parser_buf.data.ptr = node->value.s;
-                    wbt_msg_parser_buf.data.len = node->value_len;
+                    if( wbt_malloc( &msg->data, node->value_len ) != WBT_OK ) {
+                        return WBT_ERROR;
+                    }
+                    wbt_mm_memcpy( msg->data.ptr, node->value.s, node->value_len );
                 }
+                break;
+            case JSON_OBJECT:
+            case JSON_ARRAY:
+                if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
+                    if( wbt_malloc( &msg->data, 10240 ) != WBT_OK ) {
+                        return WBT_ERROR;
+                    }
+                    char *p = msg->data.ptr;
+                    size_t l = msg->data.len;
+                    json_print(node->value.p, &p, &l);
+                }
+                break;
         }
 
+        node = node->next;
     }
+
+    if( !msg->consumer_id
+            || (msg->delivery_mode != MSG_BROADCAST && msg->delivery_mode != MSG_LOAD_BALANCE)
+            || !msg->data.len ) {
+        return WBT_ERROR;
+    }
+
+    msg->effect = msg->create + msg->effect * 1000;
+    msg->expire = msg->effect + msg->expire * 1000;
+
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_push(wbt_event_t *ev) {
@@ -266,17 +292,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     json_task_t t;
     t.str = data.str;
     t.len = data.len;
-    t.callback = wbt_mq_parser;
+    t.callback = NULL;
 
-    memset(&wbt_msg_parser_buf, 0, sizeof(wbt_msg_t));
     if( json_parser(&t) != 0 ) {
-        http->status = STATUS_403;
-        return WBT_OK;
-    }
-    
-    if( !wbt_msg_parser_buf.consumer_id
-            || !wbt_msg_parser_buf.delivery_mode
-            || !wbt_msg_parser_buf.data.len ) {
         http->status = STATUS_403;
         return WBT_OK;
     }
@@ -285,21 +303,22 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     wbt_msg_t * msg = wbt_mq_msg_create();
     if( msg == NULL ) {
         // 返回投递失败
+        json_delete_object(t.root);
+
         http->status = STATUS_503;
         return WBT_OK;
     }
-    msg->consumer_id = wbt_msg_parser_buf.consumer_id;
-    msg->effect = msg->create + wbt_msg_parser_buf.effect * 1000;
-    msg->expire = msg->effect + wbt_msg_parser_buf.expire * 1000;
-    msg->delivery_mode = wbt_msg_parser_buf.delivery_mode;
-    if( wbt_malloc( &msg->data, wbt_msg_parser_buf.data.len ) != WBT_OK ) {
-        wbt_mq_msg_destory( msg );
-        
-        http->status = STATUS_503;
-        return WBT_OK;
-    }
-    wbt_memcpy( &msg->data, &wbt_msg_parser_buf.data, wbt_msg_parser_buf.data.len );
     
+    if( wbt_mq_parser(&t, msg) != WBT_OK ) {
+        json_delete_object(t.root);
+        wbt_mq_msg_destory( msg );
+
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
+    
+    json_delete_object(t.root);
+
     // TODO 持久化该消息
     
     // 投递消息

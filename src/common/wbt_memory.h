@@ -33,6 +33,7 @@ static inline void * wbt_new(size_t len) {
 #define wbt_mm_malloc(sz) malloc(sz)
 #define wbt_mm_calloc(n, sz) calloc((n), (sz))
 #define wbt_mm_strdup(s) strdup(s)
+#define wbt_mm_memcpy(d, s, n) memcpy((d), (s), (n))
 #define wbt_mm_realloc(p, sz) realloc((p), (sz))
 #define wbt_mm_free(p) free(p)
 
