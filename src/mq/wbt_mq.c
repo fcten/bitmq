@@ -236,6 +236,8 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                         msg->delivery_mode = MSG_BROADCAST;
                     } else if ( node->value.l == MSG_LOAD_BALANCE ) {
                         msg->delivery_mode = MSG_LOAD_BALANCE;
+                    } else {
+                        return WBT_ERROR;
                     }
                 }
                 break;
@@ -256,6 +258,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                     char *p = msg->data.ptr;
                     size_t l = msg->data.len;
                     json_print(node->value.p, &p, &l);
+                    wbt_realloc( &msg->data, msg->data.len-l );
                 }
                 break;
         }
@@ -263,9 +266,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
         node = node->next;
     }
 
-    if( !msg->consumer_id
-            || (msg->delivery_mode != MSG_BROADCAST && msg->delivery_mode != MSG_LOAD_BALANCE)
-            || !msg->data.len ) {
+    if( !msg->consumer_id || !msg->data.len ) {
         return WBT_ERROR;
     }
 
