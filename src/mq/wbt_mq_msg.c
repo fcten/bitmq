@@ -38,7 +38,7 @@ wbt_msg_t * wbt_mq_msg_create() {
         msg_node->value.ptr = msg;
         msg_node->value.len = sizeof(wbt_msg_t);
         
-        wbt_log_debug("msg %lld create", msg->msg_id);
+        wbt_log_debug("msg %lld create\n", msg->msg_id);
     }
     
     return msg;
@@ -49,7 +49,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
         return;
     }
     
-    wbt_log_debug("msg %lld deleted", msg->msg_id);
+    wbt_log_debug("msg %lld deleted\n", msg->msg_id);
     
     if( msg->timeout_ev ) {
         wbt_event_del( msg->timeout_ev );

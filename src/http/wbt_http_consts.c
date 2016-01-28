@@ -16,6 +16,9 @@ wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
 wbt_str_t header_connection_close = wbt_string("close");
 wbt_str_t header_cache_control = wbt_string("max-age=3600");
 wbt_str_t header_content_type_text_html = wbt_string("text/html");
+wbt_str_t header_cache_control_no_cache = wbt_string("no-store, no-cache, must-revalidate");
+wbt_str_t header_pragma_no_cache = wbt_string("no-cache");
+wbt_str_t header_expires_no_cache = wbt_string("Sat, 26 Jul 1997 05:00:00 GMT");
 
 wbt_str_t REQUEST_METHOD[] = {
     wbt_null_string,

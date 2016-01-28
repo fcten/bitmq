@@ -107,8 +107,8 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
     
     int err = SSL_get_error(ev->ssl, n);
 
-    wbt_log_debug("SSL_get_error: %d", err);
-    wbt_log_debug("Error: %s", ERR_reason_error_string(ERR_get_error()));
+    wbt_log_debug("SSL_get_error: %d\n", err);
+    wbt_log_debug("Error: %s\n", ERR_reason_error_string(ERR_get_error()));
 
     if( err == SSL_ERROR_WANT_READ ) {
         ev->on_recv = wbt_ssl_handshake;
@@ -162,8 +162,8 @@ wbt_status wbt_ssl_on_conn( wbt_event_t * ev ) {
     
     /*int err = SSL_accept (ev->ssl);
     if(err == 0) {
-        wbt_log_debug("SSL_get_error: %d", SSL_get_error(ev->ssl, err));
-        wbt_log_debug("Error: %s", ERR_reason_error_string(ERR_get_error()));
+        wbt_log_debug("SSL_get_error: %d\n", SSL_get_error(ev->ssl, err));
+        wbt_log_debug("Error: %s\n", ERR_reason_error_string(ERR_get_error()));
         
         wbt_conn_close(ev);
         return WBT_OK;

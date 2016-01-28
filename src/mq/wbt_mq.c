@@ -132,8 +132,8 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     }
     
     // 处理 body
-    if( http->body.len != 16 ) {
-        http->status = STATUS_413;
+    if( http->body.len <= 0 ) {
+        http->status = STATUS_403;
         return WBT_OK;
     }
     
@@ -152,10 +152,12 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     subscriber->ev = ev;
     ev->ctx = subscriber;
     
+    wbt_log_debug("new subscriber %lld fron conn %d\n", subscriber->subscriber_id, ev->fd);
+    
     // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
     wbt_str_t channel_ids;
     wbt_offset_to_str(http->body, channel_ids, ev->buff.ptr);
-    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
+    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 10);
 
     // 遍历想要订阅的所有频道
         wbt_channel_t * channel = wbt_mq_channel_get(channel_id);
@@ -338,18 +340,10 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
 
 wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
     // 固定返回一个空的响应，通知客户端重新发起 pull 请求
-    wbt_str_t resp = wbt_string("{\"status\":0}");
-    
-    wbt_mem_t tmp;
-    wbt_malloc(&tmp, resp.len);
-    wbt_memcpy(&tmp, (wbt_mem_t *)&resp, resp.len);
-    
     wbt_http_t * http = ev->data.ptr;
     
     http->state = STATE_SENDING;
-    http->status = STATUS_200;
-    http->file.ptr = tmp.ptr;
-    http->file.size = tmp.len;
+    http->status = STATUS_204;
 
     if( wbt_http_process(ev) != WBT_OK ) {
         wbt_conn_close(ev);
@@ -376,6 +370,9 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         http->status = STATUS_404;
         return WBT_OK;
     }
+    
+    wbt_log_debug("subscriber %lld pull fron conn %d\n", subscriber->subscriber_id, ev->fd);
+
     
     // 从订阅者的 msg_list 中取出第一条消息
     while( !wbt_list_empty( &subscriber->msg_list->head ) ) {

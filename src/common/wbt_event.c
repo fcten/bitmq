@@ -144,7 +144,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    //wbt_log_debug("event add, fd %d, addr %p, %u events.", ev->fd ,ev, wbt_events.max-wbt_events.top);
+    //wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
     wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
@@ -191,12 +191,12 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
 wbt_status wbt_event_del(wbt_event_t *ev) {
     /* 这种情况不应该发生，如果发生则说明进行了重复的删除操作 */
     if( wbt_events.top+1 >= wbt_events.max ) {
-        wbt_log_debug("try to del event from empty pool");
+        wbt_log_debug("try to del event from empty pool\n");
         
         return WBT_ERROR;
     }
     
-    wbt_log_debug("event del, fd %d, addr %p, %u events", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
 
     /* 从事件池中移除 */
     wbt_event_t **tmp_ev = wbt_events.available.ptr;
@@ -226,7 +226,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
-    //wbt_log_debug("event mod, fd %d, addr %d",ev->fd,ev);
+    //wbt_log_debug("event mod, fd %d, addr %d\n",ev->fd,ev);
 
     /* 修改epoll事件 */
     if(ev->fd >= 0) {
@@ -283,7 +283,7 @@ wbt_status wbt_event_dispatch() {;
     listen_ev.timeout = 0;
     
     if( wbt_conf.process == 1 ) {
-        //wbt_log_debug("add listen event");
+        //wbt_log_debug("add listen event\n");
         if(wbt_event_add(&listen_ev) == NULL) {
             return WBT_ERROR;
         }
@@ -308,7 +308,7 @@ wbt_status wbt_event_dispatch() {;
             }
 
             if( is_accept_lock ) {
-                //wbt_log_debug("add listen event");
+                //wbt_log_debug("add listen event\n");
                 if(wbt_event_add(&listen_ev) == NULL) {
                     return WBT_ERROR;
                 }
@@ -325,7 +325,7 @@ wbt_status wbt_event_dispatch() {;
         if (nfds == -1) {
             if (errno == EINTR) {
                 // 被信号中断
-                wbt_log_debug("epoll_wait: Interrupted system call");
+                wbt_log_debug("epoll_wait: Interrupted system call\n");
                 continue;
             } else {
                 // 其他不可弥补的错误
@@ -333,7 +333,7 @@ wbt_status wbt_event_dispatch() {;
                 return WBT_ERROR;
             }
         }
-        //wbt_log_debug("%d event happened.",nfds);
+        //wbt_log_debug("%d event happened.\n",nfds);
         
         /* 更新当前时间 */
         wbt_time_update();
@@ -352,7 +352,7 @@ wbt_status wbt_event_dispatch() {;
                     }
 
                     if( is_accept_lock || wbt_wating_to_exit ) {
-                        //wbt_log_debug("del listen event");
+                        //wbt_log_debug("del listen event\n");
                         if( wbt_event_del(ev) != WBT_OK ) {
                             return WBT_ERROR;
                         }

@@ -35,7 +35,7 @@ wbt_status wbt_log_print(const char *fmt, ...);
 
 #ifdef WBT_DEBUG
 #define wbt_log_debug(fmt, arg...) \
-	printf ("\n\033[31;49;1mDEBUG\033[0m ~ %d ~ \033[32;49m%s@%d\033[0m %.*s" fmt, getpid(), \
+	printf ("\033[31;49;1mDEBUG\033[0m ~ %d ~ \033[32;49m%s@%d\033[0m %.*s" fmt, getpid(), \
         strrchr (__FILE__, '/') == 0 ?  \
 		__FILE__ : strrchr (__FILE__, '/') + 1, \
 		__LINE__, \

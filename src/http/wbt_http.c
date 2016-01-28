@@ -95,16 +95,16 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
                 int err = wbt_ssl_get_error(ev, nwrite);
                 switch(err) {
                     case SSL_ERROR_WANT_WRITE:
-                        wbt_log_debug("SSL_ERROR_WANT_WRITE");
+                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
                         break;
                     case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ");
+                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
                         return WBT_ERROR;
                     case SSL_ERROR_SYSCALL:
-                        wbt_log_debug("SSL_ERROR_SYSCALL");
+                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
                         return WBT_ERROR;
                     default:
-                        wbt_log_debug("%d", err);
+                        wbt_log_debug("%d\n", err);
                         return WBT_ERROR;
                 }
             } else {
@@ -122,7 +122,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
 
         http->resp_offset += nwrite;
 
-        //wbt_log_debug("%d send, %d remain.", nwrite, http->response.len - http->resp_offset);
+        //wbt_log_debug("%d send, %d remain.\n", nwrite, http->response.len - http->resp_offset);
         if( http->response.len > http->resp_offset ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
@@ -153,13 +153,13 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
                 int err = wbt_ssl_get_error(ev, nwrite);
                 switch(err) {
                     case SSL_ERROR_WANT_WRITE:
-                        wbt_log_debug("SSL_ERROR_WANT_WRITE");
+                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
                         break;
                     case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ");
+                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
                         return WBT_ERROR;
                     case SSL_ERROR_SYSCALL:
-                        wbt_log_debug("SSL_ERROR_SYSCALL");
+                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
                         return WBT_ERROR;
                     default:
                         return WBT_ERROR;
@@ -174,7 +174,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             return WBT_OK;
         }
 
-        //wbt_log_debug("%d send, %d remain.", nwrite, n - nwrite);
+        //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
         if( n > nwrite ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
@@ -354,9 +354,10 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                 if( http->uri.start == 0 ) {
                     http->uri.start = offset;
                 }
-                if( ch == ' ' ) {
+                if( http->uri.len == 0 && ( ch == ' ' || ch == '?' ) ) {
                     http->uri.len = offset - http->uri.start;
-                    
+                }
+                if( ch == ' ' ) {
                     state = 2;
                 }
                 break;
@@ -487,13 +488,13 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
         return WBT_ERROR;
     }
 
-    //wbt_log_debug(" METHOD: [%.*s]",
+    //wbt_log_debug(" METHOD: [%.*s]\n",
     //        REQUEST_METHOD[http->method].len,
     //        REQUEST_METHOD[http->method].str );
-    //wbt_log_debug("    URI: [%.*s]",
+    //wbt_log_debug("    URI: [%.*s]\n",
     //        http->uri.len,
     //        (char *)ev->buff.ptr + http->uri.start );
-    //wbt_log_debug("VERSION: [%.*s]",
+    //wbt_log_debug("VERSION: [%.*s]\n",
     //        http->version.len,
     //        (char *)ev->buff.ptr + http->version.start );
 
@@ -521,7 +522,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
         switch( header->key ) {
             case HEADER_UNKNOWN:
                 /* 忽略未知的 header 
-                wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN",
+                wbt_log_debug(" HEADER: [%.*s: %.*s] UNKNOWN\n",
                     header->name.len, header->name.str,
                     header->value.len, header->value.str); */
                 break;
@@ -649,14 +650,14 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     wbt_strcat( &dest, &crlf, mem_len );
     wbt_strcat( &dest, &http->resp_body, mem_len );
     
-    //wbt_log_debug("malloc: %d, use: %d", mem_len, dest.len );
+    //wbt_log_debug("malloc: %d, use: %d\n", mem_len, dest.len );
     
     return WBT_OK;
 }
 
 wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
     wbt_http_t * http = ev->data.ptr;
-    wbt_log_debug("%.*s",ev->buff.len, (char *)ev->buff.ptr);
+    //wbt_log_debug("%.*s\n",ev->buff.len, (char *)ev->buff.ptr);
 
     if( http->state == STATE_CONNECTION_ESTABLISHED ||
             http->state == STATE_SEND_COMPLETED ) {
@@ -850,11 +851,19 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
             wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
             wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
             wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
+        } else {
+            wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
+            wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
+            wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
         }
     } else {
         send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
         
         wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+
+        wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
+        wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
+        wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
         
         http->resp_body = wbt_http_error_page[http->status];
     }
@@ -865,7 +874,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         return WBT_ERROR;
         
     }
-    //wbt_log_debug("%.*s", http->response.len, (char *)http->response.ptr);
+    //wbt_log_debug("%.*s\n", http->response.len, (char *)http->response.ptr);
     
     return WBT_OK;
 }

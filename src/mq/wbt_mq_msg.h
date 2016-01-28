@@ -24,12 +24,12 @@ void wbt_mq_msg_destory_node(wbt_msg_list_t *node);
 
 static inline void wbt_mq_msg_inc_refer(wbt_msg_t *msg) {
     msg->reference_count ++;
-    wbt_log_debug("msg %lld, refer inc, %d", msg->msg_id, msg->reference_count);
+    //wbt_log_debug("msg %lld, refer inc, %d", msg->msg_id, msg->reference_count);
 }
 
 static inline void wbt_mq_msg_dec_refer(wbt_msg_t *msg) {
     msg->reference_count --;
-    wbt_log_debug("msg %lld, refer dec, %d", msg->msg_id, msg->reference_count);
+    //wbt_log_debug("msg %lld, refer dec, %d", msg->msg_id, msg->reference_count);
 }
 
 static inline void wbt_mq_msg_inc_delivery(wbt_msg_t *msg) {
