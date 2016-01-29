@@ -343,7 +343,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
 
     rbt->size --;
     
-    wbt_rbtree_print(rbt->root);
+    //wbt_rbtree_print(rbt->root);
     //wbt_log_debug("rbtree delete\n");
 } 
 

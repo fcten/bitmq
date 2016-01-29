@@ -251,8 +251,10 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                     wbt_mm_memcpy( msg->data.ptr, node->value.s, node->value_len );
                 }
                 break;
-            case JSON_OBJECT:
             case JSON_ARRAY:
+                
+                break;
+            case JSON_OBJECT:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
                     if( wbt_malloc( &msg->data, 10240 ) != WBT_OK ) {
                         return WBT_ERROR;

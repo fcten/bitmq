@@ -196,7 +196,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    //wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
 
     /* 从事件池中移除 */
     wbt_event_t **tmp_ev = wbt_events.available.ptr;
