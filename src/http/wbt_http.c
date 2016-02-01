@@ -240,14 +240,14 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
             wbt_str_t full_path;
             if( *((char *)ev->buff.ptr + http->uri.start + http->uri.len - 1)\
                     == '/' ) {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
-                    http->uri.len,
-                    (char *)ev->buff.ptr + http->uri.start,
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
+                    wbt_conf.root.len, wbt_conf.root.str,
+                    http->uri.len, (char *)ev->buff.ptr + http->uri.start,
                     wbt_conf.index.len, wbt_conf.index.str);
             } else {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s",
-                    http->uri.len,
-                    (char *)ev->buff.ptr + http->uri.start);
+                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                    wbt_conf.root.len, wbt_conf.root.str,
+                    http->uri.len, (char *)ev->buff.ptr + http->uri.start);
             }
             wbt_file_close( &full_path );
         }

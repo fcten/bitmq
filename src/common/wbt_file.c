@@ -137,7 +137,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                     tmp_file->size = tmp.size;
                     tmp_file->last_modified = tmp.last_modified;
 
-                    //wbt_log_debug("open file: %d %zd\n", tmp.fd, tmp.size);
+                    wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
                 } else {
                     tmp.size = 0;
                     if( errno == EACCES ) {
@@ -174,6 +174,8 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
             /* 当所有对该文件的使用都被释放后，更新时间戳 */
             tmp_file->last_use_mtime = wbt_cur_mtime;
         }
+        
+        wbt_log_debug("close file: %d %d\n", tmp_file->fd, tmp_file->refer);
     }
 
     return WBT_OK;
