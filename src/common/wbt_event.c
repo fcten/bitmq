@@ -320,7 +320,12 @@ wbt_status wbt_event_dispatch() {;
                 }
             }
         }
-
+        
+        if( is_accept_add && wbt_wating_to_exit ) {
+            // 这里未能删除监听事件，不过程序马上就要退出了，应该没有问题
+            wbt_conn_close_listen();
+        }
+        
         int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
         if (nfds == -1) {
             if (errno == EINTR) {

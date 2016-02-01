@@ -26,7 +26,7 @@ wbt_module_t wbt_module_conn = {
     wbt_conn_cleanup
 };
 
-int listen_fd;
+int listen_fd = -1;
 
 wbt_status wbt_conn_init() {
     // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
@@ -83,7 +83,14 @@ wbt_status wbt_conn_init() {
 }
 
 wbt_status wbt_conn_cleanup() {
-    close(listen_fd);
+    return wbt_conn_close_listen();
+}
+
+wbt_status wbt_conn_close_listen() {
+    if( listen_fd >= 0 ) {
+        close(listen_fd);
+        listen_fd = -1;
+    }
     
     return WBT_OK;
 }
