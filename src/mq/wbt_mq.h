@@ -66,7 +66,7 @@ typedef struct wbt_msg_s {
     unsigned int consumption_count;
     // 引用次数
     // 如果该消息正在被发送，或者正在等待 ACK 响应，则不能被释放
-    unsigned int reference_count;
+    //unsigned int reference_count;
     // 消息内容
     wbt_mem_t data;
 } wbt_msg_t;
@@ -75,9 +75,12 @@ typedef struct wbt_msg_list_s {
     // 链表结构体
     wbt_list_t head;
     // 消息指针
-    wbt_msg_t * msg;
+    //wbt_msg_t * msg;
     // 过期时间
-    time_t expire;
+    //time_t expire;
+    // 消息 ID
+    // 使用指针效率更高，但是必须在内存中保存所有消息的索引，会对消息持久化造成障碍
+    wbt_mq_id msg_id;
 } wbt_msg_list_t;
 
 typedef struct wbt_subscriber_s {
@@ -91,8 +94,8 @@ typedef struct wbt_subscriber_s {
     struct wbt_channel_list_s * channel_list;
     // 可投递消息队列
     struct wbt_msg_list_s * msg_list;
-    // 当前正在处理的消息指针
-    struct wbt_msg_s * msg;
+    // 当前正在处理的消息 ID
+    wbt_mq_id msg_id;
     // 已投递消息队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
     struct wbt_msg_list_s * delivered_list;

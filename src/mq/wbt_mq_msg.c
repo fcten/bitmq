@@ -44,6 +44,17 @@ wbt_msg_t * wbt_mq_msg_create() {
     return msg;
 }
 
+wbt_msg_t * wbt_mq_msg_get(wbt_mq_id msg_id) {
+    wbt_str_t msg_key;
+    wbt_variable_to_str(msg_id, msg_key);
+    wbt_rbtree_node_t * msg_node = wbt_rbtree_get(&wbt_mq_messages, &msg_key);
+    if( msg_node == NULL ) {
+        // TODO 调用持久化接口，从磁盘中读取并缓存到内存中
+        return NULL;
+    }
+    return msg_node->value.ptr;
+}
+
 void wbt_mq_msg_destory(wbt_msg_t *msg) {
     if( msg == NULL ) {
         return;
@@ -68,18 +79,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
 }
 
 wbt_status wbt_mq_msg_destory_expired(wbt_event_t *ev) {
-    wbt_msg_t *msg = ev->ctx;
-    
-    if( msg->reference_count == 0 ) {
-        wbt_mq_msg_destory( msg );
-    } else {
-        msg->timeout_ev->timeout = wbt_cur_mtime + 10000;
-
-        if(wbt_event_mod(msg->timeout_ev) != WBT_OK) {
-            // 重新注册超时事件失败，该消息将无法得到释放。
-            return WBT_ERROR;
-        }
-    }
+    wbt_mq_msg_destory( ev->ctx );
     
     return WBT_OK;
 }
@@ -140,7 +140,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     }
 
     // 已生效消息
-    wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg);
+    wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg->msg_id);
     if( msg_node == NULL ) {
         return WBT_ERROR;
     }
@@ -161,7 +161,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
                     // TODO 记录投递失败
                 }
             } else {
-                wbt_msg_list_t * tmp_node = wbt_mq_msg_create_node(msg);
+                wbt_msg_list_t * tmp_node = wbt_mq_msg_create_node(msg->msg_id);
                 if( tmp_node == NULL ) {
                     // 内存不足，投递失败
                     // TODO 需要记录该次投递失败
@@ -203,13 +203,12 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     return WBT_OK;
 }
 
-wbt_msg_list_t * wbt_mq_msg_create_node(wbt_msg_t *msg) {
+wbt_msg_list_t * wbt_mq_msg_create_node(wbt_mq_id msg_id) {
     wbt_msg_list_t * msg_node = wbt_new(wbt_msg_list_t);
     if( msg_node == NULL ) {
         return NULL;
     }
-    msg_node->msg = msg;
-    msg_node->expire = msg->expire;
+    msg_node->msg_id = msg_id;
 
     return msg_node;
 }

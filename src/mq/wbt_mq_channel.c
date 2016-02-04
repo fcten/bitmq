@@ -6,6 +6,7 @@
  */
 
 #include "wbt_mq_channel.h"
+#include "wbt_mq_msg.h"
 
 // 存储所有可用频道
 static wbt_rbtree_t wbt_mq_channels;
@@ -182,8 +183,8 @@ void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen) {
         wbt_msg_t * msg;
         wbt_msg_list_t * msg_node;
         wbt_list_for_each_entry( msg_node, &channel->msg_list->head, head ) {
-            msg = msg_node->msg;
-            if(msg_node->expire <= wbt_cur_mtime) {
+            msg = wbt_mq_msg_get(msg_node->msg_id);
+            if(!msg || msg->expire <= wbt_cur_mtime) {
                 channel_info = wbt_sprintf(&tmp, "expired msg\n");
             } else {
                 channel_info = wbt_sprintf(&tmp, "%016llX %5u %5u %.*s\n",
