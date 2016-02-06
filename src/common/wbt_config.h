@@ -25,6 +25,7 @@ typedef struct wbt_conf_s {
     int event_timeout;      // 事件超时时间 毫秒
     int max_open_files;     // 最多打开的句柄数量
     int max_core_file_size; // 最大的 core dump 文件大小
+    long long int max_memory_usage; // 最大内存使用
     wbt_str_t user;     // 低权限用户
     wbt_str_t admin;    // 管理员联系方式
     wbt_str_t root;     // 网站根目录

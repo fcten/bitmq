@@ -22,10 +22,6 @@ typedef struct wbt_mem_s {
     void   *ptr;            /* 指向内存块的指针 */
 } wbt_mem_t;
 
-static inline void * wbt_new(size_t len) {
-    return malloc(len);
-}
-
 // 固定已知长度内存分配
 #define wbt_new(type) calloc(1, sizeof(type))
 #define wbt_delete(ptr) if(ptr) {free(ptr);ptr=NULL;}
@@ -100,6 +96,8 @@ static inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len) {
         }
     }
 }
+
+int wbt_mem_is_oom();
 
 #ifdef	__cplusplus
 }
