@@ -27,8 +27,8 @@ typedef struct wbt_rbtree_node_s {
     struct wbt_rbtree_node_s * right;
     struct wbt_rbtree_node_s * parent;
     wbt_rbtree_color color;
-    wbt_mem_t key;
-    wbt_mem_t value;
+    wbt_str_t key;
+    wbt_str_t value;
 } wbt_rbtree_node_t;
 
 typedef struct wbt_rbtree_s {

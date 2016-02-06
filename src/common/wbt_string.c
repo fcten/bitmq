@@ -6,30 +6,23 @@
  */
 
 #include "wbt_string.h"
-
-wbt_mem_t wbt_stdstr_tmp;
+#include "wbt_memory.h"
 
 const char * wbt_stdstr(wbt_str_t * str) {
+    static wbt_str_t wbt_stdstr_tmp = wbt_null_string;
+
     if( str->len + 1 > wbt_stdstr_tmp.len ) {
-        wbt_realloc( &wbt_stdstr_tmp, str->len + 1 );
+        void * p = wbt_realloc( wbt_stdstr_tmp.str, str->len + 1 );
+        if( p == NULL ) {
+            return NULL;
+        }
+        wbt_stdstr_tmp.str = p;
     }
-    wbt_memcpy( &wbt_stdstr_tmp, (wbt_mem_t *)str, str->len );
-    *( (char *)wbt_stdstr_tmp.ptr + str->len ) = '\0';
+
+    wbt_memcpy( wbt_stdstr_tmp.str, str->str, str->len );
+    *( wbt_stdstr_tmp.str + str->len ) = '\0';
     
-    return wbt_stdstr_tmp.ptr;
-}
-
-wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...) {
-    wbt_str_t    p;
-    va_list   args;
-    
-    p.str = buf->ptr;
-
-    va_start(args, fmt);
-    p.len = (size_t) vsnprintf(buf->ptr, buf->len, fmt, args);
-    va_end(args);
-
-    return p;
+    return wbt_stdstr_tmp.str;
 }
 
 /* 
@@ -121,10 +114,7 @@ void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len ) {
     int src_len = src->len;
     if( dest->len + src->len > max_len ) src_len = max_len - dest->len;
 
-    wbt_mem_t mdest;
-    mdest.ptr = dest->str + dest->len;
-    mdest.len = src_len;
-    wbt_memcpy( &mdest, (wbt_mem_t *)src, src_len );
+    wbt_memcpy( dest->str + dest->len, src->str, src_len );
     dest->len += src_len;
 }
 

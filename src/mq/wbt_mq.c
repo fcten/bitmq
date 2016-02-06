@@ -32,7 +32,7 @@ wbt_status wbt_mq_init() {
 
 wbt_status wbt_mq_on_recv(wbt_event_t *ev) {
     // 分发请求
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
 
     // 只过滤 404 响应
     if( http->status != STATUS_404 ) {
@@ -45,7 +45,7 @@ wbt_status wbt_mq_on_recv(wbt_event_t *ev) {
     wbt_str_t status = wbt_string("/mq/status/");
     
     wbt_str_t http_uri;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
     if( wbt_strncmp( &http_uri, &login, login.len ) == 0 ) {
         return wbt_mq_login(ev);
@@ -127,7 +127,7 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev) {
 
 wbt_status wbt_mq_login(wbt_event_t *ev) {
     // 解析请求
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
 
     // 必须是 POST 请求
     if( http->method != METHOD_POST ) {
@@ -160,7 +160,7 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     
     // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
     wbt_str_t channel_ids;
-    wbt_offset_to_str(http->body, channel_ids, ev->buff.ptr);
+    wbt_offset_to_str(http->body, channel_ids, ev->buff);
     wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 10);
 
     // 遍历想要订阅的所有频道
@@ -250,10 +250,11 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                 break;
             case JSON_STRING:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    if( wbt_malloc( &msg->data, node->value_len ) != WBT_OK ) {
+                    msg->data = wbt_strdup( node->value.s, node->value_len );
+                    if( msg->data == NULL ) {
                         return WBT_ERROR;
                     }
-                    wbt_mm_memcpy( msg->data.ptr, node->value.s, node->value_len );
+                    msg->data_len = node->value_len;
                 }
                 break;
             case JSON_ARRAY:
@@ -261,13 +262,15 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                 break;
             case JSON_OBJECT:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    if( wbt_malloc( &msg->data, 10240 ) != WBT_OK ) {
+                    msg->data_len = 10240;
+                    msg->data = wbt_malloc( msg->data_len );
+                    if( msg->data == NULL ) {
                         return WBT_ERROR;
                     }
-                    char *p = msg->data.ptr;
-                    size_t l = msg->data.len;
+                    char *p = msg->data;
+                    size_t l = msg->data_len;
                     json_print(node->value.p, &p, &l);
-                    wbt_realloc( &msg->data, msg->data.len-l );
+                    msg->data = wbt_realloc( msg->data, msg->data_len-l );
                 }
                 break;
         }
@@ -275,7 +278,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
         node = node->next;
     }
 
-    if( !msg->consumer_id || !msg->data.len ) {
+    if( !msg->consumer_id || !msg->data_len ) {
         return WBT_ERROR;
     }
 
@@ -287,7 +290,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
 
 wbt_status wbt_mq_push(wbt_event_t *ev) {
     // 解析请求
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
 
     // 必须是 POST 请求
     if( http->method != METHOD_POST ) {
@@ -297,7 +300,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     
     // 解析请求
     wbt_str_t data;
-    wbt_offset_to_str(http->body, data, ev->buff.ptr);
+    wbt_offset_to_str(http->body, data, ev->buff);
 
     json_task_t t;
     t.str = data.str;
@@ -347,7 +350,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
 
 wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
     // 固定返回一个空的响应，通知客户端重新发起 pull 请求
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
     
     http->state = STATE_SENDING;
     http->status = STATUS_204;
@@ -370,7 +373,7 @@ wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
 }
 
 wbt_status wbt_mq_pull(wbt_event_t *ev) {
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
     wbt_subscriber_t *subscriber = ev->ctx;
     
     if( ev->ctx == NULL ) {
@@ -394,20 +397,17 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
             continue;
         }
 
+        http->file.ptr = wbt_strdup(msg->data, msg->data_len);
+        if( http->file.ptr == NULL ) {
+            continue;
+        }
+        http->status = STATUS_200;
+        http->file.size = msg->data_len;
+
         // 从 msg_list 中删除该消息
         wbt_list_del( &msg_node->head );
         wbt_mq_msg_destory_node(msg_node);
         
-        wbt_mem_t tmp;
-        if( wbt_malloc(&tmp, msg->data.len) != WBT_OK ) {
-            continue;
-        }
-        wbt_memcpy(&tmp, &msg->data, msg->data.len);
-
-        http->status = STATUS_200;
-        http->file.ptr = tmp.ptr;
-        http->file.size = tmp.len;
-
         // 保存当前正在处理的消息指针
         subscriber->msg_id = msg->msg_id;
 
@@ -445,40 +445,37 @@ wbt_status wbt_mq_ack(wbt_event_t *ev) {
 }
 
 wbt_status wbt_mq_status(wbt_event_t *ev) {
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
     
     // 必须是 GET 请求
     if( http->method != METHOD_GET ) {
         http->status = STATUS_405;
         return WBT_OK;
     }
-    
-    wbt_mem_t tmp;
-    wbt_malloc(&tmp, 10240);
 
+    http->file.size = 10240;
+    http->file.ptr = wbt_malloc(http->file.size);
+    
     wbt_str_t resp;
     resp.len = 0;
-    resp.str = tmp.ptr;
+    resp.str = http->file.ptr;
     
     wbt_str_t http_uri;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
     wbt_str_t channel_ids;
     channel_ids.str = http_uri.str + 11;
     channel_ids.len = http_uri.len - 11;
     if( channel_ids.len != 16 ) {
-        wbt_mq_print_channels(&resp, tmp.len);
-        wbt_realloc(&tmp, resp.len);
+        wbt_mq_print_channels(&resp, http->file.size);
     } else {
         wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
-
-        wbt_mq_print_channel(channel_id, &resp, tmp.len);
-        wbt_realloc(&tmp, resp.len);
+        wbt_mq_print_channel(channel_id, &resp, http->file.size);
     }
 
+    http->file.ptr = wbt_realloc(http->file.ptr, resp.len);
+    http->file.size = resp.len;
     http->status = STATUS_200;
-    http->file.ptr = tmp.ptr;
-    http->file.size = tmp.len;
 
     return WBT_OK;
 }

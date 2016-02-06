@@ -11,7 +11,7 @@
 
 /* 建立一个空堆 */
 wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size) {
-    if( ( p->heap = wbt_mm_malloc((max_size + 1) * sizeof(wbt_event_t *)) ) == NULL ) {
+    if( ( p->heap = wbt_malloc((max_size + 1) * sizeof(wbt_event_t *)) ) == NULL ) {
         return WBT_ERROR;
     }
 
@@ -26,7 +26,7 @@ wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size) {
 wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_event_t * node) {
     if(p->size + 1 == p->max) {
         /* 堆已经满了，尝试扩充大小 */
-        void *new_p = wbt_mm_realloc(p->heap, (p->max*2 + 1) * sizeof(wbt_event_t *));
+        void *new_p = wbt_realloc(p->heap, (p->max*2 + 1) * sizeof(wbt_event_t *));
         if( new_p != NULL ) {
             p->heap = new_p;
             p->max *= 2;
@@ -101,7 +101,7 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
     // 删除元素后尝试释放空间
     // 为每一个最小堆添加定时 GC 任务太复杂了，我认为目前的做法可以接受
     if( p->max >= p->size * 4 && p->size >= 128 ) {
-        p->heap = wbt_mm_realloc( p->heap, sizeof(wbt_event_t *) * (p->max/2 + 1) );
+        p->heap = wbt_realloc( p->heap, sizeof(wbt_event_t *) * (p->max/2 + 1) );
         p->max /= 2;
 
         wbt_log_debug("heap resize to %u\n", p->max);
@@ -112,7 +112,7 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
 
 /* 删除堆 */
 wbt_status wbt_heap_destroy(wbt_heap_t * p) {
-    wbt_mm_free(p->heap);
+    wbt_free(p->heap);
     p->heap = NULL;
     p->max = 0;
     p->size = 0;

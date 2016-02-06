@@ -514,7 +514,8 @@ int json_parser( json_task_t *task ) {
         return -1;
     }
     
-    while( ch = *(task->str + task->count) ) {
+    while( task->count < task->len ) {
+        ch = *(task->str + task->count);
         task->count ++;
         
         if( ch == ' ' || ch == '\n' || ch == '\t' ) {

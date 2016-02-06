@@ -33,7 +33,7 @@ typedef struct wbt_file_s {
     /* 如果文件被读取到内存中，则在 ptr 中保存文件内容的指针
      * 否则的话，ptr 的值保持 NULL
      */
-    u_char *ptr;
+    char *ptr;
     /* 文件大小 */
     size_t size;
     /* 已发送数据偏移量 */

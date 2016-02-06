@@ -7,7 +7,7 @@
 
 #include "wbt_os_util.h"
 
-int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf) {
+int wbt_get_file_path_by_fd(int fd, void * buf, size_t buf_len) {
     if ( fd <= 0 ) {  
         return -1;  
     }  
@@ -15,7 +15,7 @@ int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf) {
     char tmp[32] = {'\0'};
     snprintf(tmp, sizeof(tmp), "/proc/self/fd/%d", fd);
 
-    return readlink(tmp, buf->ptr, buf->len);
+    return readlink(tmp, buf, buf_len);
 }
 
 int wbt_getopt(int argc,char * const argv[ ],const char * optstring) {
@@ -23,8 +23,8 @@ int wbt_getopt(int argc,char * const argv[ ],const char * optstring) {
 }
 
 
-int wbt_get_self(wbt_mem_t* buf) {
-    wbt_memset(buf, 0);
+int wbt_get_self(void * buf, size_t buf_len) {
+    wbt_memset(buf, 0, buf_len);
 
-    return readlink("/proc/self/exe", buf->ptr, buf->len);
+    return readlink("/proc/self/exe", buf, buf_len);
 }

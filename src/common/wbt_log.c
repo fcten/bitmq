@@ -16,7 +16,7 @@ wbt_module_t wbt_module_log = {
 
 int wbt_log_file_fd;
 char * wbt_log_file = "./logs/webit.log";
-wbt_mem_t wbt_log_buf;
+wbt_str_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
     /* O_CLOEXEC 需要 Linux 内核版本大于等于 2.6.23 */
@@ -34,10 +34,10 @@ wbt_status wbt_log_add(const char *fmt, ...) {
     wbt_str_t s;
     va_list   args;
 
-    s.str = wbt_log_buf.ptr;
+    s.str = wbt_log_buf.str;
 
     va_start(args, fmt);
-    s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
+    s.len = (size_t) vsnprintf(wbt_log_buf.str, wbt_log_buf.len, fmt, args);
     va_end(args);
 
     /* 操作系统本身会对写入操作进行缓存
@@ -53,12 +53,12 @@ wbt_status wbt_log_print(const char *fmt, ...) {
     wbt_str_t s;
     va_list   args;
 
-    if( (s.str = wbt_log_buf.ptr) == NULL ) {
+    if( (s.str = wbt_log_buf.str) == NULL ) {
         return WBT_ERROR;
     }
 
     va_start(args, fmt);
-    s.len = (size_t) vsnprintf(wbt_log_buf.ptr, wbt_log_buf.len, fmt, args);
+    s.len = (size_t) vsnprintf(wbt_log_buf.str, wbt_log_buf.len, fmt, args);
     va_end(args);
 
     fprintf(stdout, "%.*s", s.len, s.str);

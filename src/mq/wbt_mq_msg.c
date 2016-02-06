@@ -22,7 +22,7 @@ wbt_mq_id wbt_msg_create_count = 0;
 wbt_mq_id wbt_msg_delete_count = 0;
 
 wbt_msg_t * wbt_mq_msg_create() {
-    wbt_msg_t * msg = wbt_new(wbt_msg_t);
+    wbt_msg_t * msg = wbt_calloc(sizeof(wbt_msg_t));
     
     if( msg ) {
         msg->msg_id = ++wbt_msg_create_count;
@@ -32,11 +32,10 @@ wbt_msg_t * wbt_mq_msg_create() {
         wbt_variable_to_str(msg->msg_id, msg_key);
         wbt_rbtree_node_t * msg_node = wbt_rbtree_insert(&wbt_mq_messages, &msg_key);
         if( msg_node == NULL ) {
-            wbt_delete(msg);
+            wbt_free(msg);
             return NULL;
         }
-        msg_node->value.ptr = msg;
-        msg_node->value.len = sizeof(wbt_msg_t);
+        msg_node->value.str = (char *)msg;
         
         wbt_log_debug("msg %lld create\n", msg->msg_id);
     }
@@ -52,7 +51,7 @@ wbt_msg_t * wbt_mq_msg_get(wbt_mq_id msg_id) {
         // TODO 调用持久化接口，从磁盘中读取并缓存到内存中
         return NULL;
     }
-    return msg_node->value.ptr;
+    return (wbt_msg_t *)msg_node->value.str;
 }
 
 void wbt_mq_msg_destory(wbt_msg_t *msg) {
@@ -66,7 +65,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
         wbt_event_del( msg->timeout_ev );
     }
     
-    wbt_free(&msg->data);
+    wbt_free(msg->data);
 
     wbt_str_t msg_key;
     wbt_variable_to_str(msg->msg_id, msg_key);
@@ -204,7 +203,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
 }
 
 wbt_msg_list_t * wbt_mq_msg_create_node(wbt_mq_id msg_id) {
-    wbt_msg_list_t * msg_node = wbt_new(wbt_msg_list_t);
+    wbt_msg_list_t * msg_node = wbt_calloc(sizeof(wbt_msg_list_t));
     if( msg_node == NULL ) {
         return NULL;
     }
@@ -214,5 +213,5 @@ wbt_msg_list_t * wbt_mq_msg_create_node(wbt_mq_id msg_id) {
 }
 
 void wbt_mq_msg_destory_node(wbt_msg_list_t *node) {
-    wbt_delete(node);
+    wbt_free(node);
 }

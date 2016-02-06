@@ -37,21 +37,23 @@ wbt_heap_t timeout_events;
 wbt_status wbt_event_init() {
     wbt_list_init(&wbt_events.node.list);
     
-    if( wbt_malloc(&wbt_events.node.pool, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) != WBT_OK ) {
+    wbt_events.node.pool = wbt_malloc( WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t) );
+    if( wbt_events.node.pool == NULL ) {
         return WBT_ERROR;
     }
-    if( wbt_malloc(&wbt_events.available, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t *)) != WBT_OK ) {
+
+    wbt_events.available = wbt_malloc( WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t *) );
+    if( wbt_events.available == NULL ) {
          return WBT_ERROR;
     }
+
     wbt_events.max = WBT_EVENT_LIST_SIZE;
     wbt_events.top = WBT_EVENT_LIST_SIZE - 1;
     
     /* 把所有可用内存压入栈内 */
-    wbt_event_t *tmp_ev = wbt_events.node.pool.ptr;
-    wbt_event_t **tmp_ev_p = wbt_events.available.ptr;
     int i;
     for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
-        tmp_ev_p[i] = tmp_ev + i;
+        wbt_events.available[i] = wbt_events.node.pool + i;
     }
 
     /* 初始化事件超时队列 */
@@ -62,18 +64,20 @@ wbt_status wbt_event_init() {
     }
     
     /* 根据端口号创建锁文件 */
-    wbt_mem_t lock_file;
-    if( wbt_malloc(&lock_file, sizeof("/tmp/.wbt_accept_lock_00000")) != WBT_OK ) {
+    wbt_str_t lock_file;
+    lock_file.len = sizeof("/tmp/.wbt_accept_lock_00000");
+    lock_file.str = wbt_malloc(lock_file.len);
+    if( lock_file.str == NULL ) {
         return WBT_ERROR;
     }
-    wbt_sprintf(&lock_file, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
+    snprintf(lock_file.str, lock_file.len, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
     
-    if( ( wbt_lock_accept = wbt_lock_create(lock_file.ptr) ) <= 0 ) {
+    if( ( wbt_lock_accept = wbt_lock_create(lock_file.str) ) <= 0 ) {
         wbt_log_add("create lock file failed\n");
-        wbt_free(&lock_file);
+        wbt_free(lock_file.str);
         return WBT_ERROR;
     }
-    wbt_free(&lock_file);
+    wbt_free(lock_file.str);
 
     return WBT_OK;
 }
@@ -97,33 +101,32 @@ wbt_status wbt_event_exit() {
 }
 
 wbt_status wbt_event_resize() {
-    wbt_mem_t tmp;
-
-    if( wbt_malloc(&tmp, sizeof(wbt_event_pool_node_t)) != WBT_OK ) {
+    wbt_event_pool_node_t *new_node = wbt_calloc(sizeof(wbt_event_pool_node_t));
+    if( new_node == NULL ) {
         return WBT_ERROR;
     }
-    wbt_event_pool_node_t *new_node = tmp.ptr;
 
-    if( wbt_malloc(&new_node->pool, WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t)) != WBT_OK ) {
-        wbt_free(&tmp);
+    new_node->pool = wbt_malloc( WBT_EVENT_LIST_SIZE * sizeof(wbt_event_t) );
+    if( new_node->pool == NULL ) {
+        wbt_free(new_node);
         return WBT_ERROR;
     }
     
-    if( wbt_realloc(&wbt_events.available, (wbt_events.max + WBT_EVENT_LIST_SIZE) * sizeof(wbt_event_t *)) != WBT_OK ) {
-        wbt_free(&new_node->pool);
-        wbt_free(&tmp);
+    void * tmp = wbt_realloc(wbt_events.available, (wbt_events.max + WBT_EVENT_LIST_SIZE) * sizeof(wbt_event_t *));
+    if( tmp == NULL ) {
+        wbt_free(new_node->pool);
+        wbt_free(new_node);
         return WBT_ERROR;
     }
+    wbt_events.available = tmp;
     
     /* 将新的内存块加入到链表末尾 */
     wbt_list_add_tail(&new_node->list, &wbt_events.node.list);
 
     /* 把新的可用内存压入栈内 */
-    wbt_event_t *tmp_ev = new_node->pool.ptr;
-    wbt_event_t **tmp_ev_p = wbt_events.available.ptr;
     int i;
     for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
-        tmp_ev_p[++wbt_events.top] = tmp_ev + i;
+        wbt_events.available[++wbt_events.top] = new_node->pool + i;
     }
 
     wbt_events.max += WBT_EVENT_LIST_SIZE;
@@ -144,10 +147,10 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    //wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
+    wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
-    wbt_event_t *t = *((wbt_event_t **)wbt_events.available.ptr + wbt_events.top);
+    wbt_event_t *t = *(wbt_events.available + wbt_events.top);
     wbt_events.top --;
     
     t->fd         = ev->fd;
@@ -157,13 +160,10 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     t->timeout    = ev->timeout;
     t->events     = ev->events;
 
-    t->buff.ptr = NULL;
-    t->buff.len = 0;
-    
-    t->data.ptr = NULL;
-    t->data.len = 0;
-    
-    t->ctx = NULL;
+    t->buff = NULL;
+    t->buff_len = 0;
+    t->data = NULL;
+    t->ctx  = NULL;
 
     /* 注册epoll事件 */
     if(t->fd >= 0) {
@@ -196,12 +196,11 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    //wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
 
     /* 从事件池中移除 */
-    wbt_event_t **tmp_ev = wbt_events.available.ptr;
     wbt_events.top ++;
-    tmp_ev[wbt_events.top] = ev;
+    wbt_events.available[wbt_events.top] = ev;
 
     /* 删除超时事件 */
     if( ev->heap_idx ) {
@@ -209,8 +208,12 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     }
     
     /* 释放可能存在的事件数据缓存 */
-    wbt_free(&ev->buff);
-    wbt_free(&ev->data);
+    wbt_free(ev->buff);
+    ev->buff = NULL;
+    ev->buff_len = 0;
+
+    wbt_free(ev->data);
+    ev->data = NULL;
 
     /* 删除epoll事件 */
     if(ev->fd >= 0) {
@@ -226,7 +229,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
-    //wbt_log_debug("event mod, fd %d, addr %d\n",ev->fd,ev);
+    wbt_log_debug("event mod, fd %d, addr %p\n",ev->fd, ev);
 
     /* 修改epoll事件 */
     if(ev->fd >= 0) {
@@ -271,8 +274,6 @@ wbt_status wbt_event_dispatch() {;
 
         return WBT_ERROR;
     }
-    
-    pid_t pid = getpid();
 
     wbt_event_t listen_ev;
     listen_ev.on_timeout = NULL;

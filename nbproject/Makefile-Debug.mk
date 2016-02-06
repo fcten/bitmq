@@ -51,7 +51,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/json/wbt_json.o \
-	${OBJECTDIR}/src/module/wbt_module_helloworld.o \
 	${OBJECTDIR}/src/mq/wbt_mq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
 	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
@@ -167,11 +166,6 @@ ${OBJECTDIR}/src/json/wbt_json.o: src/json/wbt_json.c
 	${MKDIR} -p ${OBJECTDIR}/src/json
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/json/wbt_json.o src/json/wbt_json.c
-
-${OBJECTDIR}/src/module/wbt_module_helloworld.o: src/module/wbt_module_helloworld.c 
-	${MKDIR} -p ${OBJECTDIR}/src/module
-	${RM} "$@.d"
-	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/module/wbt_module_helloworld.o src/module/wbt_module_helloworld.c
 
 ${OBJECTDIR}/src/mq/wbt_mq.o: src/mq/wbt_mq.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq

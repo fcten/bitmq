@@ -15,89 +15,37 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 
-#include "../webit.h"
+#if defined(USE_TCMALLOC)
+#include <google/tcmalloc.h>
+#if (TC_VERSION_MAJOR == 1 && TC_VERSION_MINOR >= 6) || (TC_VERSION_MAJOR > 1)
+#define wbt_malloc_size(p) tc_malloc_size(p)
+#else
+#error "Newer version of tcmalloc required"
+#endif
 
-typedef struct wbt_mem_s {
-    unsigned int  len;            /* 内存块的大小 */
-    void   *ptr;            /* 指向内存块的指针 */
-} wbt_mem_t;
+#elif defined(USE_JEMALLOC)
+#include <jemalloc/jemalloc.h>
+#if (JEMALLOC_VERSION_MAJOR == 2 && JEMALLOC_VERSION_MINOR >= 1) || (JEMALLOC_VERSION_MAJOR > 2)
+#define wbt_malloc_size(p) je_malloc_usable_size(p)
+#else
+#error "Newer version of jemalloc required"
+#endif
 
-// 固定已知长度内存分配
-#define wbt_new(type) calloc(1, sizeof(type))
-#define wbt_delete(ptr) if(ptr) {free(ptr);ptr=NULL;}
+#else
+#include <malloc.h>
+#define wbt_malloc_size(p) malloc_usable_size(p)
+#endif
 
-#define wbt_mm_malloc(sz) malloc(sz)
-#define wbt_mm_calloc(n, sz) calloc((n), (sz))
-#define wbt_mm_strdup(s) strdup(s)
-#define wbt_mm_memcpy(d, s, n) memcpy((d), (s), (n))
-#define wbt_mm_realloc(p, sz) realloc((p), (sz))
-#define wbt_mm_free(p) free(p)
+void * wbt_malloc(size_t size);
+void * wbt_calloc(size_t size);
+void * wbt_realloc(void *ptr, size_t size);
+void wbt_free(void *ptr);
 
-static inline wbt_status wbt_malloc(wbt_mem_t *p, size_t len) {
-    p->ptr = malloc(len);
-    if(p->ptr != NULL) {
-        p->len = len;
-        
-        return WBT_OK;
-    } else {
-        return WBT_ERROR;
-    }
-}
+void * wbt_memset(void *ptr, int ch, size_t size);
+void * wbt_memcpy(void *dest, const void *src, size_t size);
+void * wbt_strdup(const void *ptr, size_t size);
 
-static inline wbt_status wbt_calloc(wbt_mem_t *p, size_t len, size_t size) {
-    p->ptr = calloc(len, size);
-    if(p->ptr != NULL) {
-        p->len = len;
-        
-        return WBT_OK;
-    } else {
-        return WBT_ERROR;
-    }
-}
-
-static inline wbt_status wbt_realloc(wbt_mem_t *p, size_t len) {
-    void *tmp = realloc(p->ptr, len);
-    /* bugfix: len == 0 时相当于执行 free，此时 tmp == NULL */
-    if(tmp != NULL || len == 0) {
-        p->ptr = tmp;
-        p->len = len;
-        
-        return WBT_OK;
-    } else {
-        return WBT_ERROR;
-    }
-}
-
-static inline void wbt_free(wbt_mem_t *p) {
-    if( p->len > 0 && p->ptr != NULL ) {
-        free(p->ptr);
-        p->ptr = NULL;
-        p->len = 0;
-    }
-}
-
-static inline void wbt_memset(wbt_mem_t *p, int ch) {
-    memset(p->ptr, ch, p->len);
-}
-
-static inline void wbt_memcpy(wbt_mem_t *dest, wbt_mem_t *src, size_t len) {
-    if( dest == NULL ) return;
-    if( src == NULL ) {
-        if( dest->len >= len ) {
-            memset( dest->ptr, '\0', len);
-        } else {
-            memset( dest->ptr, '\0', dest->len);
-        }
-    } else {
-        if( dest->len >= len ) {
-            memcpy( dest->ptr, src->ptr, len );
-        } else {
-            memcpy( dest->ptr, src->ptr, dest->len );
-        }
-    }
-}
-
-int wbt_mem_is_oom();
+int wbt_is_oom();
 
 #ifdef	__cplusplus
 }

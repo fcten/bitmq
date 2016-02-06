@@ -156,28 +156,33 @@ wbt_status wbt_on_connect(wbt_event_t *ev) {
 
 wbt_status wbt_on_recv(wbt_event_t *ev) {
     /* 有新的数据到达 */
-    int fd = ev->fd;
     //wbt_log_debug("recv data of connection %d.", fd);
     
     int nread;
     int bReadOk = 0;
 
-    while( ev->buff.len <= 40960 ) { /* 限制数据包长度 */
+    while( ev->buff_len <= 40960 ) { /* 限制数据包长度 */
         /* TODO realloc 意味着潜在的内存拷贝行为，目前的代码在接收大请求时效率很低 */
-        if( wbt_realloc(&ev->buff, ev->buff.len + 4096) != WBT_OK ) {
+        void * p = wbt_realloc(ev->buff, ev->buff_len + 4096);
+        if( p == NULL ) {
             /* 内存不足 */
             wbt_conn_close(ev);
 
             return WBT_OK;
+        } else {
+            ev->buff = p;
+            ev->buff_len += 4096;
         }
-        nread = wbt_ssl_read(ev, ev->buff.ptr + ev->buff.len - 4096, 4096);
+
+        nread = wbt_ssl_read(ev, ev->buff + ev->buff_len - 4096, 4096);
         if(nread < 0) {
             if(errno == EAGAIN) {
                 // 当前缓冲区已无数据可读
                 bReadOk = 1;
                 
                 /* 去除多余的缓冲区 */
-                wbt_realloc(&ev->buff, ev->buff.len - 4096);
+                ev->buff = wbt_realloc(ev->buff, ev->buff_len - 4096);
+                ev->buff_len -= 4096;
                 
                 break;
             } else if (errno == ECONNRESET) {
@@ -197,7 +202,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
        if ( nread > 0) {
             /* 去除多余的缓冲区 */
-            wbt_realloc(&ev->buff, ev->buff.len - 4096 + nread);
+            ev->buff = wbt_realloc(ev->buff, ev->buff_len - 4096 + nread);
+            ev->buff_len = ev->buff_len - 4096 + nread;
             
            continue;   // 需要再次读取
        } else {

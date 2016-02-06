@@ -40,14 +40,16 @@ wbt_module_t wbt_module_http1_generater = {
     NULL,
 };
 
-wbt_mem_t wbt_file_path;
-wbt_mem_t wbt_send_buf;
+wbt_str_t wbt_file_path;
+wbt_str_t wbt_send_buf;
 
 wbt_status wbt_http_init() {
     /* 初始化 sendbuf 与 file_path */
     // TODO 根据读取的数据长度分配内存
-    wbt_malloc(&wbt_send_buf, 10240);
-    wbt_malloc(&wbt_file_path, 512);
+    wbt_send_buf.len = 10240;
+    wbt_send_buf.str = wbt_malloc( wbt_send_buf.len );
+    wbt_file_path.len = 512;
+    wbt_file_path.str = wbt_malloc( wbt_file_path.len );
     
     return WBT_OK;
 }
@@ -57,12 +59,12 @@ wbt_status wbt_http_exit() {
 }
 
 wbt_status wbt_http_on_conn( wbt_event_t *ev ) {
-    if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
+    ev->data = wbt_calloc( sizeof(wbt_http_t) );
+    if( ev->data == NULL ) {
         return WBT_ERROR;
     }
-    wbt_memset(&ev->data, 0);
 
-    wbt_http_t *http = ev->data.ptr;
+    wbt_http_t *http = ev->data;
 
     http->state = STATE_CONNECTION_ESTABLISHED;
     
@@ -71,7 +73,7 @@ wbt_status wbt_http_on_conn( wbt_event_t *ev ) {
 
 wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     int nwrite, n;
-    wbt_http_t *http = ev->data.ptr;
+    wbt_http_t *http = ev->data;
     
     if( http->state != STATE_SENDING ) {
         return WBT_OK;
@@ -88,7 +90,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* 如果存在 response，发送 response */
     if( http->response.len - http->resp_offset > 0 ) {
         n = http->response.len - http->resp_offset; 
-        nwrite = wbt_ssl_write(ev, http->response.ptr + http->resp_offset, n);
+        nwrite = wbt_ssl_write(ev, http->response.str + http->resp_offset, n);
 
         if (nwrite == -1) {
             if( wbt_conf.secure ) {
@@ -179,14 +181,16 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
         }
+    } else {
+        // TODO 发送默认错误页面
     }
     
     /* 所有数据发送完毕 */
     http->state = STATE_SEND_COMPLETED;
     
     wbt_str_t http_uri, req_body;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
-    wbt_offset_to_str(http->body, req_body, ev->buff.ptr);
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
+    wbt_offset_to_str(http->body, req_body, ev->buff);
     wbt_log_add("%.*s %.*s %.*s\n%.*s\n",
         REQUEST_METHOD[http->method].len,
         REQUEST_METHOD[http->method].str,
@@ -201,12 +205,12 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE && !wbt_wating_to_exit ) {
         wbt_http_on_close( ev );
         /* 为下一个连接初始化相关结构 */
-        if( wbt_malloc(&ev->data, sizeof(wbt_http_t)) != WBT_OK ) {
+        ev->data = wbt_calloc(sizeof(wbt_http_t));
+        if( ev->data == NULL ) {
             return WBT_ERROR;
         }
-        wbt_memset(&ev->data, 0);
         
-        http = ev->data.ptr;
+        http = ev->data;
         http->state = STATE_SEND_COMPLETED;
 
         ev->on_recv = wbt_on_recv;
@@ -228,8 +232,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
 /* 释放 http 结构体中动态分配的内存 */
 wbt_status wbt_http_on_close( wbt_event_t *ev ) {
     wbt_http_header_t *header, *next;
-    wbt_mem_t tmp;
-    wbt_http_t *http = ev->data.ptr;
+    wbt_http_t *http = ev->data;
     
     if( http ) {
     
@@ -238,16 +241,19 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
             // TODO 需要判断 URI 是否以 / 开头
             // TODO 需要和前面的代码整合到一起
             wbt_str_t full_path;
-            if( *((char *)ev->buff.ptr + http->uri.start + http->uri.len - 1)\
-                    == '/' ) {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
+            full_path.str = wbt_file_path.str;
+            if( *((char *)ev->buff + http->uri.start + http->uri.len - 1) == '/' ) {
+                full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s%.*s",
                     wbt_conf.root.len, wbt_conf.root.str,
-                    http->uri.len, (char *)ev->buff.ptr + http->uri.start,
+                    http->uri.len, (char *)ev->buff + http->uri.start,
                     wbt_conf.index.len, wbt_conf.index.str);
             } else {
-                full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+                full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s",
                     wbt_conf.root.len, wbt_conf.root.str,
-                    http->uri.len, (char *)ev->buff.ptr + http->uri.start);
+                    http->uri.len, (char *)ev->buff + http->uri.start);
+            }
+            if( full_path.len > wbt_file_path.len ) {
+                full_path.len = wbt_file_path.len;
             }
             wbt_file_close( &full_path );
         }
@@ -257,9 +263,7 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
         while( header != NULL ) {
             next = header->next;
 
-            tmp.ptr = header;
-            tmp.len = 1;
-            wbt_free( &tmp );
+            wbt_free( header );
 
             header = next;
         }
@@ -268,29 +272,25 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
         while( header != NULL ) {
             next = header->next;
 
-            tmp.ptr = header;
-            tmp.len = 1;
-            wbt_free( &tmp );
+            wbt_free( header );
 
             header = next;
         }
 
         /* 释放生成的响应消息头 */
-        wbt_free( &http->response );
+        wbt_free( http->response.str );
 
         /* 释放读入内存的文件内容 */
-        if( http->file.ptr ) {
-            tmp.ptr = http->file.ptr;
-            tmp.len = 1;
-            wbt_free( &tmp );
-        }
-    
+        wbt_free( http->file.ptr );
     }
     
     /* 释放 http 结构体本身 */
-    wbt_free(&ev->data);
+    wbt_free(ev->data);
+    ev->data = NULL;
     /* 释放事件数据缓存 */
-    wbt_free(&ev->buff);
+    wbt_free(ev->buff);
+    ev->buff = NULL;
+    ev->buff_len = 0;
 
     return WBT_OK;
 }
@@ -299,8 +299,8 @@ wbt_status wbt_http_check_header_end( wbt_event_t *ev ) {
     wbt_str_t http_req;
     wbt_str_t http_header_end = wbt_string("\r\n\r\n");
 
-    http_req.len = ev->buff.len;
-    http_req.str = ev->buff.ptr;
+    http_req.len = ev->buff_len;
+    http_req.str = ev->buff;
 
     if( wbt_strpos( &http_req, &http_header_end ) < 0 ) {
         return WBT_ERROR;
@@ -310,7 +310,7 @@ wbt_status wbt_http_check_header_end( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
-    wbt_http_t *http = ev->data.ptr;
+    wbt_http_t *http = ev->data;
 
     http->uri.start = 0;
     http->uri.len = 0;
@@ -319,12 +319,11 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
     
     wbt_str_t http_req;
 
-    http_req.len = ev->buff.len;
-    http_req.str = ev->buff.ptr;
+    http_req.len = ev->buff_len;
+    http_req.str = ev->buff;
     
     int offset = 0, state = 0, error = 0;
     char ch;
-    wbt_mem_t tmp;
     wbt_http_header_t * header, * tail = NULL;
     while( error == 0 && offset < http_req.len ) {
         ch = http_req.str[offset];
@@ -374,10 +373,11 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
             case 3:
                 if( ch == '\n' ) {
                     /* 生成一个新的 wbt_http_header_t 并加入到链表中 */
-                    /* 待优化，解析每个 http 都需要多次 malloc 影响性能 */
-                    wbt_malloc( &tmp, sizeof( wbt_http_header_t ) );
-                    wbt_memset( &tmp, 0 );
-                    header = (wbt_http_header_t *)tmp.ptr;
+                    /* 待优化，解析每个 http 都需要多次 malloc 影响性能 */                    
+                    header = wbt_calloc( sizeof(wbt_http_header_t) );
+                    if( header == NULL ) {
+                        return WBT_ERROR;
+                    }
 
                     if( http->headers == NULL ) {
                         http->headers = tail = header;
@@ -388,7 +388,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                         } else {
                             /* 不应该出现这个错误 */
                             wbt_log_add("wbt_http_parse_request_header error\n");
-                            wbt_free(&tmp);
+                            wbt_free(header);
 
                             return WBT_ERROR;
                         }
@@ -411,7 +411,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     /* 检测该name */
                     int i;
                     wbt_str_t header_name;
-                    wbt_offset_to_str(tail->name.o, header_name, ev->buff.ptr);
+                    wbt_offset_to_str(tail->name.o, header_name, ev->buff);
                     tail->key = HEADER_UNKNOWN;
                     for( i = 1 ; i < HEADER_LENGTH ; i ++ ) {
                         if( wbt_strncmp( &header_name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
@@ -462,10 +462,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                             http->headers = NULL;
                         }
                         
-                        wbt_mem_t tmp;
-                        tmp.ptr = tail;
-                        tmp.len = 1;
-                        wbt_free( &tmp );
+                        wbt_free( tail );
                     }
 
                     state = 8;
@@ -507,7 +504,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
 
     /* 检查 HTTP 版本信息 */
     wbt_str_t http_version;
-    wbt_offset_to_str(http->version, http_version, ev->buff.ptr);
+    wbt_offset_to_str(http->version, http_version, ev->buff);
     if( wbt_strncmp( &http_version, &http_ver_1_0, http_ver_1_0.len ) != 0 &&
         wbt_strncmp( &http_version, &http_ver_1_1, http_ver_1_1.len ) != 0 ) {
         /* HTTP Version not supported */
@@ -527,7 +524,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     header->value.len, header->value.str); */
                 break;
             case HEADER_CONNECTION:
-                wbt_offset_to_str(header->value.o, http_header_value, ev->buff.ptr);
+                wbt_offset_to_str(header->value.o, http_header_value, ev->buff);
                 if( wbt_stricmp( &http_header_value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
                     /* 声明为 keep-alive 连接 */
                     http->bit_flag |= WBT_HTTP_KEEP_ALIVE;
@@ -548,7 +545,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_check_body_end( wbt_event_t *ev ) {
-    wbt_http_t *http = ev->data.ptr;
+    wbt_http_t *http = ev->data;
     
     if( http->method == METHOD_GET ) {
         /* GET 请求没有body数据，所以不论是否有body都返回 WBT_OK */
@@ -562,7 +559,7 @@ wbt_status wbt_http_check_body_end( wbt_event_t *ev ) {
         header = http->headers;
         while( header != NULL ) {
             if( header->key == HEADER_CONTENT_LENGTH ) {
-                wbt_offset_to_str(header->value.o, http_header_value, ev->buff.ptr);
+                wbt_offset_to_str(header->value.o, http_header_value, ev->buff);
                 content_len = wbt_atoi(&http_header_value);
                 break;
             }
@@ -570,7 +567,7 @@ wbt_status wbt_http_check_body_end( wbt_event_t *ev ) {
             header = header->next;
         }
 
-        http->body.len = ev->buff.len - http->body.start;
+        http->body.len = ev->buff_len - http->body.start;
 
         if( http->body.len >= content_len ) {
             return WBT_OK;
@@ -586,10 +583,10 @@ wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t
     wbt_http_header_t * header, * tail;
 
     /* 创建新的节点 */
-    wbt_mem_t tmp;
-    wbt_malloc( &tmp, sizeof( wbt_http_header_t ) );
-    wbt_memset( &tmp, 0 );
-    header = (wbt_http_header_t *)tmp.ptr;
+    header = wbt_calloc( sizeof(wbt_http_header_t) );
+    if( header == NULL ) {
+        return WBT_ERROR;
+    }
     header->key = key;
     header->value.s = *(value);
 
@@ -606,7 +603,7 @@ wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t
 
 wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     /* 释放掉上次生成的数据，以免多次调用本方法出现内存泄漏 */
-    wbt_free( &http->response );
+    wbt_free( http->response.str );
     
     /* 计算并申请所需要的内存 */
     int mem_len = 13;    // "HTTP/1.1 " CRLF CRLF
@@ -619,18 +616,19 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
             
         header = header->next;
     }
-    mem_len += http->resp_body.len;
     
-    if( wbt_malloc( &http->response, mem_len ) != WBT_OK ) {
+    http->response.str = wbt_malloc( mem_len );
+    if( http->response.str == NULL ) {
         return WBT_ERROR;
     }
+    http->response.len = mem_len;
     
     /* 生成响应消息头 */
     wbt_str_t dest;
     wbt_str_t crlf = wbt_string(CRLF);
     wbt_str_t space = wbt_string(" ");
     wbt_str_t colonspace = wbt_string(": ");
-    dest.str = (u_char *)http->response.ptr;
+    dest.str = http->response.str;
     dest.len = 0;
     /* "HTTP/1.1 200 OK\r\n" */
     wbt_strcat( &dest, &http_ver_1_1, mem_len );
@@ -648,7 +646,6 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
         header = header->next;
     }
     wbt_strcat( &dest, &crlf, mem_len );
-    wbt_strcat( &dest, &http->resp_body, mem_len );
     
     //wbt_log_debug("malloc: %d, use: %d\n", mem_len, dest.len );
     
@@ -656,7 +653,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
 }
 
 wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
     //wbt_log_debug("%.*s\n",ev->buff.len, (char *)ev->buff.ptr);
 
     if( http->state == STATE_CONNECTION_ESTABLISHED ||
@@ -669,7 +666,7 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
         return WBT_ERROR;
     }
     
-    if( ev->buff.len > 40960 ) {
+    if( ev->buff_len > 40960 ) {
          /* 413 Request Entity Too Large */
          http->status = STATUS_413;
          http->state = STATE_READY_TO_SEND;
@@ -716,7 +713,7 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
         // 判断 URI 是否以 / 开头
         // 判断 URI 中是否包含 ..
         wbt_str_t tmp_str = wbt_string(".."), http_uri;
-        wbt_offset_to_str(http->uri, http_uri, ev->buff.ptr);
+        wbt_offset_to_str(http->uri, http_uri, ev->buff);
         if( *(http_uri.str) != '/'  || wbt_strpos( &http_uri, &tmp_str ) != -1 ) {
             // 合法的 HTTP 请求中 URI 应当以 / 开头
             // 也可以以 http:// 或 https:// 开头，但暂时不支持
@@ -727,15 +724,19 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 
         // 根据 URI 是否以 / 结束选择合适的补全方式
         wbt_str_t full_path;
+        full_path.str = wbt_file_path.str;
         if( *(http_uri.str + http_uri.len - 1) == '/' ) {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s%.*s",
+            full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s%.*s",
                 wbt_conf.root.len, wbt_conf.root.str,
                 http_uri.len, http_uri.str,
                 wbt_conf.index.len, wbt_conf.index.str);
         } else {
-            full_path = wbt_sprintf(&wbt_file_path, "%.*s%.*s",
+            full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s",
                 wbt_conf.root.len, wbt_conf.root.str,
                 http_uri.len, http_uri.str);
+        }
+        if( full_path.len > wbt_file_path.len ) {
+            full_path.len = wbt_file_path.len;
         }
 
         wbt_file_t *tmp = wbt_file_open( &full_path );
@@ -770,7 +771,7 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_generater( wbt_event_t *ev ) {
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
 
     if( !http ) {
         /* 如果在之前的 on_recv 调用中错误地关闭了自身又没有返回 WBT_ERROR，
@@ -814,7 +815,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_process(wbt_event_t *ev) {   
-    wbt_http_t * http = ev->data.ptr;
+    wbt_http_t * http = ev->data;
     /* 生成响应消息头 */
     wbt_http_set_header( http, HEADER_SERVER, &header_server );
     wbt_http_set_header( http, HEADER_DATE, &wbt_time_str_http );
@@ -830,7 +831,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
             wbt_str_t header_value;
             wbt_http_header_t * header = http->headers;
             while( header != NULL ) {
-                wbt_offset_to_str(header->value.o, header_value, ev->buff.ptr);
+                wbt_offset_to_str(header->value.o, header_value, ev->buff);
                 if( header->key == HEADER_IF_MODIFIED_SINCE &&
                     wbt_strcmp( last_modified, &header_value ) == 0 ) {
                     /* 304 Not Modified */
@@ -840,11 +841,15 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
             }
         }
 
+        send_buf.str = wbt_send_buf.str;
         if( http->status == STATUS_200 ) {
-            send_buf = wbt_sprintf(&wbt_send_buf, "%d", http->file.size);
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->file.size);
         } else {
             /* 目前，这里可能是 304 */
-            send_buf = wbt_sprintf(&wbt_send_buf, "%d", 0);
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
+        }
+        if( send_buf.len > wbt_send_buf.len ) {
+            send_buf.len = wbt_send_buf.len;
         }
         
         if( http->file.fd > 0 ) {
@@ -857,15 +862,17 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
             wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
         }
     } else {
-        send_buf = wbt_sprintf(&wbt_send_buf, "%d", wbt_http_error_page[http->status].len);
+        send_buf.str = wbt_send_buf.str;
+        send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", wbt_http_error_page[http->status].len);
+        if( send_buf.len > wbt_send_buf.len ) {
+            send_buf.len = wbt_send_buf.len;
+        }
         
         wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
 
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
         wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
         wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
-        
-        http->resp_body = wbt_http_error_page[http->status];
     }
     wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
     

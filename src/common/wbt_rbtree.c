@@ -25,7 +25,7 @@ wbt_rbtree_node_t wbt_rbtree_node_nil_s = {
     &wbt_rbtree_node_nil_s,
     WBT_RBT_COLOR_BLACK,
     {0, NULL},
-    0
+    {0, NULL}
 };
 wbt_rbtree_node_t *wbt_rbtree_node_nil = &wbt_rbtree_node_nil_s;
 
@@ -162,16 +162,17 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
     wbt_rbtree_node_t *tmp_node, *tail_node;
     int ret;
 
-    tmp_node = wbt_new(wbt_rbtree_node_t);
+    tmp_node = wbt_malloc(sizeof(wbt_rbtree_node_t));
     if( tmp_node == NULL ) {
         return NULL;
     }
 
-    if( wbt_malloc(&tmp_node->key, key->len) != WBT_OK ) {
+    tmp_node->key.str = wbt_strdup(key->str, key->len);
+    tmp_node->key.len = key->len;
+    if( tmp_node->key.str == NULL ) {
+        wbt_free(tmp_node);
         return NULL;
     }
-    wbt_memcpy(&tmp_node->key, (wbt_mem_t *)key, key->len);
-    //*((char *)tmp_node->key.ptr+key->len) =  '\0';
 
     tmp_node->left = tmp_node->right = wbt_rbtree_node_nil;
     tmp_node->parent = wbt_rbtree_node_nil;
@@ -320,14 +321,14 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     if( y != node ) {
         // 如果被删除的结点 y 不是原来将要删除的结点 node，
         // 即只是用 y 的值来代替 node 的值，然后变相删除 y 以达到删除 node 的效果
-        wbt_free( &node->value );
+        wbt_free( node->value.str );
         node->value = y->value;
-        wbt_free( &node->key );
+        wbt_free( node->key.str );
         node->key = y->key;
         
-        y->key.ptr = NULL;
+        y->key.str = NULL;
         y->key.len = 0;
-        y->value.ptr = NULL;
+        y->value.str = NULL;
         y->value.len = 0;
     }
 
@@ -337,9 +338,9 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     }
 
     /* 删除 y */
-    wbt_free(&y->key);
-    wbt_free(&y->value);
-    wbt_delete(y);
+    wbt_free(y->key.str);
+    wbt_free(y->value.str);
+    wbt_free(y);
 
     rbt->size --;
     
@@ -349,16 +350,12 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
 
 wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
     wbt_rbtree_node_t *node;
-    wbt_str_t str;
     int ret;
     
     node = rbt->root;
     
     while(node != wbt_rbtree_node_nil) {
-        str.len = node->key.len;
-        str.str = node->key.ptr;
-
-        ret = wbt_strcmp(key, &str);
+        ret = wbt_strcmp(key, &node->key);
         if(ret == 0) {
             return node;
         } else if( ret > 0 ) {
@@ -376,14 +373,14 @@ void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key) {
     if( node == NULL ) {
         return NULL;
     } else {
-        return node->value.ptr;
+        return node->value.str;
     }
 }
 
 void wbt_rbtree_print(wbt_rbtree_node_t *node) {
     if(node != wbt_rbtree_node_nil) {
         wbt_rbtree_print(node->left);
-        wbt_log_debug("%.*s\n", node->key.len, (char *)node->key.ptr);
+        wbt_log_debug("%.*s\n", node->key.len, (char *)node->key.str);
         wbt_rbtree_print(node->right);
     }
 }
@@ -393,12 +390,9 @@ void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
         
-        wbt_mem_t tmp;
-        tmp.ptr = node;
-        tmp.len = sizeof(wbt_rbtree_node_t);
-        wbt_free(&node->key);
-        wbt_free(&node->value);
-        wbt_free(&tmp);
+        wbt_free(node->key.str);
+        wbt_free(node->value.str);
+        wbt_free(node);
     }
 }
 
@@ -414,12 +408,9 @@ void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
         
-        wbt_mem_t tmp;
-        tmp.ptr = node;
-        tmp.len = sizeof(wbt_rbtree_node_t);
-        wbt_free(&node->key);
-        //wbt_free(&node->value);
-        wbt_free(&tmp);
+        wbt_free(node->key.str);
+        //wbt_free(node->value.str);
+        wbt_free(node);
     }
 }
 

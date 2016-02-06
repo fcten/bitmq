@@ -35,9 +35,9 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         wbt_file_cleanup_recursive(node->left);
         wbt_file_cleanup_recursive(node->right);
         
-        wbt_file_t * tmp_file = (wbt_file_t *)node->value.ptr;
+        wbt_file_t * tmp_file = (wbt_file_t *)node->value.str;
         if( tmp_file->refer == 0 && wbt_cur_mtime - tmp_file->last_use_mtime > 10000 ) {
-            wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, (char *)node->key.ptr);
+            wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str);
             close(tmp_file->fd);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
         }
@@ -129,15 +129,20 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                 if( tmp.fd > 0 ) {
                     file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
 
-                    wbt_malloc(&file->value, sizeof(wbt_file_t));
-                    wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+                    file->value.str = wbt_malloc(sizeof(wbt_file_t));
+                    if( file->value.str == NULL ) {
+                        // TODO 如果这里失败了，该文件将永远不会被关闭
+                        wbt_rbtree_delete(&wbt_file_rbtree, file);
+                    } else {
+                        wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
-                    tmp_file->fd = tmp.fd;
-                    tmp_file->refer = 1;
-                    tmp_file->size = tmp.size;
-                    tmp_file->last_modified = tmp.last_modified;
+                        tmp_file->fd = tmp.fd;
+                        tmp_file->refer = 1;
+                        tmp_file->size = tmp.size;
+                        tmp_file->last_modified = tmp.last_modified;
 
-                    wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+                        wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+                    }
                 } else {
                     tmp.size = 0;
                     if( errno == EACCES ) {
@@ -149,7 +154,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
             }
         }
     } else {
-        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+        wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
         tmp_file->refer ++;
 
         tmp.fd = tmp_file->fd;
@@ -166,7 +171,7 @@ wbt_status wbt_file_close( wbt_str_t * file_path ) {
     wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
 
     if(file != NULL) {
-        wbt_file_t * tmp_file = (wbt_file_t *)file->value.ptr;
+        wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
         tmp_file->refer --;
 
@@ -239,9 +244,10 @@ ssize_t wbt_file_read( wbt_file_t *file ) {
     }
     
     if( !file->ptr ) {
-        wbt_mem_t tmp;
-        wbt_malloc(&tmp, file->size);
-        file->ptr = tmp.ptr;
+        file->ptr = wbt_malloc(file->size);
+        if( !file->ptr ) {
+            return -1;
+        }
     }
     
     ssize_t n = pread(file->fd,

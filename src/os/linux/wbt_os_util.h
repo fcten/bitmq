@@ -22,9 +22,9 @@ extern "C" {
 #include <sys/resource.h>
 
 #include "../../webit.h"
-#include "../../common/wbt_string.h"
+#include "../../common/wbt_memory.h"
 
-int wbt_get_file_path_by_fd(int fd, wbt_mem_t* buf);
+int wbt_get_file_path_by_fd(int fd, void * buf, size_t buf_len);
 int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
 
 #ifdef	__cplusplus

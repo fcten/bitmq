@@ -16,12 +16,10 @@ extern "C" {
 #include <stdarg.h>
 #include <string.h>
 
-#include "wbt_memory.h"
-
 typedef struct {
     /* 使用 int 而不是 unsigned int，方便进行运算和比较 */
     int len;
-    u_char *str;
+    char * str;
 } wbt_str_t;
 
 typedef struct {
@@ -34,25 +32,23 @@ typedef union {
     wbt_str_offset_t o;
 } wbt_str_union_t;
 
-#define wbt_string(str)     { sizeof(str) - 1, (u_char *) str }
+#define wbt_string(str)     { sizeof(str) - 1, (char *) str }
 #define wbt_null_string     { 0, NULL }
 
-#define wbt_str_set(stri, text)  (stri).len = sizeof(text) - 1; (stri).str = (u_char *) text
+#define wbt_str_set(stri, text)  (stri).len = sizeof(text) - 1; (stri).str = (char *) text
 #define wbt_str_set_null(stri)   (stri).len = 0; (stri).str = NULL
 
 #define wbt_offset_to_str(offset, stri, p)   do { \
-    (stri).str = (u_char *)(p) + (offset).start; \
+    (stri).str = (char *)(p) + (offset).start; \
     (stri).len = (offset).len; \
 } while(0);
 
 #define wbt_variable_to_str(vari, stri)   do { \
-    (stri).str = (u_char *)(&vari); \
+    (stri).str = (char *)(&vari); \
     (stri).len = sizeof(vari); \
 } while(0);
 
 const char * wbt_stdstr(wbt_str_t * str);
-
-wbt_str_t wbt_sprintf(wbt_mem_t *buf, const char *fmt, ...);
 
 int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 );
 int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len );

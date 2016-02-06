@@ -5,24 +5,102 @@
  * Created on 2014年8月20日, 下午3:50
  */
 
-#include <sys/mman.h> 
-#include <malloc.h>
 #include "wbt_memory.h"
 #include "wbt_config.h"
+#include "wbt_log.h"
+
+#if defined(USE_TCMALLOC)
+#define malloc(size) tc_malloc(size)
+#define calloc(count,size) tc_calloc(count,size)
+#define realloc(ptr,size) tc_realloc(ptr,size)
+#define free(ptr) tc_free(ptr)
+#elif defined(USE_JEMALLOC)
+#define malloc(size) je_malloc(size)
+#define calloc(count,size) je_calloc(count,size)
+#define realloc(ptr,size) je_realloc(ptr,size)
+#define free(ptr) je_free(ptr)
+#endif
+
+static size_t wbt_memory_usage = 0;
 
 int wbt_mem_is_oom() { 
     if( wbt_conf.max_memory_usage <= 0 ) {
         return 0;
     }
-
-    struct mallinfo mi = mallinfo();
-    //printf("heap_malloc_total=%d heap_free_total=%d heap_in_use=%d\nmmap_total=%d mmap_count=%d\n", 
-    //    mi.arena, mi.fordblks, mi.uordblks, 
-    //    mi.hblkhd, mi.hblks); 
-
-    if( mi.uordblks > wbt_conf.max_memory_usage ) {
+    
+    if( wbt_conf.max_memory_usage < wbt_memory_usage ) {
         return 1;
     }
     
     return 0;
+}
+
+void * wbt_malloc(size_t size) {
+    void * ptr = malloc(size);
+
+    if(!ptr) {
+        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+    } else {
+        wbt_memory_usage += size;
+    }
+    
+    return ptr;
+}
+
+void * wbt_calloc(size_t size) {
+    void * ptr = calloc(1, size);
+
+    if(!ptr) {
+        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+    } else {
+        wbt_memory_usage += size;
+    }
+    
+    return ptr;
+}
+
+void * wbt_realloc(void *ptr, size_t size) {
+    if( !ptr ) {
+        return wbt_malloc(size);
+    }
+    
+    size_t oldsize = wbt_malloc_size(ptr);
+
+    void * newptr = realloc(ptr, size);
+    
+    if( !newptr ) {
+        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+    } else {
+        wbt_memory_usage -= oldsize;
+        wbt_memory_usage += size;
+    }
+    
+    return newptr;
+}
+
+void wbt_free(void *ptr) {
+    if ( !ptr ) {
+        return;
+    }
+    
+    wbt_memory_usage -= wbt_malloc_size(ptr);
+    free(ptr);
+}
+
+void * wbt_memset(void *ptr, int ch, size_t size) {
+    return memset(ptr, ch, size);
+}
+
+void * wbt_memcpy(void *dest, const void *src, size_t size) {
+    return memcpy(dest, src, size);
+}
+
+void * wbt_strdup(const void *ptr, size_t size) {
+    void * p = wbt_malloc(size);
+
+    if( p ) {
+        wbt_memcpy(p,ptr,size);
+    }
+
+    return p;
 }

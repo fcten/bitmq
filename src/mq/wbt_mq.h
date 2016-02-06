@@ -68,7 +68,8 @@ typedef struct wbt_msg_s {
     // 如果该消息正在被发送，或者正在等待 ACK 响应，则不能被释放
     //unsigned int reference_count;
     // 消息内容
-    wbt_mem_t data;
+    void * data;
+    size_t data_len;
 } wbt_msg_t;
 
 typedef struct wbt_msg_list_s {

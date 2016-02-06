@@ -194,20 +194,21 @@ void wbt_master_process() {
             int i = 0;
             for (i = 0; wbt_os_environ[i]; i++) {
             }
-            wbt_mem_t tmp;
-            wbt_malloc(&tmp, (i + 3) * sizeof(char *));
-            wbt_environ = tmp.ptr;
+            wbt_environ = wbt_malloc( (i + 3) * sizeof(char *) );
             memcpy(wbt_environ, wbt_os_environ, i * sizeof(char *));
-            wbt_malloc(&tmp, 32 * sizeof(char *));
-            wbt_sprintf(&tmp, "WBT_LISTEN_FD=%d", listen_fd);
-            wbt_environ[i] = tmp.ptr;
+
+            wbt_environ[i] = wbt_malloc( 32 * sizeof(char) );
+            snprintf(wbt_environ[i], 32 * sizeof(char), "WBT_LISTEN_FD=%d", listen_fd);
+            
             wbt_environ[i+1] = 
                "SPARE=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
             wbt_environ[i+2] = NULL;
+
             if (execve(wbt_argv[0], wbt_argv, wbt_environ) < 0) {
                 wbt_log_add("execve failed: errno:%d error:%s\n", errno, strerror(errno));
             }
@@ -245,7 +246,7 @@ void wbt_exit(int exit_code) {
     exit(exit_code);
 }
 
-extern wbt_mem_t wbt_log_buf;
+extern wbt_str_t wbt_log_buf;
 
 static wbt_status wbt_save_argv(int argc, char** argv) {
     size_t len;
@@ -254,19 +255,18 @@ static wbt_status wbt_save_argv(int argc, char** argv) {
     wbt_argc = argc;
     wbt_os_argv = argv;
 
-    wbt_mem_t tmp_buf;
-    if (wbt_malloc(&tmp_buf, (argc + 1) * sizeof(char *)) != WBT_OK) {
+    wbt_argv = wbt_malloc( (argc + 1) * sizeof(char *) );
+    if ( wbt_argv == NULL ) {
         return WBT_ERROR;
     }
-    wbt_argv = tmp_buf.ptr;
 
     for (i = 0; i < argc; i++) {
         len = wbt_strlen(argv[i]) + 1;
 
-        if(wbt_malloc(&tmp_buf, len)  != WBT_OK) {
+        wbt_argv[i] = wbt_malloc(len);
+        if( wbt_argv[i] == NULL ) {
             return WBT_ERROR;
         }
-        wbt_argv[i] = tmp_buf.ptr;
 
         memcpy((u_char *) wbt_argv[i], (u_char *) argv[i], len);
     }
@@ -285,7 +285,9 @@ int main(int argc, char** argv) {
     }
 
     /* 初始化日至输出缓冲 */
-    if( wbt_malloc( &wbt_log_buf, 1024 ) != WBT_OK ) {        
+    wbt_log_buf.len = 1024;
+    wbt_log_buf.str = wbt_malloc( wbt_log_buf.len );
+    if( wbt_log_buf.str == NULL ) {        
         return 1;
     }
     
