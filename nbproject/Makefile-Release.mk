@@ -58,7 +58,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
 	${OBJECTDIR}/src/os/linux/wbt_setproctitle.o \
-	${OBJECTDIR}/src/os/linux/wbt_sigsegv.o \
 	${OBJECTDIR}/src/os/linux/wbt_terminal.o \
 	${OBJECTDIR}/src/webit.o
 
@@ -201,11 +200,6 @@ ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o: src/os/linux/wbt_setproctitle.c
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_setproctitle.o src/os/linux/wbt_setproctitle.c
-
-${OBJECTDIR}/src/os/linux/wbt_sigsegv.o: src/os/linux/wbt_sigsegv.c 
-	${MKDIR} -p ${OBJECTDIR}/src/os/linux
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/os/linux/wbt_sigsegv.o src/os/linux/wbt_sigsegv.c
 
 ${OBJECTDIR}/src/os/linux/wbt_terminal.o: src/os/linux/wbt_terminal.c 
 	${MKDIR} -p ${OBJECTDIR}/src/os/linux

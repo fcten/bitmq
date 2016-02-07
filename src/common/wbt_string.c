@@ -17,6 +17,7 @@ const char * wbt_stdstr(wbt_str_t * str) {
             return NULL;
         }
         wbt_stdstr_tmp.str = p;
+        wbt_stdstr_tmp.len = str->len + 1;
     }
 
     wbt_memcpy( wbt_stdstr_tmp.str, str->str, str->len );

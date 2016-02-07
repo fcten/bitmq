@@ -25,7 +25,7 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         channel->create = wbt_cur_mtime;
 
         channel->subscriber_list = wbt_calloc(sizeof(wbt_subscriber_list_t));
-        channel->msg_list = wbt_calloc(sizeof(wbt_msg_list_t));
+        channel->msg_list = wbt_mq_msg_create_node(0);
         if( channel->subscriber_list && channel->msg_list ) {
             wbt_list_init(&channel->subscriber_list->head);
             wbt_list_init(&channel->msg_list->head);

@@ -1,4 +1,5 @@
 #include "wbt_json.h"
+#include "../common/wbt_memory.h"
 
 enum {
     STS_START = 0,
@@ -561,7 +562,7 @@ int json_parser( json_task_t *task ) {
 }
 
 json_object_t * json_create_object() {
-    json_object_t * obj = (json_object_t *) malloc(sizeof(json_object_t));
+    json_object_t * obj = (json_object_t *) wbt_malloc(sizeof(json_object_t));
     if( obj ) {
         memset(obj, 0, sizeof(json_object_t));
         obj->object_type = JSON_OBJECT;
@@ -571,7 +572,7 @@ json_object_t * json_create_object() {
 }
 
 json_object_t * json_create_array() {
-    json_object_t * obj = (json_object_t *) malloc(sizeof(json_object_t));
+    json_object_t * obj = (json_object_t *) wbt_malloc(sizeof(json_object_t));
     if( obj ) {
         memset(obj, 0, sizeof(json_object_t));
         obj->object_type = JSON_ARRAY;
@@ -870,7 +871,7 @@ void json_delete_object(json_object_t * obj) {
         }
 
         json_object_t * next = obj->next;
-        free(obj);
+        wbt_free(obj);
         obj = next;
     }
 }

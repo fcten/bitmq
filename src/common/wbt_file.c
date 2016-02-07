@@ -39,6 +39,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         if( tmp_file->refer == 0 && wbt_cur_mtime - tmp_file->last_use_mtime > 10000 ) {
             wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str);
             close(tmp_file->fd);
+            wbt_free(tmp_file->ptr);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
         }
     }
@@ -49,6 +50,7 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
     
     // TODO 遍历所有文件可能会花费过多的时间
     wbt_file_cleanup_recursive(wbt_file_rbtree.root);
+    wbt_mem_print();
     
     //wbt_log_debug("opened fd after cleanup: %d\n", wbt_file_rbtree.size);
 

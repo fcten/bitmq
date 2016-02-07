@@ -7,6 +7,7 @@
 
 #include "wbt_setproctitle.h"
 #include "../../common/wbt_string.h"
+#include "../../common/wbt_memory.h"
 
 extern int wbt_argc;
 extern char **wbt_os_argv;
@@ -23,7 +24,7 @@ wbt_status wbt_init_proc_title() {
         size += strlen(wbt_os_environ[i]) + 1;
     }
  
-    if( ( p = malloc(size*sizeof(char)) ) == NULL ) {
+    if( ( p = wbt_malloc(size*sizeof(char)) ) == NULL ) {
         return WBT_ERROR;
     }
     
@@ -41,8 +42,8 @@ wbt_status wbt_init_proc_title() {
             size = wbt_strlen(wbt_os_environ[i]) + 1;
             wbt_argv_last = wbt_os_environ[i] + size;
 
-            memcpy(p, (u_char *) wbt_os_environ[i], size);
-            wbt_os_environ[i] = (char *) p;
+            wbt_memcpy(p, wbt_os_environ[i], size);
+            wbt_os_environ[i] = p;
             p += size;
         }
     }
@@ -55,8 +56,7 @@ wbt_status wbt_init_proc_title() {
 void wbt_set_proc_title(const char *title) {
     wbt_os_argv[1] = 0;
 
-    memcpy((u_char *) wbt_os_argv[0], (u_char *) title,
-        wbt_argv_last - wbt_os_argv[0]);
+    wbt_memcpy( wbt_os_argv[0], title, wbt_strlen(title)+1 );
 
     *wbt_argv_last = '\0';
 }

@@ -24,9 +24,9 @@ wbt_subscriber_t * wbt_mq_subscriber_create() {
     if( subscriber ) {
         subscriber->subscriber_id = ++auto_inc_id;
         subscriber->create = wbt_cur_mtime;
-        subscriber->msg_list = wbt_calloc(sizeof(wbt_msg_list_t));
+        subscriber->msg_list = wbt_mq_msg_create_node(0);
         subscriber->channel_list = wbt_calloc(sizeof(wbt_channel_list_t));
-        subscriber->delivered_list = wbt_calloc(sizeof(wbt_msg_list_t));
+        subscriber->delivered_list = wbt_mq_msg_create_node(0);
         
         if( subscriber->msg_list &&
             subscriber->channel_list &&

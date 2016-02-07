@@ -65,7 +65,7 @@ wbt_status wbt_time_update() {
 wbt_str_t * wbt_time_to_str( time_t time ) {
     struct tm *timenow;
     timenow = gmtime(&time);
-    strftime(wbt_time_str_tmp.str, wbt_time_str_tmp.len, "%a, %d %b %Y %T GMT", timenow);
+    strftime(wbt_time_str_tmp.str, wbt_time_str_tmp.len + 1, "%a, %d %b %Y %T GMT", timenow);
     
     return &wbt_time_str_tmp;
 }
