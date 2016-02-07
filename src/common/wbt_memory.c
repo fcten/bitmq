@@ -67,13 +67,15 @@ void * wbt_realloc(void *ptr, size_t size) {
     if( !ptr ) {
         return wbt_malloc(size);
     }
+    
+    size_t oldsize = wbt_malloc_size(ptr);
 
     void * newptr = realloc(ptr, size);
     
     if( !newptr ) {
         wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
     } else {
-        wbt_memory_usage -= wbt_malloc_size(ptr);
+        wbt_memory_usage -= oldsize;
         wbt_memory_usage += wbt_malloc_size(newptr);
     }
     
