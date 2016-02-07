@@ -62,14 +62,10 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
  */
 int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     int pos = 0;
-
-    if( len > str1->len || len > str2->len ) {
-        return 1;
-    }
     
     for( pos = 0; pos < len ; pos ++ ) {
         if( *(str1->str + pos) != *(str2->str + pos) ) {
-            return 1;
+            return *(str1->str + pos) - *(str2->str + pos);
         }
     }
 
@@ -84,10 +80,6 @@ int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
 int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     int pos = 0;
     char ch1, ch2;
-
-    if( len > str1->len || len > str2->len ) {
-        return 1;
-    }
     
     for( pos = 0; pos < len ; pos ++ ) {
         if ( ( (ch1 = *(str1->str + pos)) >= 'A') && (ch1 <= 'Z') ) {
@@ -97,7 +89,7 @@ int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
             ch2 += 0x20;
         }
         if( ch1 != ch2 ) {
-            return 1;
+            return ch1 - ch2;
         }
     }
 
