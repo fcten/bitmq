@@ -47,6 +47,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
 wbt_status wbt_file_cleanup(wbt_event_t *ev) {
     //wbt_log_debug("opened fd before cleanup: %d\n", wbt_file_rbtree.size);
     
+    // TODO 遍历所有文件可能会花费过多的时间
     wbt_file_cleanup_recursive(wbt_file_rbtree.root);
     
     //wbt_log_debug("opened fd after cleanup: %d\n", wbt_file_rbtree.size);
@@ -90,8 +91,6 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     /* TODO 不存在的文件也可以考虑放入文件树内
      * 如果发生大量的 404 请求，可以提高性能
      */
-    
-    tmp.offset = 0;
 
     if( file_path->len >= 512 ) {
         /* 路径过长则拒绝打开 */
@@ -137,11 +136,13 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
                         tmp_file->fd = tmp.fd;
+                        tmp_file->ptr = NULL;
                         tmp_file->refer = 1;
                         tmp_file->size = tmp.size;
                         tmp_file->last_modified = tmp.last_modified;
 
                         wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+                        return tmp_file;
                     }
                 } else {
                     tmp.size = 0;
@@ -157,30 +158,24 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
         tmp_file->refer ++;
 
-        tmp.fd = tmp_file->fd;
-        tmp.size = tmp_file->size;
-        tmp.last_modified = tmp_file->last_modified;
+        return tmp_file;
     }
 
     return &tmp;
 }
 
-wbt_status wbt_file_close( wbt_str_t * file_path ) {
+wbt_status wbt_file_close( wbt_file_t * file ) {
     //wbt_log_debug("try to close: %.*s\n", file_path->len, file_path->str);
-    /* TODO 目前这个函数需要执行一次额外的搜索操作，因为搜索已经在 open 的时候做过了 */
-    wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
-
     if(file != NULL) {
-        wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
-        tmp_file->refer --;
+        file->refer --;
 
-        if( tmp_file->refer == 0 ) {
+        if( file->refer == 0 ) {
             /* 当所有对该文件的使用都被释放后，更新时间戳 */
-            tmp_file->last_use_mtime = wbt_cur_mtime;
+            file->last_use_mtime = wbt_cur_mtime;
         }
         
-        wbt_log_debug("close file: %d %d\n", tmp_file->fd, tmp_file->refer);
+        wbt_log_debug("close file: %d %d\n", file->fd, file->refer);
     }
 
     return WBT_OK;
@@ -248,16 +243,8 @@ ssize_t wbt_file_read( wbt_file_t *file ) {
         if( !file->ptr ) {
             return -1;
         }
+        return pread(file->fd, file->ptr, file->size, 0);
     }
     
-    ssize_t n = pread(file->fd,
-            file->ptr + file->offset,
-            file->size - file->offset,
-            file->offset);
-    
-    if( n >= 0 ) {
-        file->offset += n;
-    }
-    
-    return n;
+    return 0;
 }

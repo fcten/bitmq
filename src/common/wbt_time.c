@@ -25,17 +25,17 @@ wbt_str_t wbt_time_str_expire;
 wbt_str_t wbt_time_str_tmp;
 
 wbt_status wbt_time_init() {
-    wbt_time_str_log.len = sizeof("[05/06/91 00:00:00] ");
-    wbt_time_str_log.str = wbt_malloc( wbt_time_str_log.len );
+    wbt_time_str_log.len = sizeof("[05/06/91 00:00:00] ") - 1;
+    wbt_time_str_log.str = wbt_malloc( wbt_time_str_log.len + 1 );
 
-    wbt_time_str_http.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT");
-    wbt_time_str_http.str = wbt_malloc( wbt_time_str_http.len );
+    wbt_time_str_http.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1;
+    wbt_time_str_http.str = wbt_malloc( wbt_time_str_http.len + 1 );
     
-    wbt_time_str_expire.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT");
-    wbt_time_str_expire.str = wbt_malloc( wbt_time_str_expire.len );
+    wbt_time_str_expire.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1;
+    wbt_time_str_expire.str = wbt_malloc( wbt_time_str_expire.len + 1 );
 
-    wbt_time_str_tmp.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT");
-    wbt_time_str_tmp.str = wbt_malloc( wbt_time_str_tmp.len );
+    wbt_time_str_tmp.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1;
+    wbt_time_str_tmp.str = wbt_malloc( wbt_time_str_tmp.len + 1 );
 
     wbt_time_update();
 
@@ -52,12 +52,12 @@ wbt_status wbt_time_update() {
 
     now = time(NULL);
     timenow = localtime(&now);
-    strftime(wbt_time_str_log.str, wbt_time_str_log.len, "[%x %X] ", timenow);
+    strftime(wbt_time_str_log.str, wbt_time_str_log.len + 1, "[%x %X] ", timenow);
     timenow = gmtime(&now);
-    strftime(wbt_time_str_http.str, wbt_time_str_http.len, "%a, %d %b %Y %T GMT", timenow);
+    strftime(wbt_time_str_http.str, wbt_time_str_http.len + 1, "%a, %d %b %Y %T GMT", timenow);
     now += 3600;
     timenow = gmtime(&now);
-    strftime(wbt_time_str_expire.str, wbt_time_str_expire.len, "%a, %d %b %Y %T GMT", timenow);
+    strftime(wbt_time_str_expire.str, wbt_time_str_expire.len + 1, "%a, %d %b %Y %T GMT", timenow);
     
     return WBT_OK;
 }

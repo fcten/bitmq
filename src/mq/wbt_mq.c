@@ -397,12 +397,12 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
             continue;
         }
 
-        http->file.ptr = wbt_strdup(msg->data, msg->data_len);
-        if( http->file.ptr == NULL ) {
+        http->resp_body_memory.str = wbt_strdup(msg->data, msg->data_len);
+        if( http->resp_body_memory.str == NULL ) {
             continue;
         }
         http->status = STATUS_200;
-        http->file.size = msg->data_len;
+        http->resp_body_memory.len = msg->data_len;
 
         // 从 msg_list 中删除该消息
         wbt_list_del( &msg_node->head );
@@ -453,12 +453,12 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    http->file.size = 10240;
-    http->file.ptr = wbt_malloc(http->file.size);
+    http->resp_body_memory.len = 10240;
+    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
     
     wbt_str_t resp;
     resp.len = 0;
-    resp.str = http->file.ptr;
+    resp.str = http->resp_body_memory.str;
     
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff);
@@ -467,14 +467,14 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
     channel_ids.str = http_uri.str + 11;
     channel_ids.len = http_uri.len - 11;
     if( channel_ids.len != 16 ) {
-        wbt_mq_print_channels(&resp, http->file.size);
+        wbt_mq_print_channels(&resp, http->resp_body_memory.len);
     } else {
         wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
-        wbt_mq_print_channel(channel_id, &resp, http->file.size);
+        wbt_mq_print_channel(channel_id, &resp, http->resp_body_memory.len);
     }
 
-    http->file.ptr = wbt_realloc(http->file.ptr, resp.len);
-    http->file.size = resp.len;
+    http->resp_body_memory.str = wbt_realloc(http->resp_body_memory.str, resp.len);
+    http->resp_body_memory.len = resp.len;
     http->status = STATUS_200;
 
     return WBT_OK;

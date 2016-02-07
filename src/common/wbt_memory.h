@@ -46,6 +46,7 @@ void * wbt_memcpy(void *dest, const void *src, size_t size);
 void * wbt_strdup(const void *ptr, size_t size);
 
 int wbt_is_oom();
+void wbt_mem_print();
 
 #ifdef	__cplusplus
 }

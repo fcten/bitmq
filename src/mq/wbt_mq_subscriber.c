@@ -137,10 +137,10 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
     wbt_http_t * tmp_http = subscriber->ev->data;
 
     tmp_http->status = STATUS_200;
-    tmp_http->file.ptr = wbt_strdup(msg->data, msg->data_len);
-    tmp_http->file.size = msg->data_len;
+    tmp_http->resp_body_memory.str = wbt_strdup(msg->data, msg->data_len);
+    tmp_http->resp_body_memory.len = msg->data_len;
 
-    if( !tmp_http->file.ptr || wbt_http_process(subscriber->ev) != WBT_OK ) {
+    if( !tmp_http->resp_body_memory.str || wbt_http_process(subscriber->ev) != WBT_OK ) {
         // 内存不足，投递失败
         wbt_conn_close(subscriber->ev);
         return WBT_ERROR;

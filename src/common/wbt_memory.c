@@ -35,13 +35,17 @@ int wbt_mem_is_oom() {
     return 0;
 }
 
+void wbt_mem_print() {
+    wbt_log_debug("Memory in use: %zu bytes\n", wbt_memory_usage);
+}
+
 void * wbt_malloc(size_t size) {
     void * ptr = malloc(size);
 
     if(!ptr) {
         wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
     } else {
-        wbt_memory_usage += size;
+        wbt_memory_usage += wbt_malloc_size(ptr);
     }
     
     return ptr;
@@ -53,7 +57,7 @@ void * wbt_calloc(size_t size) {
     if(!ptr) {
         wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
     } else {
-        wbt_memory_usage += size;
+        wbt_memory_usage += wbt_malloc_size(ptr);
     }
     
     return ptr;
@@ -63,16 +67,14 @@ void * wbt_realloc(void *ptr, size_t size) {
     if( !ptr ) {
         return wbt_malloc(size);
     }
-    
-    size_t oldsize = wbt_malloc_size(ptr);
 
     void * newptr = realloc(ptr, size);
     
     if( !newptr ) {
         wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
     } else {
-        wbt_memory_usage -= oldsize;
-        wbt_memory_usage += size;
+        wbt_memory_usage -= wbt_malloc_size(ptr);
+        wbt_memory_usage += wbt_malloc_size(newptr);
     }
     
     return newptr;

@@ -26,7 +26,7 @@ extern "C" {
  * 3、如果打开的文件数量超过阈值，移除最久未访问的文件。
  */
 typedef struct wbt_file_s {
-     /* 文件句柄 */
+    /* 文件句柄 */
     int fd;
     /* 文件引用计数 */
     int refer;
@@ -36,8 +36,6 @@ typedef struct wbt_file_s {
     char *ptr;
     /* 文件大小 */
     size_t size;
-    /* 已发送数据偏移量 */
-    off_t offset;
     /* 最近使用时间 */
     time_t last_use_mtime;
     /* 最近修改时间 */
@@ -48,7 +46,7 @@ wbt_status wbt_file_init();
 wbt_status wbt_file_exit();
 
 wbt_file_t * wbt_file_open( wbt_str_t * file_path );
-wbt_status wbt_file_close( wbt_str_t * file_path );
+wbt_status wbt_file_close( wbt_file_t * file );
 
 ssize_t wbt_file_read( wbt_file_t * );
 

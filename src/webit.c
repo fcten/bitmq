@@ -239,6 +239,9 @@ void wbt_exit(int exit_code) {
 
     /* 卸载所有模块 */
     wbt_module_exit();
+    
+    // 打印内存信息
+    wbt_mem_print();
 
     wbt_log_add("Webit exit (pid: %d)\n", getpid());
     wbt_log_print("\n\nWebit exit (pid: %d)\n", getpid());

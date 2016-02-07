@@ -174,10 +174,12 @@ typedef struct wbt_http_s {
     wbt_str_offset_t body;
     /* 以下变量用于保存响应数据 */
     wbt_http_status_t status;
-    wbt_file_t file;
     wbt_http_header_t * resp_headers;
-    wbt_str_t response;
-    unsigned int resp_offset;
+    wbt_str_t resp_header;
+    off_t header_offset;
+    wbt_str_t resp_body_memory;
+    wbt_file_t * resp_body_file;
+    off_t body_offset;
     /* 以下变量用于保存请求头的解析结果 */
     unsigned int bit_flag;
     /* 以下变量用于保存请求处理状态 */

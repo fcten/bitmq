@@ -88,9 +88,9 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     setsockopt( ev->fd, SOL_TCP, TCP_NODELAY, &on, sizeof ( on ) );
 
     /* 如果存在 response，发送 response */
-    if( http->response.len - http->resp_offset > 0 ) {
-        n = http->response.len - http->resp_offset; 
-        nwrite = wbt_ssl_write(ev, http->response.str + http->resp_offset, n);
+    if( http->resp_header.len - http->header_offset > 0 ) {
+        n = http->resp_header.len - http->header_offset; 
+        nwrite = wbt_ssl_write(ev, http->resp_header.str + http->header_offset, n);
 
         if (nwrite == -1) {
             if( wbt_conf.secure ) {
@@ -122,32 +122,21 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             return WBT_OK;
         }
 
-        http->resp_offset += nwrite;
+        http->header_offset += nwrite;
 
         //wbt_log_debug("%d send, %d remain.\n", nwrite, http->response.len - http->resp_offset);
-        if( http->response.len > http->resp_offset ) {
+        if( http->resp_header.len > http->header_offset ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
         }
     }
     
-    if( http->status == STATUS_200 && http->file.size > http->file.offset  ) {
-        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
-        // 需要在未发送完成前继续监听可写事件
-        n = http->file.size - http->file.offset;
+    if( http->resp_body_memory.str && http->resp_body_memory.len > http->body_offset ) {
+        n = http->resp_body_memory.len - http->body_offset;
 
-        if( http->file.ptr != NULL ) {
-            // 需要发送的数据已经在内存中
-            nwrite = wbt_ssl_write(ev, http->file.ptr + http->file.offset, n);
-            if( nwrite >= 0 ) {
-                http->file.offset += nwrite;
-            }
-        } else if( http->file.fd > 0 && wbt_conf.sendfile ) {
-            // 需要发送的数据不在内存中，但是指定了需要发送的文件
-            nwrite = sendfile( ev->fd, http->file.fd, &http->file.offset, n );
-        } else {
-            // 不应该出现这种情况
-            n = nwrite = 0;
+        nwrite = wbt_ssl_write(ev, http->resp_body_memory.str + http->body_offset, n);
+        if( nwrite >= 0 ) {
+            http->body_offset += nwrite;
         }
 
         if (nwrite == -1) {
@@ -181,8 +170,53 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             /* 尚未发送完，缓冲区满 */
             return WBT_OK;
         }
-    } else {
-        // TODO 发送默认错误页面
+    } else if( http->status == STATUS_200 && http->resp_body_file && http->resp_body_file->size > http->body_offset ) {
+        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
+        // 需要在未发送完成前继续监听可写事件
+        n = http->resp_body_file->size - http->body_offset;
+
+        if( http->resp_body_file->ptr != NULL ) {
+            // 需要发送的数据已经在内存中
+            nwrite = wbt_ssl_write(ev, http->resp_body_file->ptr + http->body_offset, n);
+            if( nwrite >= 0 ) {
+                http->body_offset += nwrite;
+            }
+        } else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
+            // 需要发送的数据不在内存中，但是指定了需要发送的文件
+            nwrite = sendfile( ev->fd, http->resp_body_file->fd, &http->body_offset, n );
+        }
+
+        if (nwrite == -1) {
+            if( wbt_conf.secure ) {
+                int err = wbt_ssl_get_error(ev, nwrite);
+                switch(err) {
+                    case SSL_ERROR_WANT_WRITE:
+                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
+                        break;
+                    case SSL_ERROR_WANT_READ:
+                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
+                        return WBT_ERROR;
+                    case SSL_ERROR_SYSCALL:
+                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
+                        return WBT_ERROR;
+                    default:
+                        return WBT_ERROR;
+                }
+            } else {
+                if( errno != EAGAIN ) {
+                    /* 连接被意外关闭，同上 */
+                    return WBT_ERROR;
+                }
+            }
+            
+            return WBT_OK;
+        }
+
+        //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
+        if( n > nwrite ) {
+            /* 尚未发送完，缓冲区满 */
+            return WBT_OK;
+        }
     }
     
     /* 所有数据发送完毕 */
@@ -237,25 +271,8 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
     if( http ) {
     
         /* 关闭已打开的文件（不是真正的关闭，只是声明该文件已经在本次处理中使用完毕） */
-        if( http->file.fd > 0 ) {
-            // TODO 需要判断 URI 是否以 / 开头
-            // TODO 需要和前面的代码整合到一起
-            wbt_str_t full_path;
-            full_path.str = wbt_file_path.str;
-            if( *((char *)ev->buff + http->uri.start + http->uri.len - 1) == '/' ) {
-                full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s%.*s",
-                    wbt_conf.root.len, wbt_conf.root.str,
-                    http->uri.len, (char *)ev->buff + http->uri.start,
-                    wbt_conf.index.len, wbt_conf.index.str);
-            } else {
-                full_path.len = snprintf(wbt_file_path.str, wbt_file_path.len, "%.*s%.*s",
-                    wbt_conf.root.len, wbt_conf.root.str,
-                    http->uri.len, (char *)ev->buff + http->uri.start);
-            }
-            if( full_path.len > wbt_file_path.len ) {
-                full_path.len = wbt_file_path.len;
-            }
-            wbt_file_close( &full_path );
+        if( http->resp_body_file ) {
+            wbt_file_close( http->resp_body_file );
         }
 
         /* 释放动态分配的内存 */
@@ -278,10 +295,10 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
         }
 
         /* 释放生成的响应消息头 */
-        wbt_free( http->response.str );
+        wbt_free( http->resp_header.str );
 
         /* 释放读入内存的文件内容 */
-        wbt_free( http->file.ptr );
+        wbt_free( http->resp_body_memory.str );
     }
     
     /* 释放 http 结构体本身 */
@@ -603,7 +620,8 @@ wbt_status wbt_http_set_header( wbt_http_t* http, wbt_http_line_t key, wbt_str_t
 
 wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     /* 释放掉上次生成的数据，以免多次调用本方法出现内存泄漏 */
-    wbt_free( http->response.str );
+    wbt_free( http->resp_header.str );
+    http->resp_header.len = 0;
     
     /* 计算并申请所需要的内存 */
     int mem_len = 13;    // "HTTP/1.1 " CRLF CRLF
@@ -617,18 +635,18 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
         header = header->next;
     }
     
-    http->response.str = wbt_malloc( mem_len );
-    if( http->response.str == NULL ) {
+    http->resp_header.str = wbt_malloc( mem_len );
+    if( http->resp_header.str == NULL ) {
         return WBT_ERROR;
     }
-    http->response.len = mem_len;
+    http->resp_header.len = mem_len;
     
     /* 生成响应消息头 */
     wbt_str_t dest;
     wbt_str_t crlf = wbt_string(CRLF);
     wbt_str_t space = wbt_string(" ");
     wbt_str_t colonspace = wbt_string(": ");
-    dest.str = http->response.str;
+    dest.str = http->resp_header.str;
     dest.len = 0;
     /* "HTTP/1.1 200 OK\r\n" */
     wbt_strcat( &dest, &http_ver_1_1, mem_len );
@@ -757,14 +775,11 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 
         http->state = STATE_READY_TO_SEND;
         http->status = STATUS_200;
-        http->file.fd = tmp->fd;
-        http->file.size = tmp->size;
-        http->file.last_modified = tmp->last_modified;
+        http->resp_body_file = tmp;
         if( !wbt_conf.sendfile ) {
-            /* TODO 在 open file 的时候读取文件内容并缓存 */
-            wbt_file_read( &http->file );
+            wbt_file_read( http->resp_body_file);
         }
-        http->file.offset = 0;
+        http->body_offset = 0;
     }
     
     return WBT_OK;
@@ -826,8 +841,8 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
     }
     wbt_str_t send_buf;
     if( http->status == STATUS_200 ) {
-        if( http->file.fd > 0 && ( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) ) {
-            wbt_str_t * last_modified = wbt_time_to_str( http->file.last_modified );
+        if( http->resp_body_file && ( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) ) {
+            wbt_str_t * last_modified = wbt_time_to_str( http->resp_body_file->last_modified );
             wbt_str_t header_value;
             wbt_http_header_t * header = http->headers;
             while( header != NULL ) {
@@ -842,20 +857,23 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         }
 
         send_buf.str = wbt_send_buf.str;
-        if( http->status == STATUS_200 ) {
-            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->file.size);
+
+        if( http->resp_body_memory.str ) {
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", http->resp_body_memory.len);
+        } else if( http->status == STATUS_200 && http->resp_body_file ) {
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->resp_body_file->size);
         } else {
-            /* 目前，这里可能是 304 */
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
         }
+
         if( send_buf.len > wbt_send_buf.len ) {
             send_buf.len = wbt_send_buf.len;
         }
         
-        if( http->file.fd > 0 ) {
+        if( http->resp_body_file ) {
             wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
             wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
-            wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->file.last_modified ) );
+            wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->resp_body_file->last_modified ) );
         } else {
             wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
             wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
@@ -873,6 +891,9 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
         wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
         wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
+        
+        http->resp_body_memory.str = wbt_strdup(wbt_http_error_page[http->status].str, wbt_http_error_page[http->status].len);
+        http->resp_body_memory.len = wbt_http_error_page[http->status].len;
     }
     wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
     
