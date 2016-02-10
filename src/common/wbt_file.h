@@ -36,10 +36,14 @@ typedef struct wbt_file_s {
     char *ptr;
     /* 文件大小 */
     size_t size;
-    /* 最近使用时间 */
-    time_t last_use_mtime;
-    /* 最近修改时间 */
+    /* 如果使用 gzip，则 gzip_ptr 中保存压缩后的文件内容 */
+    char *gzip_ptr;
+    /* 压缩后的文件大小 */
+    size_t gzip_size;
+    /* 文件最后修改时间 */
     time_t last_modified;
+    /* 文件最后被访问时间 */
+    time_t last_use_mtime;
 } wbt_file_t;
 
 wbt_status wbt_file_init();
@@ -49,6 +53,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path );
 wbt_status wbt_file_close( wbt_file_t * file );
 
 ssize_t wbt_file_read( wbt_file_t * );
+wbt_status wbt_file_compress( wbt_file_t *file );
 
 wbt_status wbt_trylock_fd(int fd);
 wbt_status wbt_lock_fd(int fd);

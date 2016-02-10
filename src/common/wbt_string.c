@@ -55,6 +55,41 @@ int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 ) {
     return -1;
 }
 
+/* 
+ * 搜索 str2 字符串在 str1 字符串中第一次出现的位置
+ * 大小写不敏感
+ * 如果没有找到该字符串,则返回 -1
+ */
+int wbt_stripos( wbt_str_t *str1, wbt_str_t *str2 ) {
+    int pos = 0, i = 0, flag = 0;
+    char ch1, ch2;
+
+    if( str1->len < str2->len ) {
+        return -1;
+    }
+
+    for( pos = 0 ; pos <= (str1->len - str2->len) ; pos ++ ) {
+        flag = 0;
+        for( i = 0 ; i < str2->len ; i ++ ) {
+            if ( ( (ch1 = *(str1->str + pos + i)) >= 'A') && (ch1 <= 'Z') ) {
+                ch1 += 0x20;
+            }
+            if ( ( (ch2 = *(str2->str + i)) >= 'A') && (ch2 <= 'Z') ) {
+                ch2 += 0x20;
+            }
+            if( ch1 != ch2 ) {
+                flag = 1;
+                break;
+            }
+        }
+        if( !flag ) {
+            return pos;
+        }
+    }
+    
+    return -1;
+}
+
 /*
  * 比较字符串 str1 和 str2 的前 len 个字符
  * 大小写敏感
@@ -75,9 +110,9 @@ int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
 /*
  * 比较字符串 str1 和 str2 的前 len 个字符
  * 大小写不敏感
- * 相同返回 0，否则返回 1
+ * 相同返回 0，否则返回差值
  */
-int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
+int wbt_strnicmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     int pos = 0;
     char ch1, ch2;
     
@@ -85,7 +120,7 @@ int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
         if ( ( (ch1 = *(str1->str + pos)) >= 'A') && (ch1 <= 'Z') ) {
             ch1 += 0x20;
         }
-        if ( ( (ch2 = *(str2->str + pos)) >= 'A') && (ch1 <= 'Z') ) {
+        if ( ( (ch2 = *(str2->str + pos)) >= 'A') && (ch2 <= 'Z') ) {
             ch2 += 0x20;
         }
         if( ch1 != ch2 ) {
@@ -94,6 +129,34 @@ int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len ) {
     }
 
     return 0;
+}
+
+/*
+ * 比较字符串 str1 和 str2
+ * 大小写不敏感
+ * 相同返回 0，否则返回差值
+ */
+int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2 ) {
+    int value, length;
+
+    if( str1->len > str2->len ) {
+        length = str2->len;
+    } else {
+        length = str1->len;
+    }
+    
+    value = wbt_strnicmp( str1, str2, length );
+    if(value != 0) return value;
+
+    if( str1->len > str2->len ) {
+        value = *(str1->str + length);
+    } else if( str1->len < str2->len ) {
+        value = - *(str2->str + length);
+    } else {
+        value = 0;
+    }
+
+    return value;
 }
 
 /*

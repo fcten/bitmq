@@ -21,6 +21,7 @@ typedef struct wbt_conf_s {
     int process;        // 工作进程数量
     int secure;         // 是否启用 https
     int sendfile;       // 是否使用 sendfile
+    int gzip;           // 是否使用 gzip
     int keep_alive_timeout; // 长连接超时时间 毫秒
     int event_timeout;      // 事件超时时间 毫秒
     int max_open_files;     // 最多打开的句柄数量

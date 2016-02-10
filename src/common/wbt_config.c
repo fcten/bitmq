@@ -113,7 +113,14 @@ wbt_status wbt_conf_init() {
             }
         }
     }
-    
+
+    wbt_conf.gzip = 0;
+    if( ( m_value = wbt_conf_get_v("gzip") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+            wbt_conf.gzip = 1;
+        }
+    }
+
     wbt_conf.keep_alive_timeout = 600000;
     if( ( value = wbt_conf_get("keep_alive_timeout") ) != NULL ) {
         wbt_conf.keep_alive_timeout = atoi(value);

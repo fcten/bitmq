@@ -37,8 +37,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_config.o \
 	${OBJECTDIR}/src/common/wbt_connection.o \
+	${OBJECTDIR}/src/common/wbt_crc.o \
 	${OBJECTDIR}/src/common/wbt_event.o \
 	${OBJECTDIR}/src/common/wbt_file.o \
+	${OBJECTDIR}/src/common/wbt_gzip.o \
 	${OBJECTDIR}/src/common/wbt_heap.o \
 	${OBJECTDIR}/src/common/wbt_list.o \
 	${OBJECTDIR}/src/common/wbt_log.o \
@@ -54,6 +56,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/mq/wbt_mq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
 	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
+	${OBJECTDIR}/src/mq/wbt_mq_persistence.o \
 	${OBJECTDIR}/src/mq/wbt_mq_subscriber.o \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
@@ -84,7 +87,7 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -lssl -lcrypto -ldl
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -lssl -lcrypto -ldl -lz
 
 ${OBJECTDIR}/src/common/wbt_config.o: src/common/wbt_config.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
@@ -96,6 +99,11 @@ ${OBJECTDIR}/src/common/wbt_connection.o: src/common/wbt_connection.c
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_connection.o src/common/wbt_connection.c
 
+${OBJECTDIR}/src/common/wbt_crc.o: src/common/wbt_crc.c 
+	${MKDIR} -p ${OBJECTDIR}/src/common
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_crc.o src/common/wbt_crc.c
+
 ${OBJECTDIR}/src/common/wbt_event.o: src/common/wbt_event.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
@@ -105,6 +113,11 @@ ${OBJECTDIR}/src/common/wbt_file.o: src/common/wbt_file.c
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_file.o src/common/wbt_file.c
+
+${OBJECTDIR}/src/common/wbt_gzip.o: src/common/wbt_gzip.c 
+	${MKDIR} -p ${OBJECTDIR}/src/common
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_gzip.o src/common/wbt_gzip.c
 
 ${OBJECTDIR}/src/common/wbt_heap.o: src/common/wbt_heap.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
@@ -180,6 +193,11 @@ ${OBJECTDIR}/src/mq/wbt_mq_msg.o: src/mq/wbt_mq_msg.c
 	${MKDIR} -p ${OBJECTDIR}/src/mq
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_msg.o src/mq/wbt_mq_msg.c
+
+${OBJECTDIR}/src/mq/wbt_mq_persistence.o: src/mq/wbt_mq_persistence.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_persistence.o src/mq/wbt_mq_persistence.c
 
 ${OBJECTDIR}/src/mq/wbt_mq_subscriber.o: src/mq/wbt_mq_subscriber.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq

@@ -16,6 +16,7 @@
 #include "../common/wbt_ssl.h"
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
+#include "../common/wbt_gzip.h"
 #include "wbt_http.h"
 
 extern wbt_atomic_t wbt_wating_to_exit;
@@ -131,91 +132,182 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         }
     }
     
-    if( http->resp_body_memory.str && http->resp_body_memory.len > http->body_offset ) {
-        n = http->resp_body_memory.len - http->body_offset;
+    if( http->bit_flag & WBT_HTTP_GZIP ) {
+        if( http->resp_body_gzip.str && http->resp_body_gzip.len > http->body_offset ) {
+            n = http->resp_body_gzip.len - http->body_offset;
 
-        nwrite = wbt_ssl_write(ev, http->resp_body_memory.str + http->body_offset, n);
-        if( nwrite >= 0 ) {
-            http->body_offset += nwrite;
-        }
-
-        if (nwrite == -1) {
-            if( wbt_conf.secure ) {
-                int err = wbt_ssl_get_error(ev, nwrite);
-                switch(err) {
-                    case SSL_ERROR_WANT_WRITE:
-                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                        break;
-                    case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                        return WBT_ERROR;
-                    case SSL_ERROR_SYSCALL:
-                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                        return WBT_ERROR;
-                    default:
-                        return WBT_ERROR;
-                }
-            } else {
-                if( errno != EAGAIN ) {
-                    /* 连接被意外关闭，同上 */
-                    return WBT_ERROR;
-                }
-            }
-            
-            return WBT_OK;
-        }
-
-        //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-        if( n > nwrite ) {
-            /* 尚未发送完，缓冲区满 */
-            return WBT_OK;
-        }
-    } else if( http->status == STATUS_200 && http->resp_body_file && http->resp_body_file->size > http->body_offset ) {
-        // 在非阻塞模式下，对于大量数据，每次只能发送一部分
-        // 需要在未发送完成前继续监听可写事件
-        n = http->resp_body_file->size - http->body_offset;
-
-        if( http->resp_body_file->ptr != NULL ) {
-            // 需要发送的数据已经在内存中
-            nwrite = wbt_ssl_write(ev, http->resp_body_file->ptr + http->body_offset, n);
+            nwrite = wbt_ssl_write(ev, http->resp_body_gzip.str + http->body_offset, n);
             if( nwrite >= 0 ) {
                 http->body_offset += nwrite;
             }
-        } else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
-            // 需要发送的数据不在内存中，但是指定了需要发送的文件
-            nwrite = sendfile( ev->fd, http->resp_body_file->fd, &http->body_offset, n );
-        }
 
-        if (nwrite == -1) {
-            if( wbt_conf.secure ) {
-                int err = wbt_ssl_get_error(ev, nwrite);
-                switch(err) {
-                    case SSL_ERROR_WANT_WRITE:
-                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                        break;
-                    case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
+            if (nwrite == -1) {
+                if( wbt_conf.secure ) {
+                    int err = wbt_ssl_get_error(ev, nwrite);
+                    switch(err) {
+                        case SSL_ERROR_WANT_WRITE:
+                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
+                            break;
+                        case SSL_ERROR_WANT_READ:
+                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
+                            return WBT_ERROR;
+                        case SSL_ERROR_SYSCALL:
+                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
+                            return WBT_ERROR;
+                        default:
+                            return WBT_ERROR;
+                    }
+                } else {
+                    if( errno != EAGAIN ) {
+                        /* 连接被意外关闭，同上 */
                         return WBT_ERROR;
-                    case SSL_ERROR_SYSCALL:
-                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                        return WBT_ERROR;
-                    default:
-                        return WBT_ERROR;
+                    }
+                }
+
+                return WBT_OK;
+            }
+
+            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
+            if( n > nwrite ) {
+                /* 尚未发送完，缓冲区满 */
+                return WBT_OK;
+            }
+        } else if( http->resp_body_file && http->resp_body_file->gzip_size > http->body_offset ) {
+            // 在非阻塞模式下，对于大量数据，每次只能发送一部分
+            // 需要在未发送完成前继续监听可写事件
+            n = http->resp_body_file->gzip_size - http->body_offset;
+
+            if( http->resp_body_file->gzip_ptr != NULL ) {
+                // 需要发送的数据已经在内存中
+                nwrite = wbt_ssl_write(ev, http->resp_body_file->gzip_ptr + http->body_offset, n);
+                if( nwrite >= 0 ) {
+                    http->body_offset += nwrite;
                 }
             } else {
-                if( errno != EAGAIN ) {
-                    /* 连接被意外关闭，同上 */
-                    return WBT_ERROR;
-                }
+                nwrite = n = 0;
             }
-            
-            return WBT_OK;
-        }
 
-        //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-        if( n > nwrite ) {
-            /* 尚未发送完，缓冲区满 */
-            return WBT_OK;
+            if (nwrite == -1) {
+                if( wbt_conf.secure ) {
+                    int err = wbt_ssl_get_error(ev, nwrite);
+                    switch(err) {
+                        case SSL_ERROR_WANT_WRITE:
+                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
+                            break;
+                        case SSL_ERROR_WANT_READ:
+                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
+                            return WBT_ERROR;
+                        case SSL_ERROR_SYSCALL:
+                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
+                            return WBT_ERROR;
+                        default:
+                            return WBT_ERROR;
+                    }
+                } else {
+                    if( errno != EAGAIN ) {
+                        /* 连接被意外关闭，同上 */
+                        return WBT_ERROR;
+                    }
+                }
+
+                return WBT_OK;
+            }
+
+            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
+            if( n > nwrite ) {
+                /* 尚未发送完，缓冲区满 */
+                return WBT_OK;
+            }
+        }
+    } else {
+        if( http->resp_body_memory.str && http->resp_body_memory.len > http->body_offset ) {
+            n = http->resp_body_memory.len - http->body_offset;
+
+            nwrite = wbt_ssl_write(ev, http->resp_body_memory.str + http->body_offset, n);
+            if( nwrite >= 0 ) {
+                http->body_offset += nwrite;
+            }
+
+            if (nwrite == -1) {
+                if( wbt_conf.secure ) {
+                    int err = wbt_ssl_get_error(ev, nwrite);
+                    switch(err) {
+                        case SSL_ERROR_WANT_WRITE:
+                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
+                            break;
+                        case SSL_ERROR_WANT_READ:
+                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
+                            return WBT_ERROR;
+                        case SSL_ERROR_SYSCALL:
+                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
+                            return WBT_ERROR;
+                        default:
+                            return WBT_ERROR;
+                    }
+                } else {
+                    if( errno != EAGAIN ) {
+                        /* 连接被意外关闭，同上 */
+                        return WBT_ERROR;
+                    }
+                }
+
+                return WBT_OK;
+            }
+
+            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
+            if( n > nwrite ) {
+                /* 尚未发送完，缓冲区满 */
+                return WBT_OK;
+            }
+        } else if( http->resp_body_file && http->resp_body_file->size > http->body_offset ) {
+            // 在非阻塞模式下，对于大量数据，每次只能发送一部分
+            // 需要在未发送完成前继续监听可写事件
+            n = http->resp_body_file->size - http->body_offset;
+
+            if( http->resp_body_file->ptr != NULL ) {
+                // 需要发送的数据已经在内存中
+                nwrite = wbt_ssl_write(ev, http->resp_body_file->ptr + http->body_offset, n);
+                if( nwrite >= 0 ) {
+                    http->body_offset += nwrite;
+                }
+            } else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
+                // 需要发送的数据不在内存中，但是指定了需要发送的文件
+                nwrite = sendfile( ev->fd, http->resp_body_file->fd, &http->body_offset, n );
+            } else {
+                nwrite = n = 0;
+            }
+
+            if (nwrite == -1) {
+                if( wbt_conf.secure ) {
+                    int err = wbt_ssl_get_error(ev, nwrite);
+                    switch(err) {
+                        case SSL_ERROR_WANT_WRITE:
+                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
+                            break;
+                        case SSL_ERROR_WANT_READ:
+                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
+                            return WBT_ERROR;
+                        case SSL_ERROR_SYSCALL:
+                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
+                            return WBT_ERROR;
+                        default:
+                            return WBT_ERROR;
+                    }
+                } else {
+                    if( errno != EAGAIN ) {
+                        /* 连接被意外关闭，同上 */
+                        return WBT_ERROR;
+                    }
+                }
+
+                return WBT_OK;
+            }
+
+            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
+            if( n > nwrite ) {
+                /* 尚未发送完，缓冲区满 */
+                return WBT_OK;
+            }
         }
     }
     
@@ -431,7 +523,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     wbt_offset_to_str(tail->name.o, header_name, ev->buff);
                     tail->key = HEADER_UNKNOWN;
                     for( i = 1 ; i < HEADER_LENGTH ; i ++ ) {
-                        if( wbt_strncmp( &header_name, &HTTP_HEADERS[i], HTTP_HEADERS[i].len ) == 0 ) {
+                        if( wbt_stricmp( &header_name, &HTTP_HEADERS[i] ) == 0 ) {
                             tail->key = i;
                             break;
                         }
@@ -542,7 +634,7 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                 break;
             case HEADER_CONNECTION:
                 wbt_offset_to_str(header->value.o, http_header_value, ev->buff);
-                if( wbt_stricmp( &http_header_value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
+                if( wbt_strnicmp( &http_header_value, &header_connection_keep_alive, header_connection_keep_alive.len ) == 0 ) {
                     /* 声明为 keep-alive 连接 */
                     http->bit_flag |= WBT_HTTP_KEEP_ALIVE;
                 } else {
@@ -552,6 +644,14 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
             case HEADER_IF_MODIFIED_SINCE:
                 /* 此时还没有读取文件，因此先记录此项 */
                 http->bit_flag |= WBT_HTTP_IF_MODIFIED_SINCE;
+                break;
+            case HEADER_ACCEPT_ENCODING:
+                wbt_offset_to_str(header->value.o, http_header_value, ev->buff);
+                if( wbt_stripos( &http_header_value, &header_encoding_gzip ) >= 0 ) {
+                    http->bit_flag |= WBT_HTTP_GZIP;
+                } else {
+                    http->bit_flag &= ~WBT_HTTP_GZIP;
+                }
                 break;
         }
 
@@ -839,8 +939,15 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
     } else {
         wbt_http_set_header( http, HEADER_CONNECTION, &header_connection_close );
     }
-    wbt_str_t send_buf;
-    if( http->status == STATUS_200 ) {
+
+    if( http->status != STATUS_200 ) {
+        if( !http->resp_body_memory.str ) {
+            wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+
+            http->resp_body_memory.str = wbt_strdup(wbt_http_error_page[http->status].str, wbt_http_error_page[http->status].len);
+            http->resp_body_memory.len = wbt_http_error_page[http->status].len;
+        }
+    } else {
         if( http->resp_body_file && ( http->bit_flag & WBT_HTTP_IF_MODIFIED_SINCE ) ) {
             wbt_str_t * last_modified = wbt_time_to_str( http->resp_body_file->last_modified );
             wbt_str_t header_value;
@@ -851,16 +958,91 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
                     wbt_strcmp( last_modified, &header_value ) == 0 ) {
                     /* 304 Not Modified */
                     http->status = STATUS_304;
+                    wbt_file_close(http->resp_body_file);
+                    http->resp_body_file = NULL;
                 }
                 header = header->next;
             }
         }
+    }
+    
+    /* 决定是否启用 gzip */
+    if( http->bit_flag & WBT_HTTP_GZIP ) { // 首先，必须客户端支持 gzip
+        if( http->resp_body_file ) {
+            // TODO: 只对文本文件启用 gzip（通过 HEADER_CONTENT_TYPE 判断）
+            wbt_file_compress( http->resp_body_file);
+            if( !http->resp_body_file->gzip_ptr || http->resp_body_file->size <= 1024 ) {
+                http->bit_flag &= ~WBT_HTTP_GZIP;
+            }
+        } else if( http->resp_body_memory.str ) {
+            if( http->resp_body_memory.len <= 1024 ) {
+                http->bit_flag &= ~WBT_HTTP_GZIP;
+            } else if( !http->resp_body_gzip.str ) {
+                int ret;
+                size_t size = http->resp_body_memory.len > 1024 ? http->resp_body_memory.len : 1024;
+                do {
+                    // 最大分配 16M
+                    if( size > 1024 * 1024 * 16 ) {
+                        wbt_free( http->resp_body_gzip.str );
+                        http->resp_body_gzip.str = NULL;
+                        http->bit_flag &= ~WBT_HTTP_GZIP;
+                        break;
+                    }
 
-        send_buf.str = wbt_send_buf.str;
+                    void *p = wbt_realloc( http->resp_body_gzip.str, size );
+                    if( p == NULL ) {
+                        wbt_free( http->resp_body_gzip.str );
+                        http->resp_body_gzip.str = NULL;
+                        http->bit_flag &= ~WBT_HTTP_GZIP;
+                        break;
+                    }
+                    http->resp_body_gzip.str = p;
+                    http->resp_body_gzip.len = size;
 
+                    ret = wbt_gzip_compress((Bytef *)http->resp_body_memory.str,
+                            (uLong)http->resp_body_memory.len,
+                            (Bytef *)http->resp_body_gzip.str,
+                            (uLong *)&http->resp_body_gzip.len );
+
+                    if( ret == Z_OK ) {
+
+                    } else if( ret == Z_BUF_ERROR ) {
+                        // 缓冲区不够大
+                        size *= 2;
+                    } else {
+                        // 内存不足
+                        wbt_free( http->resp_body_gzip.str );
+                        http->resp_body_gzip.str = NULL;
+                        http->bit_flag &= ~WBT_HTTP_GZIP;
+                    }
+                } while( ret == Z_BUF_ERROR );
+            }
+        } else {
+            http->bit_flag &= ~WBT_HTTP_GZIP;
+        }
+    }
+    if( http->bit_flag & WBT_HTTP_GZIP ) {
+        wbt_http_set_header( http, HEADER_CONTENT_ENCODING, &header_encoding_gzip );
+    }
+
+    wbt_str_t send_buf;
+    send_buf.str = wbt_send_buf.str;
+    if( http->bit_flag & WBT_HTTP_GZIP ) {
+        if( http->resp_body_gzip.str ) {
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", http->resp_body_gzip.len);
+        } else if( http->resp_body_file ) {
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->resp_body_file->gzip_size);
+        } else {
+            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
+        }
+
+        if( send_buf.len > wbt_send_buf.len ) {
+            send_buf.len = wbt_send_buf.len;
+        }
+    } else {
         if( http->resp_body_memory.str ) {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", http->resp_body_memory.len);
-        } else if( http->status == STATUS_200 && http->resp_body_file ) {
+        } else if( http->resp_body_file ) {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->resp_body_file->size);
         } else {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
@@ -869,34 +1051,19 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         if( send_buf.len > wbt_send_buf.len ) {
             send_buf.len = wbt_send_buf.len;
         }
-        
-        if( http->resp_body_file ) {
-            wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
-            wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
-            wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->resp_body_file->last_modified ) );
-        } else {
-            wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
-            wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
-            wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
-        }
-    } else {
-        send_buf.str = wbt_send_buf.str;
-        send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", wbt_http_error_page[http->status].len);
-        if( send_buf.len > wbt_send_buf.len ) {
-            send_buf.len = wbt_send_buf.len;
-        }
-        
-        wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+    }
+    wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
 
+    if( http->resp_body_file ) {
+        wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
+        wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
+        wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->resp_body_file->last_modified ) );
+    } else if( http->status != STATUS_304 ) {
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
         wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
         wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
-        
-        http->resp_body_memory.str = wbt_strdup(wbt_http_error_page[http->status].str, wbt_http_error_page[http->status].len);
-        http->resp_body_memory.len = wbt_http_error_page[http->status].len;
     }
-    wbt_http_set_header( http, HEADER_CONTENT_LENGTH, &send_buf );
-    
+
     if( wbt_http_generate_response_header( http ) != WBT_OK ) {
         /* 内存不足，生成响应消息头失败 */
         return WBT_ERROR;

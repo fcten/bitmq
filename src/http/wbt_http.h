@@ -178,6 +178,7 @@ typedef struct wbt_http_s {
     wbt_str_t resp_header;
     off_t header_offset;
     wbt_str_t resp_body_memory;
+    wbt_str_t resp_body_gzip;
     wbt_file_t * resp_body_file;
     off_t body_offset;
     /* 以下变量用于保存请求头的解析结果 */
@@ -188,6 +189,7 @@ typedef struct wbt_http_s {
 
 #define WBT_HTTP_KEEP_ALIVE         1
 #define WBT_HTTP_IF_MODIFIED_SINCE  2
+#define WBT_HTTP_GZIP               4
 
 extern wbt_str_t REQUEST_METHOD[];
 extern wbt_str_t HTTP_HEADERS[];
@@ -205,7 +207,7 @@ extern wbt_str_t header_content_type_text_html;
 extern wbt_str_t header_cache_control_no_cache;
 extern wbt_str_t header_pragma_no_cache;
 extern wbt_str_t header_expires_no_cache;
-
+extern wbt_str_t header_encoding_gzip;
 
 wbt_status wbt_http_init();
 wbt_status wbt_http_exit();

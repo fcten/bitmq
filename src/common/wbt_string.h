@@ -51,9 +51,11 @@ typedef union {
 const char * wbt_stdstr(wbt_str_t * str);
 
 int wbt_strpos( wbt_str_t *str1, wbt_str_t *str2 );
+int wbt_stripos( wbt_str_t *str1, wbt_str_t *str2 );
 int wbt_strncmp( wbt_str_t *str1, wbt_str_t *str2, int len );
-int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2, int len );
+int wbt_strnicmp( wbt_str_t *str1, wbt_str_t *str2, int len );
 int wbt_strcmp( wbt_str_t *str1, wbt_str_t *str2);
+int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2);
 
 void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
 

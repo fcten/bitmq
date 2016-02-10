@@ -12,6 +12,7 @@
 #include "wbt_rbtree.h"
 #include "wbt_event.h"
 #include "wbt_time.h"
+#include "wbt_gzip.h"
 
 wbt_module_t wbt_module_file = {
     wbt_string("file"),
@@ -40,6 +41,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
             wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str);
             close(tmp_file->fd);
             wbt_free(tmp_file->ptr);
+            wbt_free(tmp_file->gzip_ptr);
             wbt_rbtree_delete(&wbt_file_rbtree, node);
         }
     }
@@ -130,7 +132,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                 if( tmp.fd > 0 ) {
                     file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
 
-                    file->value.str = wbt_malloc(sizeof(wbt_file_t));
+                    file->value.str = wbt_calloc(sizeof(wbt_file_t));
                     if( file->value.str == NULL ) {
                         // TODO 如果这里失败了，该文件将永远不会被关闭
                         wbt_rbtree_delete(&wbt_file_rbtree, file);
@@ -138,7 +140,6 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
                         tmp_file->fd = tmp.fd;
-                        tmp_file->ptr = NULL;
                         tmp_file->refer = 1;
                         tmp_file->size = tmp.size;
                         tmp_file->last_modified = tmp.last_modified;
@@ -249,4 +250,54 @@ ssize_t wbt_file_read( wbt_file_t *file ) {
     }
     
     return 0;
+}
+
+wbt_status wbt_file_compress( wbt_file_t *file ) {
+    if( !file->ptr && wbt_file_read( file ) < 0 ) {
+        return WBT_ERROR;
+    }
+    
+    if( file->gzip_ptr ) {
+        return WBT_OK;
+    }
+    
+    int ret;
+    size_t size = file->size > 1024 ? file->size : 1024;
+    do {
+        // 最大分配 16M
+        if( size > 1024 * 1024 * 16 ) {
+            wbt_free( file->gzip_ptr );
+            file->gzip_ptr = NULL;
+            return WBT_ERROR;
+        }
+
+        void *p = wbt_realloc( file->gzip_ptr, size );
+        if( p == NULL ) {
+            wbt_free( file->gzip_ptr );
+            file->gzip_ptr = NULL;
+            return WBT_ERROR;
+        }
+        file->gzip_ptr = p;
+        file->gzip_size = size;
+
+        ret = wbt_gzip_compress((Bytef *)file->ptr,
+                (uLong)file->size,
+                (Bytef *)file->gzip_ptr,
+                (uLong *)&file->gzip_size );
+
+        if( ret == Z_OK ) {
+            file->gzip_ptr = wbt_realloc( file->gzip_ptr, file->gzip_size );
+            return WBT_OK;
+        } else if( ret == Z_BUF_ERROR ) {
+            // 缓冲区不够大
+            size *= 2;
+        } else {
+            // 内存不足
+            wbt_free( file->gzip_ptr );
+            file->gzip_ptr = NULL;
+            return WBT_ERROR;
+        }
+    } while( ret == Z_BUF_ERROR );
+
+    return WBT_ERROR;
 }
