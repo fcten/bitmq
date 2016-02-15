@@ -25,6 +25,8 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
 void wbt_mq_print_channels(wbt_str_t *resp, int maxlen);
 void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen);
 
+long long int wbt_mq_channel_status_active();
+
 #ifdef	__cplusplus
 }
 #endif

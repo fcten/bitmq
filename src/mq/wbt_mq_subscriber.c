@@ -162,3 +162,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber, wbt_msg_t *m
 
     return WBT_OK;
 }
+
+long long int wbt_mq_subscriber_status_active() {
+    return wbt_mq_subscribers.size;
+}

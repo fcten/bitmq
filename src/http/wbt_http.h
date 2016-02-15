@@ -83,6 +83,7 @@ typedef enum {
     HEADER_LAST_MODIFIED,
     HEADER_COOKIE,
     HEADER_SET_COOKIE,
+    HEADER_ACCESS_CONTROL_ALLOW_ORIGIN,
     HEADER_LENGTH
 } wbt_http_line_t;
 

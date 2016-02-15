@@ -18,8 +18,8 @@ wbt_status wbt_mq_msg_init() {
     return WBT_OK;
 }
 
-wbt_mq_id wbt_msg_create_count = 0;
-wbt_mq_id wbt_msg_delete_count = 0;
+static wbt_mq_id wbt_msg_create_count = 0;
+static wbt_mq_id wbt_msg_delete_count = 0;
 
 wbt_msg_t * wbt_mq_msg_create() {
     wbt_msg_t * msg = wbt_calloc(sizeof(wbt_msg_t));
@@ -214,4 +214,20 @@ wbt_msg_list_t * wbt_mq_msg_create_node(wbt_mq_id msg_id) {
 
 void wbt_mq_msg_destory_node(wbt_msg_list_t *node) {
     wbt_free(node);
+}
+
+long long int wbt_mq_msg_status_total() {
+    return (long long int)wbt_msg_create_count;
+}
+
+long long int wbt_mq_msg_status_active() {
+    return (long long int)(wbt_msg_create_count - wbt_msg_delete_count);
+}
+
+long long int wbt_mq_msg_status_delayed() {
+    return 0;
+}
+
+long long int wbt_mq_msg_status_waiting_ack() {
+    return 0;
 }

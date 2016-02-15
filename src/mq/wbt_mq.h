@@ -116,8 +116,12 @@ typedef struct wbt_channel_s {
     time_t create;
     // 订阅者
     struct wbt_subscriber_list_s * subscriber_list;
+    // 订阅者数量
+    unsigned int subscriber_count;
     // 消息队列
     struct wbt_msg_list_s * msg_list;
+    // 堆积消息数量
+    unsigned int msg_count;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
@@ -137,7 +141,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev);
 wbt_status wbt_mq_pull(wbt_event_t *ev);
 wbt_status wbt_mq_pull_timeout(wbt_event_t *ev);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
-wbt_status wbt_mq_status(wbt_event_t *ev);
+
+time_t wbt_mq_uptime();
 
 #ifdef	__cplusplus
 }

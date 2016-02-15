@@ -27,6 +27,11 @@ static inline void wbt_mq_msg_inc_delivery(wbt_msg_t *msg) {
     msg->delivery_count ++;
 }
 
+long long int wbt_mq_msg_status_total();
+long long int wbt_mq_msg_status_active();
+long long int wbt_mq_msg_status_delayed();
+long long int wbt_mq_msg_status_waiting_ack();
+
 #ifdef	__cplusplus
 }
 #endif

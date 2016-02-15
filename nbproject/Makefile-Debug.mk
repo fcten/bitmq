@@ -57,6 +57,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
 	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
 	${OBJECTDIR}/src/mq/wbt_mq_persistence.o \
+	${OBJECTDIR}/src/mq/wbt_mq_status.o \
 	${OBJECTDIR}/src/mq/wbt_mq_subscriber.o \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
@@ -198,6 +199,11 @@ ${OBJECTDIR}/src/mq/wbt_mq_persistence.o: src/mq/wbt_mq_persistence.c
 	${MKDIR} -p ${OBJECTDIR}/src/mq
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_persistence.o src/mq/wbt_mq_persistence.c
+
+${OBJECTDIR}/src/mq/wbt_mq_status.o: src/mq/wbt_mq_status.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_status.o src/mq/wbt_mq_status.c
 
 ${OBJECTDIR}/src/mq/wbt_mq_subscriber.o: src/mq/wbt_mq_subscriber.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq

@@ -85,6 +85,7 @@ wbt_str_t HTTP_HEADERS[] = {
     wbt_string("Last-Modified"),
     wbt_string("Cookie"),
     wbt_string("Set-Cookie"),
+    wbt_string("Access-Control-Allow-Origin"),
     wbt_null_string
 };
 

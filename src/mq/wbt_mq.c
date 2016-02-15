@@ -9,6 +9,7 @@
 #include "wbt_mq_channel.h"
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
+#include "wbt_mq_status.h"
 #include "../json/wbt_json.h"
 
 wbt_module_t wbt_module_mq = {
@@ -26,8 +27,20 @@ wbt_status wbt_mq_init() {
     wbt_mq_channel_init();
     wbt_mq_subscriber_init();
     wbt_mq_msg_init();
+    
+    wbt_mq_uptime();
 
     return WBT_OK;
+}
+
+time_t wbt_mq_uptime() {
+    static time_t start_time = 0;
+
+    if(!start_time) {
+        start_time = wbt_cur_mtime;
+    }
+    
+    return (wbt_cur_mtime - start_time)/1000;
 }
 
 wbt_status wbt_mq_on_recv(wbt_event_t *ev) {
@@ -47,7 +60,7 @@ wbt_status wbt_mq_on_recv(wbt_event_t *ev) {
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
-    if( wbt_strncmp( &http_uri, &login, login.len ) == 0 ) {
+    if( wbt_strcmp( &http_uri, &login ) == 0 ) {
         return wbt_mq_login(ev);
     } else if( wbt_strcmp( &http_uri, &pull ) == 0 ) {
         return wbt_mq_pull(ev);
@@ -444,38 +457,3 @@ wbt_status wbt_mq_ack(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_status(wbt_event_t *ev) {
-    wbt_http_t * http = ev->data;
-    
-    // 必须是 GET 请求
-    if( http->method != METHOD_GET ) {
-        http->status = STATUS_405;
-        return WBT_OK;
-    }
-
-    http->resp_body_memory.len = 10240;
-    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
-    
-    wbt_str_t resp;
-    resp.len = 0;
-    resp.str = http->resp_body_memory.str;
-    
-    wbt_str_t http_uri;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff);
-    
-    wbt_str_t channel_ids;
-    channel_ids.str = http_uri.str + 11;
-    channel_ids.len = http_uri.len - 11;
-    if( channel_ids.len != 16 ) {
-        wbt_mq_print_channels(&resp, http->resp_body_memory.len);
-    } else {
-        wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
-        wbt_mq_print_channel(channel_id, &resp, http->resp_body_memory.len);
-    }
-
-    http->resp_body_memory.str = wbt_realloc(http->resp_body_memory.str, resp.len);
-    http->resp_body_memory.len = resp.len;
-    http->status = STATUS_200;
-
-    return WBT_OK;
-}

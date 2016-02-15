@@ -223,3 +223,7 @@ void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen) {
     
     wbt_free(tmp);
 }
+
+long long int wbt_mq_channel_status_active() {
+    return wbt_mq_channels.size;
+}
