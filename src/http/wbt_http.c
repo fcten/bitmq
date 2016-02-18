@@ -765,7 +765,7 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
     }
     wbt_strcat( &dest, &crlf, mem_len );
     
-    wbt_log_debug("malloc: %d, use: %d\n", mem_len, dest.len );
+    //wbt_log_debug("malloc: %d, use: %d\n", mem_len, dest.len );
     
     return WBT_OK;
 }

@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "wbt_mq.h"
+#include "../json/wbt_json.h"
 
 wbt_status wbt_mq_channel_init();
 wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id);
@@ -22,8 +23,13 @@ void wbt_mq_channel_destory(wbt_channel_t *channel);
 wbt_status wbt_mq_channel_add_subscriber(wbt_channel_t *channel, wbt_subscriber_t *subscriber);
 wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_t *subscriber);
 
-void wbt_mq_print_channels(wbt_str_t *resp, int maxlen);
-void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen);
+wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg);
+void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_list_t *msg_node);
+
+json_object_t * wbt_mq_channel_print(wbt_channel_t *channel);
+void wbt_mq_channel_print_all(json_object_t * obj);
+void wbt_mq_channel_msg_print(wbt_channel_t *channel, json_object_t * obj);
+void wbt_mq_channel_subscriber_print(wbt_channel_t *channel, json_object_t * obj);
 
 long long int wbt_mq_channel_status_active();
 

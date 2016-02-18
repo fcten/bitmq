@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "wbt_mq.h"
+#include "../json/wbt_json.h"
 
 wbt_status wbt_mq_msg_init();
 wbt_msg_t * wbt_mq_msg_create();
@@ -31,6 +32,8 @@ long long int wbt_mq_msg_status_total();
 long long int wbt_mq_msg_status_active();
 long long int wbt_mq_msg_status_delayed();
 long long int wbt_mq_msg_status_waiting_ack();
+
+json_object_t * wbt_mq_msg_print(wbt_msg_t *msg);
 
 #ifdef	__cplusplus
 }

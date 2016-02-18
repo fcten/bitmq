@@ -12,6 +12,18 @@
 #include "wbt_mq_status.h"
 #include "../json/wbt_json.h"
 
+wbt_str_t wbt_str_message = wbt_string("message");
+wbt_str_t wbt_str_channel = wbt_string("channel");
+wbt_str_t wbt_str_subscriber = wbt_string("subscriber");
+wbt_str_t wbt_str_total = wbt_string("total");
+wbt_str_t wbt_str_active = wbt_string("active");
+wbt_str_t wbt_str_delayed = wbt_string("delayed");
+wbt_str_t wbt_str_waiting_ack = wbt_string("waiting_ack");
+wbt_str_t wbt_str_system = wbt_string("system");
+wbt_str_t wbt_str_uptime = wbt_string("uptime");
+wbt_str_t wbt_str_channel_id = wbt_string("channel_id");
+wbt_str_t wbt_str_list = wbt_string("list");
+
 wbt_module_t wbt_module_mq = {
     wbt_string("mq"),
     wbt_mq_init, // init
@@ -200,8 +212,7 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
                 
                 msg = wbt_mq_msg_get(msg_node->msg_id);
                 if( !msg || msg->expire <= wbt_cur_mtime ) {
-                    wbt_list_del(&msg_node->head);
-                    wbt_mq_msg_destory_node(msg_node);
+                    wbt_mq_channel_del_msg(channel, msg_node);
                     continue;
                 }
 
@@ -215,8 +226,7 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
 
                 // 如果是负载均衡消息，则从 msg_list 中移除该消息
                 if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
-                    wbt_list_del(&msg_node->head);
-                    wbt_mq_msg_destory_node(msg_node);
+                    wbt_mq_channel_del_msg(channel, msg_node);
                 }
             } while(next_node != channel->msg_list);
         }

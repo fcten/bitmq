@@ -107,6 +107,8 @@ wbt_status wbt_mq_channel_add_subscriber(wbt_channel_t *channel, wbt_subscriber_
     subscriber_node->subscriber = subscriber;
     wbt_list_add(&subscriber_node->head, &channel->subscriber_list->head);
     
+    channel->subscriber_count ++;
+    
     return WBT_OK;
 }
 
@@ -119,6 +121,9 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
         if( subscriber_node->subscriber == subscriber ) {
             wbt_list_del(&subscriber_node->head);
             wbt_free(subscriber_node);
+            
+            channel->subscriber_count --;
+            
             return WBT_OK;
         }
     }
@@ -126,104 +131,92 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
 }
 
 extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
-void wbt_mq_print_channels_r(wbt_rbtree_node_t *node, wbt_str_t *resp, int maxlen) {
-    void * tmp = wbt_malloc(1024);
-
-    if(node != wbt_rbtree_node_nil) {
-        wbt_mq_print_channels_r(node->left, resp, maxlen);
+void wbt_mq_channel_print_r(wbt_rbtree_node_t *node, json_object_t * obj, int *max) {
+    if( node != wbt_rbtree_node_nil && *max ) {
+        wbt_mq_channel_print_r(node->left, obj, max);
         
         wbt_channel_t *channel = (wbt_channel_t *)node->value.str;
-        wbt_str_t channel_info;
-        channel_info.str = tmp;
-        channel_info.len = snprintf(tmp, 1024, "%016llX\n", channel->channel_id);
-        if( channel_info.len > 1024 ) {
-            channel_info.len = 1024;
-        }
-        wbt_strcat(resp, &channel_info, maxlen);
+
+        json_append(obj, NULL, 0, JSON_OBJECT, wbt_mq_channel_print(channel), 0);
+        (*max) --;
         
-        wbt_mq_print_channels_r(node->right, resp, maxlen);
+        wbt_mq_channel_print_r(node->right, obj, max);
     }
-    
-    wbt_free(tmp);
 }
 
-void wbt_mq_print_channels(wbt_str_t *resp, int maxlen) {
-    void * tmp = wbt_malloc(1024);
-    wbt_str_t channel_count;
-    channel_count.str = tmp;
-    channel_count.len = snprintf(tmp, 1024, "%u channels\n", wbt_mq_channels.size);
-    if( channel_count.len > 1024 ) {
-        channel_count.len = 1024;
-    }
-    wbt_strcat(resp, &channel_count, maxlen);
-    wbt_free(tmp);
-    wbt_mq_print_channels_r(wbt_mq_channels.root, resp, maxlen);
+/* 输出所有频道（默认最多输出 100 条） */
+void wbt_mq_channel_print_all(json_object_t * obj) {
+    int max = 100;
+    wbt_mq_channel_print_r(wbt_mq_channels.root, obj, &max);
 }
 
-void wbt_mq_print_channel(wbt_mq_id channel_id, wbt_str_t *resp, int maxlen) {
-    wbt_channel_t *channel = wbt_mq_channel_get(channel_id);
-    if(channel == NULL) {
-        return;
-    }
+json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
+    json_object_t * obj = json_create_object();
+    json_object_t * message = json_create_object();
+    json_object_t * subscriber = json_create_object();
+    json_append(obj, wbt_str_channel_id.str, wbt_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
+    json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
+    json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
+
+    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->msg_count, 0 );
     
-    void * tmp = wbt_malloc(1024);
+    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->subscriber_count, 0 );
+    
+    return obj;
+}
 
-    wbt_str_t channel_info;
-    channel_info.str = tmp;
-
-    channel_info.len = snprintf(tmp, 1024, "channel: %016llX\n", channel->channel_id);
-    if( channel_info.len > 1024 ) {
-        channel_info.len = 1024;
+/* 输出指定频道的所有堆积消息（默认最多输出 100 条） */
+void wbt_mq_channel_msg_print(wbt_channel_t *channel, json_object_t * obj) {
+    int max = 100;
+    if( channel->msg_list && !wbt_list_empty(&channel->msg_list->head) ) {
+        wbt_msg_list_t * msg_node;
+        wbt_list_for_each_entry( msg_node, &channel->msg_list->head, head ) {
+            json_append(obj, NULL, 0, JSON_LONGLONG, &msg_node->msg_id, 0);
+            if( --max <= 0 ) {
+                break;
+            }
+        }
     }
-    wbt_strcat(resp, &channel_info, maxlen);
+}
 
-    channel_info.len = snprintf(tmp, 1024, "\nsubscriber_list:\n");
-    if( channel_info.len > 1024 ) {
-        channel_info.len = 1024;
-    }
-    wbt_strcat(resp, &channel_info, maxlen);
-
-    if( channel->subscriber_list ) {
+/* 输出指定频道的所有订阅者（默认最多输出 100 条） */
+void wbt_mq_channel_subscriber_print(wbt_channel_t *channel, json_object_t * obj) {
+    int max = 100;
+    if( channel->subscriber_list && !wbt_list_empty(&channel->subscriber_list->head) ) {
         wbt_subscriber_t * subscriber;
         wbt_subscriber_list_t * subscriber_node;
         wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
             subscriber = subscriber_node->subscriber;
-            channel_info.len = snprintf(tmp, 1024, "%016llX\n", subscriber->subscriber_id);
-            if( channel_info.len > 1024 ) {
-                channel_info.len = 1024;
-            }
-            wbt_strcat(resp, &channel_info, maxlen);
-        }
-    }
-    
-    channel_info.len = snprintf(tmp, 1024, "\nmsg_list:\n");
-    if( channel_info.len > 1024 ) {
-        channel_info.len = 1024;
-    }
-    wbt_strcat(resp, &channel_info, maxlen);
 
-    if( channel->msg_list ) {
-        wbt_msg_t * msg;
-        wbt_msg_list_t * msg_node;
-        wbt_list_for_each_entry( msg_node, &channel->msg_list->head, head ) {
-            msg = wbt_mq_msg_get(msg_node->msg_id);
-            if(!msg || msg->expire <= wbt_cur_mtime) {
-                channel_info.len = snprintf(tmp, 1024, "expired msg\n");
-            } else {
-                channel_info.len = snprintf(tmp, 1024, "%016llX %5u %5u %.*s\n",
-                        msg->msg_id, msg->consumption_count, msg->delivery_count,
-                        msg->data_len>100?100:(int)msg->data_len, (char *)msg->data);
+            json_append(obj, NULL, 0, JSON_LONGLONG, &subscriber->subscriber_id, 0);
+
+            if( --max <= 0 ) {
+                break;
             }
-            if( channel_info.len > 1024 ) {
-                channel_info.len = 1024;
-            }
-            wbt_strcat(resp, &channel_info, maxlen);
         }
     }
-    
-    wbt_free(tmp);
 }
 
 long long int wbt_mq_channel_status_active() {
     return wbt_mq_channels.size;
+}
+
+wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
+    wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg->msg_id);
+    if( msg_node == NULL ) {
+        return WBT_ERROR;
+    }
+    
+    wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
+    
+    channel->msg_count ++;
+    
+    return WBT_OK;
+}
+
+void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_list_t *msg_node) {
+    wbt_list_del(&msg_node->head);
+    wbt_mq_msg_destory_node(msg_node);
+    
+    channel->msg_count --;
 }

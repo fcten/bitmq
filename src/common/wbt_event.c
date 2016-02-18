@@ -147,7 +147,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
+    //wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
     
     /* 添加到事件池内 */
     wbt_event_t *t = *(wbt_events.available + wbt_events.top);
@@ -196,7 +196,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    //wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
 
     /* 从事件池中移除 */
     wbt_events.top ++;
@@ -229,7 +229,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
-    wbt_log_debug("event mod, fd %d, addr %p\n",ev->fd, ev);
+    //wbt_log_debug("event mod, fd %d, addr %p\n",ev->fd, ev);
 
     /* 修改epoll事件 */
     if(ev->fd >= 0) {

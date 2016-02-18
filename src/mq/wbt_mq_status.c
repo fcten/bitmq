@@ -19,6 +19,12 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
     if( http->status != STATUS_404 ) {
         return WBT_OK;
     }
+
+    // 必须是 GET 请求
+    if( http->method != METHOD_GET ) {
+        http->status = STATUS_405;
+        return WBT_OK;
+    }
     
     // TODO 实际的访问控制需要自己通过 IP 实现
     wbt_str_t access_control_allow_origin = wbt_string("*");
@@ -51,55 +57,16 @@ wbt_status wbt_mq_status(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_status1(wbt_event_t *ev) {
-    wbt_http_t * http = ev->data;
-    
-    // 必须是 GET 请求
-    if( http->method != METHOD_GET ) {
-        http->status = STATUS_405;
-        return WBT_OK;
-    }
-
-    http->resp_body_memory.len = 10240;
-    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
-    
-    wbt_str_t resp;
-    resp.len = 0;
-    resp.str = http->resp_body_memory.str;
-    
-    wbt_str_t http_uri;
-    wbt_offset_to_str(http->uri, http_uri, ev->buff);
-    
-    wbt_str_t channel_ids;
-    channel_ids.str = http_uri.str + 11;
-    channel_ids.len = http_uri.len - 11;
-    if( channel_ids.len != 16 ) {
-        wbt_mq_print_channels(&resp, http->resp_body_memory.len);
-    } else {
-        wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 16);
-        wbt_mq_print_channel(channel_id, &resp, http->resp_body_memory.len);
-    }
-
-    http->resp_body_memory.str = wbt_realloc(http->resp_body_memory.str, resp.len);
-    http->resp_body_memory.len = resp.len;
-    http->status = STATUS_200;
-
-    return WBT_OK;
-}
-
-static wbt_str_t wbt_str_message = wbt_string("message");
-static wbt_str_t wbt_str_channel = wbt_string("channel");
-static wbt_str_t wbt_str_subscriber = wbt_string("subscriber");
-static wbt_str_t wbt_str_total = wbt_string("total");
-static wbt_str_t wbt_str_active = wbt_string("active");
-static wbt_str_t wbt_str_delayed = wbt_string("delayed");
-static wbt_str_t wbt_str_waiting_ack = wbt_string("waiting_ack");
-static wbt_str_t wbt_str_system = wbt_string("system");
-static wbt_str_t wbt_str_uptime = wbt_string("uptime");
-
 wbt_status wbt_mq_status_general(wbt_event_t *ev) {
     wbt_http_t * http = ev->data;
     
+    http->resp_body_memory.len = 1024;
+    http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
+    if( http->resp_body_memory.str == NULL ) {
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+
     long long int message_total = wbt_mq_msg_status_total();
     long long int message_active = wbt_mq_msg_status_active();
     long long int message_delayed = wbt_mq_msg_status_delayed();
@@ -130,12 +97,6 @@ wbt_status wbt_mq_status_general(wbt_event_t *ev) {
     
     json_append(system, wbt_str_uptime.str, wbt_str_uptime.len, JSON_LONGLONG, &system_uptime, 0);
 
-    http->resp_body_memory.len = 1024;
-    http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
-    if( http->resp_body_memory.str == NULL ) {
-        http->status = STATUS_503;
-        return WBT_OK;
-    }
     char *ptr = http->resp_body_memory.str;
     size_t len = http->resp_body_memory.len;
     json_print(obj, &ptr, &len);
@@ -150,25 +111,105 @@ wbt_status wbt_mq_status_general(wbt_event_t *ev) {
 }
 
 wbt_status wbt_mq_status_message_general(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_status_channel_general(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    wbt_http_t * http = ev->data;
+
+    http->resp_body_memory.len = 4096;
+    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
+    if( http->resp_body_memory.str == NULL ) {
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+    
+    long long int channel_active = wbt_mq_channel_status_active();
+    
+    json_object_t * obj        = json_create_object();
+    json_object_t * list       = json_create_array();
+    json_append(obj, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    list,            0);
+    json_append(obj, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel_active, 0);
+
+    wbt_mq_channel_print_all(list);
+    
+    char *ptr = http->resp_body_memory.str;
+    size_t len = http->resp_body_memory.len;
+    json_print(obj, &ptr, &len);
+    http->resp_body_memory.len = http->resp_body_memory.len - len;
+    http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );
+
+    json_delete_object(obj);
+    
+    http->status = STATUS_200;
+
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_status_system_general(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_status_message(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_status_channel(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    wbt_http_t * http = ev->data;
+    
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
+    
+    wbt_str_t channel_id_str;
+    channel_id_str.str = http_uri.str + 19;
+    channel_id_str.len = http_uri.len - 19;
+    wbt_mq_id channel_id = wbt_str_to_ull(&channel_id_str, 10);
+
+    wbt_channel_t *channel = wbt_mq_channel_get(channel_id);
+    if(channel == NULL) {
+        http->status = STATUS_404;
+        return WBT_OK;
+    }
+
+    http->resp_body_memory.len = 1024;
+    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
+    if( http->resp_body_memory.str == NULL ) {
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+
+    json_object_t * obj             = json_create_object();
+    json_object_t * message         = json_create_object();
+    json_object_t * subscriber      = json_create_object();
+    json_object_t * message_list    = json_create_array();
+    json_object_t * subscriber_list = json_create_array();
+    
+    json_append(obj, wbt_str_channel_id.str, wbt_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
+    json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
+    json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
+
+    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->msg_count, 0);
+    json_append(message, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    message_list,        0);
+
+    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->subscriber_count, 0);
+    json_append(subscriber, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    subscriber_list,            0);
+
+    wbt_mq_channel_msg_print(channel, message_list);
+    wbt_mq_channel_subscriber_print(channel, subscriber_list);
+    
+    char *ptr = http->resp_body_memory.str;
+    size_t len = http->resp_body_memory.len;
+    json_print(obj, &ptr, &len);
+    http->resp_body_memory.len = http->resp_body_memory.len - len;
+    http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );
+
+    json_delete_object(obj);
+
+    http->status = STATUS_200;
+
+    return WBT_OK;
 }
 
 wbt_status wbt_mq_status_system(wbt_event_t *ev) {
-    return wbt_mq_status1(ev);
+    return WBT_OK;
 }

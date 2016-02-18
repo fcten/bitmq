@@ -587,7 +587,7 @@ json_object_t * json_append(json_object_t * obj, const char * key, size_t key_le
     assert(obj);
     assert( (obj->object_type == JSON_OBJECT && key) || (obj->object_type != JSON_OBJECT) );
 
-    while( obj->value.l ) {
+    while( obj->value_type != JSON_NONE ) {
         if( !obj->next ) {
             if( obj->object_type == JSON_OBJECT ) {
                 obj->next = json_create_object();
