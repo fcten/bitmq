@@ -19,6 +19,7 @@ wbt_status wbt_mq_msg_init() {
 }
 
 static wbt_mq_id wbt_msg_create_count = 0;
+static wbt_mq_id wbt_msg_effect_count = 0;
 static wbt_mq_id wbt_msg_delete_count = 0;
 
 wbt_msg_t * wbt_mq_msg_create() {
@@ -26,6 +27,7 @@ wbt_msg_t * wbt_mq_msg_create() {
     
     if( msg ) {
         msg->msg_id = ++wbt_msg_create_count;
+        msg->seq_id = 0;
         msg->create = wbt_cur_mtime;
         
         wbt_str_t msg_key;
@@ -131,6 +133,8 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
             }
             msg->timeout_ev->ctx = msg;
         }
+        
+        msg->seq_id = ++wbt_msg_effect_count;
     }
 
     wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);

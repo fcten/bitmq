@@ -309,8 +309,8 @@ wbt_status wbt_conf_reload() {
 
     /* 解析配置文件 */
     if( wbt_conf_parse(&wbt_config_file_content) == WBT_OK ) {
-        wbt_free(wbt_config_file_content.str);
         //wbt_rbtree_print(wbt_config_rbtree.root);
+        wbt_free(wbt_config_file_content.str);
 
         char tmp[1024];
         snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.str );

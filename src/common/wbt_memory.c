@@ -36,7 +36,12 @@ int wbt_mem_is_oom() {
 }
 
 void wbt_mem_print() {
-    wbt_log_debug("Memory in use: %zu bytes\n", wbt_memory_usage);
+    double kb = (double)wbt_memory_usage/1024;
+    if( kb > 1024 ) {
+        wbt_log_debug("Memory in use: %.1f MB\n", kb/1024);
+    } else {
+        wbt_log_debug("Memory in use: %.1f KB\n", kb);
+    }
 }
 
 void * wbt_malloc(size_t size) {

@@ -41,6 +41,8 @@ typedef long long unsigned int wbt_mq_id;
 typedef struct wbt_msg_s {
     // 消息 ID
     wbt_mq_id msg_id;
+    // 消息生效顺序
+    wbt_mq_id seq_id;
     // 消息生产者所订阅的频道 ID
     wbt_mq_id producer_id;
     // 消息消费者所订阅的频道 ID
