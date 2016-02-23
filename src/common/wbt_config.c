@@ -71,15 +71,6 @@ wbt_status wbt_conf_init() {
         }
     }
     
-    wbt_conf.run_mode = 0;
-    if( ( value = wbt_conf_get("run_mode") ) != NULL ) {
-        wbt_conf.run_mode = atoi(value);
-        if( wbt_conf.run_mode < 0 || wbt_conf.run_mode > 1 ) {
-            wbt_log_add("run_mode out of range ( expect 0 - 1 )\n");
-            return WBT_ERROR;
-        }
-    }
-    
     wbt_conf.secure = 0;
     if( ( m_value = wbt_conf_get_v("secure") ) != NULL ) {
         if( wbt_strcmp( m_value, &wbt_conf_option_on ) == 0 ) {

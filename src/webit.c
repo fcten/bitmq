@@ -80,7 +80,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 
 void wbt_worker_process() {
     /* 设置进程标题 */
-    if( !wbt_conf.run_mode ) {
+    if( wbt_conf.daemon ) {
         wbt_set_proc_title("webit: worker process");
     }
 
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
     /* 解析传入参数 */
     int ch;
     opterr = 0;
-    while( ( ch = wbt_getopt(argc,argv,"c:hs:tv") ) != -1 ) {
+    while( ( ch = wbt_getopt(argc,argv,"c:hs:tvd") ) != -1 ) {
         switch(ch) {
             case 'v':
                 wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
@@ -317,6 +317,9 @@ int main(int argc, char** argv) {
                 if( wbt_conf_set_file(optarg) != WBT_OK ) {
                     return 1;
                 }
+                break;
+            case 'd':
+                wbt_conf.daemon = 1;
                 break;
             case '?':
                 if( optopt == 'c' || optopt == 's' || optopt == 't' ) {
@@ -367,7 +370,7 @@ int main(int argc, char** argv) {
     }
     tzset();
 
-    if( !wbt_conf.run_mode ) {
+    if( wbt_conf.daemon ) {
         wbt_log_print( "\n\nwebit is now running in the background.\n\n" );
 
         /* 转入后台运行 */
@@ -392,7 +395,7 @@ int main(int argc, char** argv) {
         wbt_log_add("Root path: %s\n", wwwroot);
     }*/
 
-    if( !wbt_conf.run_mode ) {
+    if( wbt_conf.daemon ) {
         wbt_master_process();
     } else {
         wbt_worker_process();

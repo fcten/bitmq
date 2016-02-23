@@ -17,7 +17,7 @@ extern "C" {
 
 typedef struct wbt_conf_s {
     int listen_port;    // 监听端口
-    int run_mode;       // 1 - deamon, 2 - debug
+    int daemon;         // 后台模式
     int process;        // 工作进程数量
     int secure;         // 是否启用 https
     int sendfile;       // 是否使用 sendfile
