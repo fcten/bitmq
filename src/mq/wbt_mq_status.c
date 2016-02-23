@@ -188,10 +188,10 @@ wbt_status wbt_mq_status_channel(wbt_event_t *ev) {
     json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
     json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
 
-    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->msg_count, 0);
+    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->queue.size, 0);
     json_append(message, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    message_list,        0);
 
-    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->subscriber_count, 0);
+    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0);
     json_append(subscriber, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    subscriber_list,            0);
 
     wbt_mq_channel_msg_print(channel, message_list);

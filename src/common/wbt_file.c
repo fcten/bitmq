@@ -32,7 +32,7 @@ extern wbt_atomic_t wbt_wating_to_exit;
 
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     /* 从叶节点递归处理至根节点 */
-    if(node != wbt_rbtree_node_nil) {
+    if(node) {
         wbt_file_cleanup_recursive(node->left);
         wbt_file_cleanup_recursive(node->right);
         

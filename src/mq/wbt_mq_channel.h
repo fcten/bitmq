@@ -24,7 +24,7 @@ wbt_status wbt_mq_channel_add_subscriber(wbt_channel_t *channel, wbt_subscriber_
 wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_t *subscriber);
 
 wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg);
-void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_list_t *msg_node);
+void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_t *msg);
 
 json_object_t * wbt_mq_channel_print(wbt_channel_t *channel);
 void wbt_mq_channel_print_all(json_object_t * obj);

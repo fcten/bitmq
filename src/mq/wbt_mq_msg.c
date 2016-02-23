@@ -63,6 +63,13 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     
     wbt_log_debug("msg %lld deleted\n", msg->msg_id);
     
+    // 从消息所对应的频道中删除该消息
+    // TODO 这里没有必要再做一次 wbt_mq_channel_get 查询
+    wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
+    if( channel ) {
+        wbt_mq_channel_del_msg(channel, msg);
+    }
+    
     if( msg->timeout_ev ) {
         wbt_event_del( msg->timeout_ev );
     }
@@ -142,75 +149,42 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         return WBT_ERROR;
     }
 
-    // 已生效消息
-    //wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg->msg_id);
-    //if( msg_node == NULL ) {
-    //    return WBT_ERROR;
-    //}
-    
-    if( msg->delivery_mode == MSG_BROADCAST ) {
-        // 保存该消息
-        if( wbt_mq_channel_add_msg(channel, msg) != WBT_OK ) {
-            return WBT_ERROR;
-        }
+    // 已生效消息，保存该消息
+    if( wbt_mq_channel_add_msg(channel, msg) != WBT_OK ) {
+        return WBT_ERROR;
+    }
 
-        // 广播模式，消息将投递给该频道下所有的订阅者
+    if( msg->delivery_mode == MSG_BROADCAST ) {
+        // 广播模式，通知该频道下所有的订阅者获取该消息
         wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
         wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
             subscriber = subscriber_node->subscriber;
 
-            if( wbt_list_empty(&subscriber->msg_list->head) &&
-                subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
-                if( wbt_mq_subscriber_send_msg(subscriber, msg) != WBT_OK ) {
+            if( subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
+                if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
                     // TODO 记录投递失败
-                }
-            } else {
-                wbt_msg_list_t * tmp_node = wbt_mq_msg_create_node(msg->msg_id);
-                if( tmp_node == NULL ) {
-                    // 内存不足，投递失败
-                    // TODO 需要记录该次投递失败
-                    continue;
-                } else {
-                    wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
+                    wbt_log_debug("msg %lld send to %d failed\n", msg->msg_id, subscriber->ev->fd);
                 }
             }
         }
     } else if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
-        if( wbt_list_empty( &channel->subscriber_list->head ) ) {
-            // 频道没有任何订阅者
-            if( wbt_mq_channel_add_msg(channel, msg) != WBT_OK ) {
-                return WBT_ERROR;
-            }
-            return WBT_OK;
-        }
-        
-        // 负载均衡模式，消息将投递给订阅队列中的第一个订阅者
-        wbt_subscriber_list_t * subscriber_list;
+        // 负载均衡模式，通知订阅队列中的第一个订阅者获取该消息
+        wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
-        subscriber_list = wbt_list_first_entry(&channel->subscriber_list->head, wbt_subscriber_list_t, head);
-        subscriber = subscriber_list->subscriber;
+        subscriber_node = wbt_list_first_entry(&channel->subscriber_list->head, wbt_subscriber_list_t, head);
+        subscriber = subscriber_node->subscriber;
 
-        if( wbt_list_empty(&subscriber->msg_list->head) &&
-            subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
-            if( wbt_mq_subscriber_send_msg(subscriber, msg) != WBT_OK ) {
-                //  直接投递失败
-                if( wbt_mq_channel_add_msg(channel, msg) != WBT_OK ) {
-                    return WBT_ERROR;
-                }
-            }
-        } else {
-            wbt_msg_list_t * tmp_node = wbt_mq_msg_create_node(msg->msg_id);
-            if( tmp_node == NULL ) {
-                // 内存不足，投递失败
-                return WBT_ERROR;
-            } else {
-                wbt_list_add_tail( &tmp_node->head, &subscriber->msg_list->head );
+        // TODO 这里忽略了投递失败的情况，导致消息不能严格地平均分发
+        // 后续应当改进负载均衡算法
+        if( subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
+            if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
+                // 直接投递失败，忽略该错误
             }
         }
 
-        // 投递成功后，将该订阅者移动到链表末尾
-        wbt_list_move_tail(&subscriber_list->head, &channel->subscriber_list->head);
+        // 无论是否成功，都应当将该订阅者移动到链表末尾
+        wbt_list_move_tail(&subscriber_node->head, &channel->subscriber_list->head);
     } else {
         return WBT_ERROR;
     }

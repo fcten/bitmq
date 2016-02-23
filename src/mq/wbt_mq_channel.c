@@ -23,15 +23,14 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
     if( channel ) {
         channel->channel_id = channel_id;
         channel->create = wbt_cur_mtime;
+        
+        wbt_rbtree_init(&channel->queue);
 
         channel->subscriber_list = wbt_calloc(sizeof(wbt_subscriber_list_t));
-        channel->msg_list = wbt_mq_msg_create_node(0);
-        if( channel->subscriber_list && channel->msg_list ) {
+        if( channel->subscriber_list ) {
             wbt_list_init(&channel->subscriber_list->head);
-            wbt_list_init(&channel->msg_list->head);
         } else {
             wbt_free(channel->subscriber_list);
-            wbt_free(channel->msg_list);
             wbt_free(channel);
             return NULL;
         }
@@ -41,7 +40,6 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         wbt_rbtree_node_t * channel_node = wbt_rbtree_insert(&wbt_mq_channels, &channel_key);
         if( channel_node == NULL ) {
             wbt_free(channel->subscriber_list);
-            wbt_free(channel->msg_list);
             wbt_free(channel);
             return NULL;
         }
@@ -81,15 +79,7 @@ void wbt_mq_channel_destory(wbt_channel_t *channel) {
         wbt_free(channel->subscriber_list);
     }
     
-    if( channel->msg_list ) {
-        wbt_msg_list_t * pos;
-        while(!wbt_list_empty(&channel->msg_list->head)) {
-            pos = wbt_list_first_entry(&channel->msg_list->head, wbt_msg_list_t, head);
-            wbt_list_del(&pos->head);
-            wbt_free(pos);
-        }
-        wbt_free(channel->msg_list);
-    }
+    wbt_rbtree_destroy_ignore_value(&channel->queue);
 
     wbt_str_t channel_key;
     wbt_variable_to_str(channel->channel_id, channel_key);
@@ -130,9 +120,8 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
     return WBT_OK;
 }
 
-extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
 void wbt_mq_channel_print_r(wbt_rbtree_node_t *node, json_object_t * obj, int *max) {
-    if( node != wbt_rbtree_node_nil && *max ) {
+    if( node && *max ) {
         wbt_mq_channel_print_r(node->left, obj, max);
         
         wbt_channel_t *channel = (wbt_channel_t *)node->value.str;
@@ -158,9 +147,9 @@ json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
     json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
     json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
 
-    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->msg_count, 0 );
+    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->queue.size, 0 );
     
-    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel->subscriber_count, 0 );
+    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0 );
     
     return obj;
 }
@@ -168,13 +157,14 @@ json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
 /* 输出指定频道的所有堆积消息（默认最多输出 100 条） */
 void wbt_mq_channel_msg_print(wbt_channel_t *channel, json_object_t * obj) {
     int max = 100;
-    if( channel->msg_list && !wbt_list_empty(&channel->msg_list->head) ) {
-        wbt_msg_list_t * msg_node;
-        wbt_list_for_each_entry( msg_node, &channel->msg_list->head, head ) {
-            json_append(obj, NULL, 0, JSON_LONGLONG, &msg_node->msg_id, 0);
-            if( --max <= 0 ) {
-                break;
-            }
+    wbt_rbtree_node_t *node;
+    wbt_msg_t *msg;
+      
+    for (node = wbt_rbtree_first(&channel->queue); node; node = wbt_rbtree_next(node)) {
+        msg = (wbt_msg_t *)node->value.str;
+        json_append(obj, NULL, 0, JSON_LONGLONG, &msg->msg_id, 0);
+        if( --max <= 0 ) {
+            break;
         }
     }
 }
@@ -202,21 +192,27 @@ long long int wbt_mq_channel_status_active() {
 }
 
 wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
-    wbt_msg_list_t * msg_node = wbt_mq_msg_create_node(msg->msg_id);
-    if( msg_node == NULL ) {
+    wbt_str_t key;
+    wbt_variable_to_str(msg->seq_id, key);
+    wbt_rbtree_node_t *node = wbt_rbtree_insert(&channel->queue, &key);
+    if( node == NULL ) {
+        // seq_id 重复或者内存不足
         return WBT_ERROR;
     }
     
-    wbt_list_add_tail( &msg_node->head, &channel->msg_list->head );
-    
-    channel->msg_count ++;
+    node->value.str = (char *)msg;
     
     return WBT_OK;
 }
 
-void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_list_t *msg_node) {
-    wbt_list_del(&msg_node->head);
-    wbt_mq_msg_destory_node(msg_node);
+void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
+    wbt_str_t key;
+    wbt_variable_to_str(msg->seq_id, key);
+    wbt_rbtree_node_t *node = wbt_rbtree_get(&channel->queue, &key);
+    if( node == NULL ) {
+        return;
+    }
     
-    channel->msg_count --;
+    node->value.str = NULL;
+    wbt_rbtree_delete(&channel->queue, node);
 }

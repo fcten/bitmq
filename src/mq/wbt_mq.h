@@ -93,10 +93,8 @@ typedef struct wbt_subscriber_s {
     time_t create;
     // TCP 连接上下文
     wbt_event_t * ev;
-    // 订阅频道列表
+    // 所订阅频道 ID
     struct wbt_channel_list_s * channel_list;
-    // 可投递消息队列
-    struct wbt_msg_list_s * msg_list;
     // 当前正在处理的消息 ID
     wbt_mq_id msg_id;
     // 已投递消息队列
@@ -121,9 +119,7 @@ typedef struct wbt_channel_s {
     // 订阅者数量
     unsigned int subscriber_count;
     // 消息队列
-    struct wbt_msg_list_s * msg_list;
-    // 堆积消息数量
-    unsigned int msg_count;
+    wbt_rbtree_t queue;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {
@@ -131,6 +127,8 @@ typedef struct wbt_channel_list_s {
     wbt_list_t head;
     // 消息指针
     wbt_channel_t * channel;
+    // 已处理消息序列号（小于等于该序号的消息已经被处理过）
+    wbt_mq_id seq_id;
 } wbt_channel_list_t;
 
 wbt_status wbt_mq_init();

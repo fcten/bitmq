@@ -153,7 +153,7 @@ wbt_str_t wbt_http_error_page[] = {
     wbt_string("201 Created"),
     wbt_string("202 Accepted"),
     wbt_string("203 Non-Authoritative Information"),
-    wbt_string("204 No Content"),
+    wbt_null_string,
     wbt_string("205 Reset Content"),
     wbt_string("206 Partial Content"),
     wbt_string("207 Multi-Status"),
@@ -162,7 +162,7 @@ wbt_str_t wbt_http_error_page[] = {
     wbt_string("302 Found"),
     wbt_string("302 Moved Temporarily"), // 注意：这并不是一个标准的 HTTP/1.1 状态码，只是为了兼容而添加
     wbt_string("303 See Other"),
-    wbt_string("304 Not Modified"),
+    wbt_null_string,
     wbt_string("305 Use Proxy"),
     wbt_string("307 Temporary Redirect"),
     wbt_string(  /* STATUS 400 */

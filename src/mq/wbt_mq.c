@@ -105,13 +105,6 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
     }
 
     wbt_msg_list_t *msg_node;
-    // 遍历所有未投递的消息，重新投递负载均衡消息
-    wbt_list_for_each_entry(msg_node, &subscriber->msg_list->head, head) {
-        msg = wbt_mq_msg_get(msg_node->msg_id);
-        if( msg && msg->delivery_mode == MSG_LOAD_BALANCE ) {
-            wbt_mq_msg_delivery(msg);
-        }
-    }
     // 重新投递尚未返回 ACK 响应的负载均衡消息
     wbt_list_for_each_entry(msg_node, &subscriber->delivered_list->head, head) {
         msg = wbt_mq_msg_get(msg_node->msg_id);
@@ -200,35 +193,6 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
             wbt_mq_channel_add_subscriber(channel, subscriber) != WBT_OK ) {
             http->status = STATUS_503;
             return WBT_OK;
-        }
-
-        // 遍历该频道的 msg_list
-        if( !wbt_list_empty(&channel->msg_list->head) ) {
-            wbt_msg_list_t *msg_node, *next_node = wbt_list_next_entry(channel->msg_list, head);
-            wbt_msg_t *msg;
-            do {
-                msg_node = next_node;
-                next_node = wbt_list_next_entry(next_node, head);
-                
-                msg = wbt_mq_msg_get(msg_node->msg_id);
-                if( !msg || msg->expire <= wbt_cur_mtime ) {
-                    wbt_mq_channel_del_msg(channel, msg_node);
-                    continue;
-                }
-
-                // 复制该消息到订阅者的 msg_list 中
-                wbt_msg_list_t *tmp_node = wbt_mq_msg_create_node(msg_node->msg_id);
-                if( tmp_node == NULL ) {
-                    // 内存不足，操作失败
-                    continue;
-                }
-                wbt_list_add_tail(&tmp_node->head, &subscriber->msg_list->head);
-
-                // 如果是负载均衡消息，则从 msg_list 中移除该消息
-                if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
-                    wbt_mq_channel_del_msg(channel, msg_node);
-                }
-            } while(next_node != channel->msg_list);
         }
 
     http->status = STATUS_200;
@@ -399,37 +363,45 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
     wbt_http_t * http = ev->data;
     wbt_subscriber_t *subscriber = ev->ctx;
     
-    if( ev->ctx == NULL ) {
+    if( subscriber == NULL ) {
         http->status = STATUS_404;
         return WBT_OK;
     }
     
     wbt_log_debug("subscriber %lld pull fron conn %d\n", subscriber->subscriber_id, ev->fd);
 
-    
-    // 从订阅者的 msg_list 中取出第一条消息
-    while( !wbt_list_empty( &subscriber->msg_list->head ) ) {
-        wbt_msg_list_t *msg_node = wbt_list_first_entry( &subscriber->msg_list->head, wbt_msg_list_t, head );
-        wbt_msg_t *msg = wbt_mq_msg_get(msg_node->msg_id);
-        
-        // 如果消息已过期，则忽略
-        if( !msg || msg->expire <= wbt_cur_mtime ) {
-            // 从 msg_list 中删除该消息
-            wbt_list_del( &msg_node->head );
-            wbt_mq_msg_destory_node(msg_node);
-            continue;
+    // 遍历所订阅的频道，获取可投递消息
+    wbt_channel_list_t *channel_node;
+    wbt_rbtree_node_t *node;
+    wbt_msg_t *msg = NULL;
+    wbt_str_t key;
+    wbt_list_for_each_entry(channel_node, &subscriber->channel_list->head, head) {
+        wbt_variable_to_str(channel_node->seq_id, key);
+        node = wbt_rbtree_get_greater(&channel_node->channel->queue, &key);
+        if( node ) {
+            msg = (wbt_msg_t *)node->value.str;
+            break;
         }
+    }
 
+    if(msg) {
         http->resp_body_memory.str = wbt_strdup(msg->data, msg->data_len);
         if( http->resp_body_memory.str == NULL ) {
-            continue;
+            http->status = STATUS_503;
+            return WBT_OK;
         }
         http->status = STATUS_200;
         http->resp_body_memory.len = msg->data_len;
+        
+        // 如果是负载均衡消息，则从该频道中暂时移除该消息，以被免重复处理
+        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+            // 消息本身不能被释放
+            node->value.str = NULL;
+            wbt_rbtree_delete(&channel_node->channel->queue, node);
+        }
 
-        // 从 msg_list 中删除该消息
-        wbt_list_del( &msg_node->head );
-        wbt_mq_msg_destory_node(msg_node);
+        // 更新消息处理进度
+        channel_node->seq_id = msg->seq_id;
         
         // 保存当前正在处理的消息指针
         subscriber->msg_id = msg->msg_id;

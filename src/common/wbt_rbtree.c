@@ -18,15 +18,13 @@
  * 5）对每个结点，从该结点到其子孙结点的所有路径上包含相同数目的黑结点。
  */
 
-/* 这是一个通用的叶节点 */
-wbt_rbtree_node_t wbt_rbtree_node_nil_s = {
-    &wbt_rbtree_node_nil_s,
-    &wbt_rbtree_node_nil_s,
-    (unsigned long int)&wbt_rbtree_node_nil_s,
-    {0, NULL},
-    {0, NULL}
-};
-wbt_rbtree_node_t *wbt_rbtree_node_nil = &wbt_rbtree_node_nil_s;
+static inline void wbt_rbtree_set_parent(wbt_rbtree_node_t *node, wbt_rbtree_node_t *parent) {  
+    node->parent_color = (node->parent_color & 3) | (unsigned long int)parent;  
+}
+
+static inline void wbt_rbtree_set_color(wbt_rbtree_node_t *node, wbt_rbtree_color color) {
+    node->parent_color = (node->parent_color & ~1) | color;
+}
 
 static inline void wbt_rbtree_left_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {
     wbt_rbtree_node_t  *temp;
@@ -34,7 +32,7 @@ static inline void wbt_rbtree_left_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t *
     temp = node->right;
     node->right = temp->left;
 
-    if (temp->left != wbt_rbtree_node_nil) {
+    if (temp->left) {
         wbt_rbtree_set_parent(temp->left, node);
     }
 
@@ -58,7 +56,7 @@ static inline void wbt_rbtree_right_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t 
     temp = node->left;
     node->left = temp->right;
 
-    if (temp->right != wbt_rbtree_node_nil) {
+    if (temp->right) {
         wbt_rbtree_set_parent(temp->right, node);
     }
 
@@ -78,11 +76,11 @@ static inline void wbt_rbtree_right_rotate(wbt_rbtree_t *rbt, wbt_rbtree_node_t 
 
 /* 寻找 node 的中序后继 */
 static wbt_rbtree_node_t * wbt_rbtree_successor( wbt_rbtree_t * rbt, wbt_rbtree_node_t * node ) {
-    if( node->right != wbt_rbtree_node_nil ) { 
+    if( node->right ) { 
         /* 如果 node 的右子树不为空，那么为右子树中最左边的结点 */
         wbt_rbtree_node_t * q = node->right; 
         wbt_rbtree_node_t * p = node->right; 
-        while( p->left != wbt_rbtree_node_nil ) { 
+        while( p->left ) { 
             q = p; 
             p = p->left; 
         } 
@@ -90,7 +88,7 @@ static wbt_rbtree_node_t * wbt_rbtree_successor( wbt_rbtree_t * rbt, wbt_rbtree_
     } else {
         /* 如果 node 的右子树为空，那么 node 的后继为 node 的所有祖先中为左子树的祖先 */
         wbt_rbtree_node_t * y = wbt_rbtree_parent(node); 
-        while( y != wbt_rbtree_node_nil && node == y->right ) { 
+        while( y && node == y->right ) { 
             node = y; 
             y = wbt_rbtree_parent(y); 
         }
@@ -156,7 +154,7 @@ void wbt_rbtree_insert_fixup(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {
 void wbt_rbtree_init(wbt_rbtree_t *rbt) {
     /*rbt->max = 1024;*/
     rbt->size = 0;
-    rbt->root = wbt_rbtree_node_nil;
+    rbt->root = NULL;
 }
 
 wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
@@ -175,11 +173,11 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
         return NULL;
     }
 
-    tmp_node->left = tmp_node->right = wbt_rbtree_node_nil;
-    wbt_rbtree_set_parent(tmp_node, wbt_rbtree_node_nil);
+    tmp_node->left = tmp_node->right = NULL;
+    wbt_rbtree_set_parent(tmp_node, NULL);
     wbt_rbtree_set_red(tmp_node);
 
-    if( rbt->root == wbt_rbtree_node_nil ) {
+    if( rbt->root == NULL ) {
         rbt->root = tmp_node;
     } else {
         tail_node = rbt->root;
@@ -189,7 +187,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
                 /* 键值已经存在 */
                 return NULL;
             } else if( ret > 0 ) {
-                if( tail_node->right != wbt_rbtree_node_nil ) {
+                if( tail_node->right ) {
                     tail_node = tail_node->right;
                 } else {
                     /* 找到了插入位置 */
@@ -198,7 +196,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
                     break;
                 }
             } else {
-                if( tail_node->left != wbt_rbtree_node_nil ) {
+                if( tail_node->left ) {
                     tail_node = tail_node->left;
                 } else {
                     /* 找到了插入位置 */
@@ -289,7 +287,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     wbt_rbtree_node_t * y; // 将要被删除的结点 
     wbt_rbtree_node_t * x; // 将要被删除的结点的唯一儿子 
     
-    if( node->left == wbt_rbtree_node_nil || node->right == wbt_rbtree_node_nil ) {
+    if( node->left == NULL || node->right == NULL ) {
         // 如果 node 有一个子树为空的话，那么将直接删除 node,即 y 指向 node
         y = node;
     } else {
@@ -298,7 +296,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
         y = wbt_rbtree_successor(rbt, node);  
     }
 
-    if( y->left != wbt_rbtree_node_nil ) {
+    if( y->left ) {
         // 如果y的左子树不为空，则 x 指向 y 的左子树 
         x = y->left; 
     } else { 
@@ -306,9 +304,11 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     }
 
     // 将原来 y 的父母设为 x 的父母，y 即将被删除
-    wbt_rbtree_set_parent(x, wbt_rbtree_parent(y));
+    if(x) {
+        wbt_rbtree_set_parent(x, wbt_rbtree_parent(y));
+    }
 
-    if( wbt_rbtree_parent(y) == wbt_rbtree_node_nil ) { 
+    if( wbt_rbtree_parent(y) == NULL ) { 
         rbt->root = x; 
     } else { 
         if( y == wbt_rbtree_parent(y)->left ) { 
@@ -332,7 +332,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
         y->value.len = 0;
     }
 
-    if( wbt_rbtree_is_black(y) ) {
+    if( x && wbt_rbtree_is_black(y) ) {
         // 如果被删除的结点 y 的颜色为黑色，那么可能会导致树违背性质4,导致某条路径上少了一个黑色 
         wbt_rbtree_delete_fixup(rbt, x); 
     }
@@ -354,7 +354,7 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
     
     node = rbt->root;
     
-    while(node != wbt_rbtree_node_nil) {
+    while(node) {
         ret = wbt_strcmp(key, &node->key);
         if(ret == 0) {
             return node;
@@ -377,22 +377,148 @@ void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key) {
     }
 }
 
-wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key);
+// 获取一个小于 key 的最大的值
+wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key) {
+    wbt_rbtree_node_t *node, *ret = NULL;
+    
+    node = rbt->root;
+    
+    while(node) {
+        if(wbt_strcmp(&node->key, key) >= 0) {
+            node = node->left;
+        } else {
+            ret = node;
+            node = node->right;
+        }
+    }
+    
+    return ret;
+}
 
+// 获取一个小于等于 key 的最大的值
+wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key) {
+    wbt_rbtree_node_t *node, *ret = NULL;
+    
+    node = rbt->root;
+    
+    while(node) {
+        if(wbt_strcmp(&node->key, key) > 0) {
+            node = node->left;
+        } else {
+            ret = node;
+            node = node->right;
+        }
+    }
+    
+    return ret;
+}
+
+// 获取一个大于 key 的最小的值
+wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key) {
+    wbt_rbtree_node_t *node, *ret = NULL;
+    
+    node = rbt->root;
+    
+    while(node) {
+        if(wbt_strcmp(&node->key, key) > 0) {
+            wbt_log_debug("%lld > %lld\n", (*(unsigned long long int *)node->key.str), (*(unsigned long long int *)key->str));
+            ret = node;
+            node = node->left;
+        } else {
+            wbt_log_debug("%lld <= %lld\n", (*(unsigned long long int *)node->key.str), (*(unsigned long long int *)key->str));
+            node = node->right;
+        }
+    }
+    
+    wbt_log_debug("============\n");
+    wbt_log_debug("bigger than %lld\n", (*(unsigned long long int *)key->str));
+    wbt_rbtree_print(rbt->root);
+    if(ret) {
+        wbt_log_debug("return %lld\n", (*(unsigned long long int *)ret->key.str));
+    }
+    wbt_log_debug("============\n");
+    
+    return ret;
+}
+
+// 获取一个大于等于 key 的最小的值
+wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key) {
+    wbt_rbtree_node_t *node, *ret = NULL;
+    
+    node = rbt->root;
+    
+    while(node) {
+        if(wbt_strcmp(&node->key, key) >= 0) {
+            ret = node;
+            node = node->left;
+        } else {
+            node = node->right;
+        }
+    }
+    
+    return ret;
+}
+
+wbt_rbtree_node_t * wbt_rbtree_first(const wbt_rbtree_t *rbt) {
+    wbt_rbtree_node_t *n = rbt->root;  
+
+    if(n == NULL) {
+        return NULL;
+    }
+
+    while (n->left) { 
+        n = n->left;
+    }
+
+    return n;  
+}  
+  
+wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node) {
+    wbt_rbtree_node_t *parent;  
+  
+    if (wbt_rbtree_parent(node) == node) {
+        return NULL;
+    }
+  
+    /* If we have a right-hand child, go down and then left as far 
+       as we can. */  
+    if (node->right) {  
+        node = node->right;   
+        while (node->left) {  
+            node = node->left;
+        }
+        return (wbt_rbtree_node_t *)node;
+    }  
+  
+    /* No right-hand children.  Everything down and left is 
+       smaller than us, so any 'next' node must be in the general 
+       direction of our parent. Go up the tree; any time the 
+       ancestor is a right-hand child of its parent, keep going 
+       up. First time it's a left-hand child of its parent, said 
+       parent is our 'next' node. */  
+    while ((parent = wbt_rbtree_parent(node)) && node == parent->right) {
+        node = parent;
+    }
+  
+    return parent;  
+}
 
 void wbt_rbtree_print(wbt_rbtree_node_t *node) {
-    if(node != wbt_rbtree_node_nil) {
+    if(node) {
         wbt_rbtree_print(node->left);
-        wbt_log_debug("%.*s\n", node->key.len, (char *)node->key.str);
+        if( node->key.len == 4 ) {
+            wbt_log_debug("%u\n", (*(unsigned int *)node->key.str));
+        } else if( node->key.len == 8 ) {
+            wbt_log_debug("%lld\n", (*(unsigned long long int *)node->key.str));
+        } else {
+            wbt_log_debug("%.*s\n", node->key.len, (char *)node->key.str);
+        }
         wbt_rbtree_print(node->right);
     }
 }
 
 void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
-    if(node != wbt_rbtree_node_nil) {
+    if(node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
         
@@ -404,13 +530,12 @@ void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
 
 void wbt_rbtree_destroy(wbt_rbtree_t *rbt) {
     wbt_rbtree_destroy_recursive(rbt->root);
-    
-    rbt->max = 0;
+
     rbt->size = 0;
 }
 
 void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
-    if(node != wbt_rbtree_node_nil) {
+    if(node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
         
@@ -423,6 +548,5 @@ void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
 void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt) {
     wbt_rbtree_destroy_recursive_ignore_value(rbt->root);
     
-    rbt->max = 0;
     rbt->size = 0;
 }

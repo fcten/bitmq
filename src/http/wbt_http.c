@@ -391,6 +391,7 @@ wbt_status wbt_http_on_close( wbt_event_t *ev ) {
 
         /* 释放读入内存的文件内容 */
         wbt_free( http->resp_body_memory.str );
+        wbt_free( http->resp_body_gzip.str );
     }
     
     /* 释放 http 结构体本身 */

@@ -33,22 +33,14 @@ typedef struct wbt_rbtree_node_s {
 
 #define wbt_rbtree_parent(r)   ((wbt_rbtree_node_t *)((r)->parent_color & ~3))
 #define wbt_rbtree_color(r)    ((r)->parent_color & 1)
-#define wbt_rbtree_is_red(r)   (!wbt_rbtree_color(r))
-#define wbt_rbtree_is_black(r) wbt_rbtree_color(r)
+#define wbt_rbtree_is_red(r)   (r?!wbt_rbtree_color(r):0)
+#define wbt_rbtree_is_black(r) (r? wbt_rbtree_color(r):1)
 #define wbt_rbtree_set_red(r)  do { (r)->parent_color &= ~1; } while (0)
 #define wbt_rbtree_set_black(r)  do { (r)->parent_color |= 1; } while (0)
-
-static inline void wbt_rbtree_set_parent(wbt_rbtree_node_t *node, wbt_rbtree_node_t *parent) {  
-    node->parent_color = (node->parent_color & 3) | (unsigned long int)parent;  
-}  
-static inline void wbt_rbtree_set_color(wbt_rbtree_node_t *node, wbt_rbtree_color color) {
-    node->parent_color = (node->parent_color & ~1) | color;
-}  
 
 typedef struct wbt_rbtree_s {
     wbt_rbtree_node_t * root;
     unsigned int size;
-    unsigned int max;
 } wbt_rbtree_t;
 
 void wbt_rbtree_init(wbt_rbtree_t *rbt);
@@ -68,6 +60,9 @@ wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t
 
 void wbt_rbtree_destroy(wbt_rbtree_t *rbt);
 void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt);
+
+wbt_rbtree_node_t * wbt_rbtree_first(const wbt_rbtree_t *rbt);
+wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node);
 
 #ifdef	__cplusplus
 }
