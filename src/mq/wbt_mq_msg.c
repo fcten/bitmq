@@ -169,6 +169,11 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
             }
         }
     } else if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        if( wbt_list_empty( &channel->subscriber_list->head ) ) {
+            // 频道没有任何订阅者
+            return WBT_OK;
+        }
+
         // 负载均衡模式，通知订阅队列中的第一个订阅者获取该消息
         wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
