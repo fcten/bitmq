@@ -91,36 +91,14 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* 如果存在 response，发送 response */
     if( http->resp_header.len - http->header_offset > 0 ) {
         n = http->resp_header.len - http->header_offset; 
-        nwrite = wbt_ssl_write(ev, http->resp_header.str + http->header_offset, n);
+        nwrite = wbt_send(ev, http->resp_header.str + http->header_offset, n);
 
-        if (nwrite == -1) {
-            if( wbt_conf.secure ) {
-                int err = wbt_ssl_get_error(ev, nwrite);
-                switch(err) {
-                    case SSL_ERROR_WANT_WRITE:
-                        wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                        break;
-                    case SSL_ERROR_WANT_READ:
-                        wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                        return WBT_ERROR;
-                    case SSL_ERROR_SYSCALL:
-                        wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                        return WBT_ERROR;
-                    default:
-                        wbt_log_debug("%d\n", err);
-                        return WBT_ERROR;
-                }
+        if (nwrite <= 0) {
+            if( errno == EAGAIN ) {
+                return WBT_OK;
             } else {
-                if( errno != EAGAIN ) {
-                    /* 这里数据发送失败了，但应当返回 WBT_OK。这个函数的返回值
-                     * 仅用于判断是否发生了必须重启工作进程的严重错误。
-                     * 如果模块需要处理数据发送失败的错误，必须根据 state 在 on_close 回调中处理。
-                     */
-                    return WBT_ERROR;
-                }
+                return WBT_ERROR;
             }
-            
-            return WBT_OK;
         }
 
         http->header_offset += nwrite;
@@ -135,181 +113,50 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     if( http->bit_flag & WBT_HTTP_GZIP ) {
         if( http->resp_body_gzip.str && http->resp_body_gzip.len > http->body_offset ) {
             n = http->resp_body_gzip.len - http->body_offset;
-
-            nwrite = wbt_ssl_write(ev, http->resp_body_gzip.str + http->body_offset, n);
-            if( nwrite >= 0 ) {
-                http->body_offset += nwrite;
-            }
-
-            if (nwrite == -1) {
-                if( wbt_conf.secure ) {
-                    int err = wbt_ssl_get_error(ev, nwrite);
-                    switch(err) {
-                        case SSL_ERROR_WANT_WRITE:
-                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                            break;
-                        case SSL_ERROR_WANT_READ:
-                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                            return WBT_ERROR;
-                        case SSL_ERROR_SYSCALL:
-                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                            return WBT_ERROR;
-                        default:
-                            return WBT_ERROR;
-                    }
-                } else {
-                    if( errno != EAGAIN ) {
-                        /* 连接被意外关闭，同上 */
-                        return WBT_ERROR;
-                    }
-                }
-
-                return WBT_OK;
-            }
-
-            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-            if( n > nwrite ) {
-                /* 尚未发送完，缓冲区满 */
-                return WBT_OK;
-            }
+            nwrite = wbt_send(ev, http->resp_body_gzip.str + http->body_offset, n);
         } else if( http->resp_body_file && http->resp_body_file->gzip_size > http->body_offset ) {
-            // 在非阻塞模式下，对于大量数据，每次只能发送一部分
-            // 需要在未发送完成前继续监听可写事件
             n = http->resp_body_file->gzip_size - http->body_offset;
-
-            if( http->resp_body_file->gzip_ptr != NULL ) {
-                // 需要发送的数据已经在内存中
-                nwrite = wbt_ssl_write(ev, http->resp_body_file->gzip_ptr + http->body_offset, n);
-                if( nwrite >= 0 ) {
-                    http->body_offset += nwrite;
-                }
-            } else {
-                nwrite = n = 0;
-            }
-
-            if (nwrite == -1) {
-                if( wbt_conf.secure ) {
-                    int err = wbt_ssl_get_error(ev, nwrite);
-                    switch(err) {
-                        case SSL_ERROR_WANT_WRITE:
-                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                            break;
-                        case SSL_ERROR_WANT_READ:
-                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                            return WBT_ERROR;
-                        case SSL_ERROR_SYSCALL:
-                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                            return WBT_ERROR;
-                        default:
-                            return WBT_ERROR;
-                    }
-                } else {
-                    if( errno != EAGAIN ) {
-                        /* 连接被意外关闭，同上 */
-                        return WBT_ERROR;
-                    }
-                }
-
-                return WBT_OK;
-            }
-
-            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-            if( n > nwrite ) {
-                /* 尚未发送完，缓冲区满 */
-                return WBT_OK;
-            }
+            nwrite = wbt_send(ev, http->resp_body_file->gzip_ptr + http->body_offset, n);
+        } else {
+            goto send_complete;
         }
     } else {
         if( http->resp_body_memory.str && http->resp_body_memory.len > http->body_offset ) {
             n = http->resp_body_memory.len - http->body_offset;
-
-            nwrite = wbt_ssl_write(ev, http->resp_body_memory.str + http->body_offset, n);
-            if( nwrite >= 0 ) {
-                http->body_offset += nwrite;
-            }
-
-            if (nwrite == -1) {
-                if( wbt_conf.secure ) {
-                    int err = wbt_ssl_get_error(ev, nwrite);
-                    switch(err) {
-                        case SSL_ERROR_WANT_WRITE:
-                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                            break;
-                        case SSL_ERROR_WANT_READ:
-                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                            return WBT_ERROR;
-                        case SSL_ERROR_SYSCALL:
-                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                            return WBT_ERROR;
-                        default:
-                            return WBT_ERROR;
-                    }
-                } else {
-                    if( errno != EAGAIN ) {
-                        /* 连接被意外关闭，同上 */
-                        return WBT_ERROR;
-                    }
-                }
-
-                return WBT_OK;
-            }
-
-            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-            if( n > nwrite ) {
-                /* 尚未发送完，缓冲区满 */
-                return WBT_OK;
-            }
+            nwrite = wbt_send(ev, http->resp_body_memory.str + http->body_offset, n);
         } else if( http->resp_body_file && http->resp_body_file->size > http->body_offset ) {
-            // 在非阻塞模式下，对于大量数据，每次只能发送一部分
-            // 需要在未发送完成前继续监听可写事件
             n = http->resp_body_file->size - http->body_offset;
-
             if( http->resp_body_file->ptr != NULL ) {
-                // 需要发送的数据已经在内存中
-                nwrite = wbt_ssl_write(ev, http->resp_body_file->ptr + http->body_offset, n);
-                if( nwrite >= 0 ) {
-                    http->body_offset += nwrite;
-                }
+                nwrite = wbt_send(ev, http->resp_body_file->ptr + http->body_offset, n);
             } else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
-                // 需要发送的数据不在内存中，但是指定了需要发送的文件
                 nwrite = sendfile( ev->fd, http->resp_body_file->fd, &http->body_offset, n );
-            } else {
-                nwrite = n = 0;
-            }
-
-            if (nwrite == -1) {
-                if( wbt_conf.secure ) {
-                    int err = wbt_ssl_get_error(ev, nwrite);
-                    switch(err) {
-                        case SSL_ERROR_WANT_WRITE:
-                            wbt_log_debug("SSL_ERROR_WANT_WRITE\n");
-                            break;
-                        case SSL_ERROR_WANT_READ:
-                            wbt_log_debug("SSL_ERROR_WANT_READ\n");
-                            return WBT_ERROR;
-                        case SSL_ERROR_SYSCALL:
-                            wbt_log_debug("SSL_ERROR_SYSCALL\n");
-                            return WBT_ERROR;
-                        default:
-                            return WBT_ERROR;
-                    }
-                } else {
-                    if( errno != EAGAIN ) {
-                        /* 连接被意外关闭，同上 */
-                        return WBT_ERROR;
-                    }
+                if( nwrite > 0 ) {
+                    http->body_offset -= nwrite;
                 }
-
-                return WBT_OK;
+            } else {
+                return WBT_ERROR;
             }
-
-            //wbt_log_debug("%d send, %d remain.\n", nwrite, n - nwrite);
-            if( n > nwrite ) {
-                /* 尚未发送完，缓冲区满 */
-                return WBT_OK;
-            }
+        } else {
+            goto send_complete;
         }
     }
+
+    if (nwrite <= 0) {
+        if( errno == EAGAIN ) {
+            return WBT_OK;
+        } else {
+            return WBT_ERROR;
+        }
+    }
+
+    http->body_offset += nwrite;
+
+    if( n > nwrite ) {
+        /* 尚未发送完，缓冲区满 */
+        return WBT_OK;
+    }
+    
+send_complete:
     
     /* 所有数据发送完毕 */
     http->state = STATE_SEND_COMPLETED;

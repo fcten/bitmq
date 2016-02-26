@@ -43,6 +43,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev);
 wbt_status wbt_on_send(wbt_event_t *ev);
 //wbt_status wbt_on_close(wbt_event_t *ev);
 
+ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len);
+ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len);
+
 wbt_status wbt_conn_close_listen();
 
 #ifdef	__cplusplus

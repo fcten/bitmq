@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/bmtp/wbt_bmtp.o \
 	${OBJECTDIR}/src/common/wbt_config.o \
 	${OBJECTDIR}/src/common/wbt_connection.o \
 	${OBJECTDIR}/src/common/wbt_crc.o \
@@ -89,6 +90,11 @@ LDLIBSOPTIONS=
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/webit ${OBJECTFILES} ${LDLIBSOPTIONS} -lssl -lcrypto -ldl -lz
+
+${OBJECTDIR}/src/bmtp/wbt_bmtp.o: src/bmtp/wbt_bmtp.c 
+	${MKDIR} -p ${OBJECTDIR}/src/bmtp
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/bmtp/wbt_bmtp.o src/bmtp/wbt_bmtp.c
 
 ${OBJECTDIR}/src/common/wbt_config.o: src/common/wbt_config.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common

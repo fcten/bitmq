@@ -205,22 +205,6 @@ wbt_status wbt_ssl_on_close( wbt_event_t * ev ) {
     return WBT_OK;
 }
 
-int wbt_ssl_read(wbt_event_t *ev, void *buf, int num) {
-    if( wbt_conf.secure ) {
-        return SSL_read(ev->ssl, buf, num);
-    } else {
-        return recv(ev->fd, buf, num, 0);
-    }
-}
-
-int wbt_ssl_write(wbt_event_t *ev, const void *buf, int num) {
-    if( wbt_conf.secure ) {
-        return SSL_write(ev->ssl, buf, num);
-    } else {
-        return send(ev->fd, buf, num, 0);
-    }
-}
-
 int wbt_ssl_ecdh_curve() {
 #if OPENSSL_VERSION_NUMBER >= 0x0090800fL
 #ifndef OPENSSL_NO_ECDH
@@ -255,8 +239,4 @@ int wbt_ssl_ecdh_curve() {
 #endif
 
     return WBT_OK;
-}
-
-int wbt_ssl_get_error(wbt_event_t *ev, int ret) {
-    return SSL_get_error(ev->ssl, ret);
 }

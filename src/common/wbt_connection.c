@@ -166,16 +166,14 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         void * p = wbt_realloc(ev->buff, ev->buff_len + 4096);
         if( p == NULL ) {
             /* 内存不足 */
-            wbt_conn_close(ev);
-
-            return WBT_OK;
+            break;
         } else {
             ev->buff = p;
             ev->buff_len += 4096;
         }
 
-        nread = wbt_ssl_read(ev, ev->buff + ev->buff_len - 4096, 4096);
-        if(nread < 0) {
+        nread = wbt_recv(ev, ev->buff + ev->buff_len - 4096, 4096);
+        if(nread <= 0) {
             if(errno == EAGAIN) {
                 // 当前缓冲区已无数据可读
                 bReadOk = 1;
@@ -188,28 +186,16 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             } else if (errno == ECONNRESET) {
                 // 对方发送了RST
                 break;
-            } else if (errno == EINTR) {
-                // 被信号中断
-                continue;
             } else {
                 // 其他不可弥补的错误
                 break;
             }
-        } else if( nread == 0) {
-            // 这里表示对端的socket已正常关闭.发送过FIN了。
-            break;
-        }
-
-       if ( nread > 0) {
+        } else {
             /* 去除多余的缓冲区 */
             ev->buff = wbt_realloc(ev->buff, ev->buff_len - 4096 + nread);
             ev->buff_len = ev->buff_len - 4096 + nread;
             
            continue;   // 需要再次读取
-       } else {
-           // 安全读完
-           bReadOk = 1;
-           break; // 退出while(1),表示已经全部读完数据
        }
     }
 
@@ -263,4 +249,75 @@ wbt_status wbt_setnonblocking(int sock) {
     }
     
     return WBT_OK;
+}
+
+ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
+    int ret;
+    int err;
+    char ebuf[256];
+    unsigned long e;
+
+    errno = 0;
+
+    if(ev->ssl) {
+        ret = SSL_read(ev->ssl, buf, len);
+        if(ret <= 0) {
+            err = SSL_get_error(ev->ssl, ret);
+            if(err == SSL_ERROR_WANT_READ) {
+                ret = -1;
+                errno = EAGAIN;
+            } else if(err == SSL_ERROR_WANT_WRITE) {
+                ret = -1;
+                //ev->want_write = true;
+                errno = EAGAIN;
+            } else {
+                e = ERR_get_error();
+                while(e){
+                    wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
+                    e = ERR_get_error();
+                }
+                errno = EPROTO;
+            }
+        }
+        return (ssize_t )ret;
+    }else{
+        /* Call normal read/recv */
+        return recv(ev->fd, buf, len, 0);
+    }
+}
+
+ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len) {
+    int ret;
+    int err;
+    char ebuf[256];
+    unsigned long e;
+
+    errno = 0;
+
+    if(ev->ssl){
+        //ev->want_write = false;
+        ret = SSL_write(ev->ssl, buf, len);
+        if(ret < 0){
+            err = SSL_get_error(ev->ssl, ret);
+            if(err == SSL_ERROR_WANT_READ){
+                ret = -1;
+                errno = EAGAIN;
+            }else if(err == SSL_ERROR_WANT_WRITE){
+                ret = -1;
+                //mosq->want_write = true;
+                errno = EAGAIN;
+            }else{
+                e = ERR_get_error();
+                while(e){
+                    wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
+                    e = ERR_get_error();
+                }
+                errno = EPROTO;
+            }
+        }
+        return (ssize_t )ret;
+    }else{
+        /* Call normal write/send */
+        return send(ev->fd, buf, len, 0);
+    }
 }

@@ -22,11 +22,6 @@ wbt_status wbt_ssl_exit();
 wbt_status wbt_ssl_on_conn( wbt_event_t *ev );
 wbt_status wbt_ssl_on_close( wbt_event_t *ev );
 
-int wbt_ssl_read(wbt_event_t *ev, void *buf, int num);
-int wbt_ssl_write(wbt_event_t *ev, const void *buf, int num);
-
-int wbt_ssl_get_error(wbt_event_t *ev, int ret);
-
 #ifdef	__cplusplus
 }
 #endif
