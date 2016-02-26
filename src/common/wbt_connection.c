@@ -111,7 +111,7 @@ wbt_status wbt_conn_close(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_on_connect(wbt_event_t *ev) {
+wbt_status wbt_on_accept(wbt_event_t *ev) {
     struct sockaddr_in remote;
     int conn_sock, addrlen = sizeof(remote);
 #ifdef WBT_USE_ACCEPT4

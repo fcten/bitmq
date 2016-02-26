@@ -277,7 +277,7 @@ wbt_status wbt_event_dispatch() {;
 
     wbt_event_t listen_ev;
     listen_ev.on_timeout = NULL;
-    listen_ev.on_recv = wbt_on_connect;
+    listen_ev.on_recv = wbt_on_accept;
     listen_ev.on_send = NULL;
     listen_ev.events = EPOLLIN | EPOLLET;
     listen_ev.fd = listen_fd;

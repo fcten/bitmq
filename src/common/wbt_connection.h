@@ -38,7 +38,7 @@ wbt_status wbt_conn_init();
 wbt_status wbt_conn_close(wbt_event_t *ev);
 wbt_status wbt_conn_cleanup();
 
-wbt_status wbt_on_connect(wbt_event_t *ev);
+wbt_status wbt_on_accept(wbt_event_t *ev);
 wbt_status wbt_on_recv(wbt_event_t *ev);
 wbt_status wbt_on_send(wbt_event_t *ev);
 //wbt_status wbt_on_close(wbt_event_t *ev);
