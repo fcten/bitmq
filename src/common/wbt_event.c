@@ -28,10 +28,7 @@ extern wbt_atomic_t wbt_wating_to_exit, wbt_connection_count;
 int wbt_lock_accept;
 
 /* 事件队列 */
-wbt_event_pool_t wbt_events;
-
-/* 事件超时队列 */
-wbt_heap_t timeout_events;
+static wbt_event_pool_t wbt_events;
 
 /* 初始化事件队列 */
 wbt_status wbt_event_init() {
@@ -55,13 +52,6 @@ wbt_status wbt_event_init() {
     for(i=0 ; i<WBT_EVENT_LIST_SIZE ; i++) {
         wbt_events.available[i] = wbt_events.node.pool + i;
     }
-
-    /* 初始化事件超时队列 */
-    if(wbt_heap_init(&timeout_events, WBT_EVENT_LIST_SIZE) != WBT_OK) {
-        wbt_log_add("create heap failed\n");
-
-        return WBT_ERROR;
-    }
     
     /* 根据端口号创建锁文件 */
     wbt_str_t lock_file;
@@ -81,21 +71,9 @@ wbt_status wbt_event_init() {
 
     return WBT_OK;
 }
-    
-/* 程序退出前执行所有尚未触发的超时事件 */
+
 wbt_status wbt_event_exit() {
-    if(timeout_events.size > 0) {
-        wbt_event_t *p = wbt_heap_get(&timeout_events);
-        while(timeout_events.size > 0) {
-            /* 移除超时事件 */
-            wbt_heap_delete(&timeout_events);
-            /* 尝试调用回调函数 */
-            if( p->on_timeout != NULL ) {
-                p->on_timeout(p);
-            }
-            p = wbt_heap_get(&timeout_events);
-        }
-    }
+    // 可以在这里删除所有残留事件
     
     return WBT_OK;
 }
@@ -153,12 +131,14 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     wbt_event_t *t = *(wbt_events.available + wbt_events.top);
     wbt_events.top --;
     
-    t->fd         = ev->fd;
-    t->on_timeout = ev->on_timeout;
-    t->on_recv    = ev->on_recv;
-    t->on_send    = ev->on_send;
-    t->timeout    = ev->timeout;
-    t->events     = ev->events;
+    t->fd      = ev->fd;
+    t->on_recv = ev->on_recv;
+    t->on_send = ev->on_send;
+    t->events  = ev->events;
+    
+    t->timer.heap_idx   = 0;
+    t->timer.on_timeout = ev->timer.on_timeout;
+    t->timer.timeout    = ev->timer.timeout;
 
     t->buff = NULL;
     t->buff_len = 0;
@@ -178,10 +158,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     }
     
     /* 如果存在超时时间，添加到超时队列中 */
-    if(t->timeout > wbt_cur_mtime) {
-        if(wbt_heap_insert(&timeout_events, t) != WBT_OK) {
-            return NULL;
-        }
+    if(wbt_timer_add(&t->timer) != WBT_OK) {
+        return NULL;
     }
 
     return t;
@@ -203,9 +181,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     wbt_events.available[wbt_events.top] = ev;
 
     /* 删除超时事件 */
-    if( ev->heap_idx ) {
-        wbt_heap_remove(&timeout_events, ev->heap_idx);
-    }
+    wbt_timer_del(&ev->timer);
     
     /* 释放可能存在的事件数据缓存 */
     wbt_free(ev->buff);
@@ -244,15 +220,11 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
     }
     
     /* 删除超时事件 */
-    if( ev->heap_idx ) {
-        wbt_heap_remove(&timeout_events, ev->heap_idx);
-    }
+    wbt_timer_del(&ev->timer);
 
     /* 如果存在超时时间，重新添加到超时队列中 */
-    if(ev->timeout > wbt_cur_mtime) {
-        if(wbt_heap_insert(&timeout_events, ev) != WBT_OK) {
-            return WBT_ERROR;
-        }
+    if(wbt_timer_add(&ev->timer) != WBT_OK) {
+        return WBT_ERROR;
     }
     
     return WBT_OK;
@@ -276,12 +248,12 @@ wbt_status wbt_event_dispatch() {;
     }
 
     wbt_event_t listen_ev;
-    listen_ev.on_timeout = NULL;
+    wbt_memset(&listen_ev, 0, sizeof(wbt_event_t));
+
     listen_ev.on_recv = wbt_on_accept;
     listen_ev.on_send = NULL;
     listen_ev.events = EPOLLIN | EPOLLET;
     listen_ev.fd = listen_fd;
-    listen_ev.timeout = 0;
     
     if( wbt_conf.process == 1 ) {
         //wbt_log_debug("add listen event\n");
@@ -378,7 +350,7 @@ wbt_status wbt_event_dispatch() {;
             if( ev->fd == listen_fd ) {
                 continue;
             } else if (events[i].events & EPOLLRDHUP) {
-                wbt_conn_close(ev);
+                wbt_on_close(ev);
             } else if ((events[i].events & EPOLLIN) && ev->on_recv) {
                 if( ev->on_recv(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_recv);
@@ -392,24 +364,9 @@ wbt_status wbt_event_dispatch() {;
             }
         }
         
-        /* 删除超时事件 */
-        if(timeout_events.size > 0) {
-            wbt_event_t *p = wbt_heap_get(&timeout_events);
-            while(p && p->timeout <= wbt_cur_mtime ) {
-                /* 移除超时事件 */
-                wbt_heap_delete(&timeout_events);
-                /* 尝试调用回调函数 */
-                if(p->on_timeout != NULL) {
-                    p->on_timeout(p);
-                }
-                p = wbt_heap_get(&timeout_events);
-            }
-            if(timeout_events.size > 0) {
-                timeout = p->timeout - wbt_cur_mtime;
-            } else {
-                timeout = -1;
-            }
-        } else {
+        /* 检查并执行超时事件 */
+        timeout = wbt_timer_process();
+        if( timeout == 0 ) {
             timeout = -1;
         }
     }

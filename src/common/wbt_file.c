@@ -47,7 +47,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
     }
 }
 
-wbt_status wbt_file_cleanup(wbt_event_t *ev) {
+wbt_status wbt_file_cleanup(wbt_timer_t *timer) {
     //wbt_log_debug("opened fd before cleanup: %d\n", wbt_file_rbtree.size);
     
     // TODO 遍历所有文件可能会花费过多的时间
@@ -58,9 +58,9 @@ wbt_status wbt_file_cleanup(wbt_event_t *ev) {
 
     if(!wbt_wating_to_exit) {
         /* 重新注册定时事件 */
-        ev->timeout = wbt_cur_mtime + 10000;
+        timer->timeout = wbt_cur_mtime + 10000;
 
-        if(wbt_event_mod(ev) != WBT_OK) {
+        if(wbt_timer_mod(timer) != WBT_OK) {
             return WBT_ERROR;
         }
     }
@@ -77,13 +77,12 @@ wbt_status wbt_file_init() {
     wbt_rbtree_init(&wbt_file_rbtree);
 
     /* 添加一个定时任务用以清理过期的文件句柄 */
-    wbt_event_t tmp_ev;
-    tmp_ev.on_timeout = wbt_file_cleanup;
-    tmp_ev.fd = -1;
-    /* tmp_ev.events = 0; // fd 大于等于 0 时该属性才有意义 */
-    tmp_ev.timeout = wbt_cur_mtime + 10000;
+    wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
+    timer->on_timeout  = wbt_file_cleanup;
+    timer->timeout     = wbt_cur_mtime + 10000;
+    timer->heap_idx    = 0;
 
-    if(wbt_event_add(&tmp_ev) == NULL) {
+    if(wbt_timer_add(timer) != WBT_OK) {
         return WBT_ERROR;
     }
     

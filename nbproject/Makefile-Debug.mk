@@ -51,6 +51,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_ssl.o \
 	${OBJECTDIR}/src/common/wbt_string.o \
 	${OBJECTDIR}/src/common/wbt_time.o \
+	${OBJECTDIR}/src/common/wbt_timer.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/json/wbt_json.o \
@@ -170,6 +171,11 @@ ${OBJECTDIR}/src/common/wbt_time.o: src/common/wbt_time.c
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_time.o src/common/wbt_time.c
+
+${OBJECTDIR}/src/common/wbt_timer.o: src/common/wbt_timer.c 
+	${MKDIR} -p ${OBJECTDIR}/src/common
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_timer.o src/common/wbt_timer.c
 
 ${OBJECTDIR}/src/http/wbt_http.o: src/http/wbt_http.c 
 	${MKDIR} -p ${OBJECTDIR}/src/http

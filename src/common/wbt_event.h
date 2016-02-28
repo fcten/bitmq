@@ -27,15 +27,14 @@ extern "C" {
 
 #include "../webit.h"
 #include "wbt_list.h"
+#include "wbt_timer.h"
 
 typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
-    wbt_status (*on_timeout)(struct wbt_event_s *); /* 超时回调函数 */
+    unsigned int events;                            /* 事件类型 */
     wbt_status (*on_recv)(struct wbt_event_s *);    /* 触发回调函数 */
     wbt_status (*on_send)(struct wbt_event_s *);    /* 触发回调函数 */
-    time_t timeout;                                 /* 事件超时时间 */
-    unsigned int heap_idx;                          /* 在超时队列中的位置 */
-    unsigned int events;                            /* 事件类型 */
+    wbt_timer_t timer;
     SSL * ssl;                                      /* 使用加密连接 */
     void * buff;                                    /* 事件数据缓存（接收到的数据） */
     size_t buff_len;

@@ -335,7 +335,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
+wbt_status wbt_mq_pull_timeout(wbt_timer_t *timer) {
+    wbt_event_t *ev = wbt_timer_entry(timer, wbt_event_t, timer);
+
     // 固定返回一个空的响应，通知客户端重新发起 pull 请求
     wbt_http_t * http = ev->data;
     
@@ -343,13 +345,13 @@ wbt_status wbt_mq_pull_timeout(wbt_event_t *ev) {
     http->status = STATUS_204;
 
     if( wbt_http_process(ev) != WBT_OK ) {
-        wbt_conn_close(ev);
+        wbt_on_close(ev);
     } else {
         /* 等待socket可写 */
-        ev->on_timeout = wbt_conn_close;
+        ev->timer.on_timeout = wbt_conn_close;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
         ev->on_send = wbt_on_send;
         ev->events = EPOLLOUT | EPOLLET;
-        ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -413,8 +415,8 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         // 如果没有可发送的消息，挂起请求
         http->state = STATE_BLOCKING;
 
-        ev->timeout = wbt_cur_mtime + 30000;
-        ev->on_timeout = wbt_mq_pull_timeout;
+        ev->timer.timeout = wbt_cur_mtime + 30000;
+        ev->timer.on_timeout = wbt_mq_pull_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -423,7 +425,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         return WBT_OK;
     } else {
         // 如果没有可发送的消息，直接返回
-        return wbt_mq_pull_timeout(ev);
+        return wbt_mq_pull_timeout(&ev->timer);
     }
 }
 

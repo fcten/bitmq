@@ -11,6 +11,7 @@
 extern wbt_module_t wbt_module_time;
 extern wbt_module_t wbt_module_log;
 extern wbt_module_t wbt_module_conf;
+extern wbt_module_t wbt_module_timer;
 extern wbt_module_t wbt_module_event;
 extern wbt_module_t wbt_module_file;
 extern wbt_module_t wbt_module_conn;
@@ -23,6 +24,7 @@ wbt_module_t * wbt_modules[] = {
     &wbt_module_time,
     &wbt_module_log,
     &wbt_module_conf,
+    &wbt_module_timer,
     &wbt_module_event,
     &wbt_module_file,
     &wbt_module_conn,

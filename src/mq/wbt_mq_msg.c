@@ -70,9 +70,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
         wbt_mq_channel_del_msg(channel, msg);
     }
     
-    if( msg->timeout_ev ) {
-        wbt_event_del( msg->timeout_ev );
-    }
+    wbt_timer_del(&msg->timer);
     
     wbt_free(msg->data);
 
@@ -86,23 +84,24 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     wbt_msg_delete_count ++;
 }
 
-wbt_status wbt_mq_msg_destory_expired(wbt_event_t *ev) {
-    wbt_mq_msg_destory( ev->ctx );
+wbt_status wbt_mq_msg_destory_expired(wbt_timer_t *timer) {
+    wbt_msg_t *msg = wbt_timer_entry(timer, wbt_msg_t, timer);
+
+    wbt_mq_msg_destory(msg);
     
     return WBT_OK;
 }
 
-wbt_status wbt_mq_msg_delivery_delayed(wbt_event_t *ev) {
-    wbt_msg_t *msg = ev->ctx;
+wbt_status wbt_mq_msg_delivery_delayed(wbt_timer_t *timer) {
+    wbt_msg_t *msg = wbt_timer_entry(timer, wbt_msg_t, timer);
     
-    wbt_event_del( msg->timeout_ev );
-    msg->timeout_ev = NULL;
+    wbt_timer_del(&msg->timer);
     
-    if( wbt_mq_msg_delivery( msg ) == WBT_OK ) {
+    if( wbt_mq_msg_delivery(msg) == WBT_OK ) {
         return WBT_OK;
     } else {
         // 投递失败，该消息将会丢失。内存不足时可能出现该情况
-        wbt_mq_msg_destory( msg );
+        wbt_mq_msg_destory(msg);
         return WBT_ERROR;
     }
 }
@@ -119,26 +118,20 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         return WBT_OK;
     } else if( msg->effect > wbt_cur_mtime ) {
         // 未生效消息
-        wbt_event_t tmp_ev;
-        tmp_ev.on_timeout = wbt_mq_msg_delivery_delayed;
-        tmp_ev.fd = -1;
-        tmp_ev.timeout = msg->effect;
-        if((msg->timeout_ev = wbt_event_add(&tmp_ev)) == NULL) {
+        msg->timer.on_timeout = wbt_mq_msg_delivery_delayed;
+        msg->timer.timeout    = msg->effect;
+        if( wbt_timer_add(&msg->timer) != WBT_OK ) {
             return WBT_ERROR;
         }
-        msg->timeout_ev->ctx = msg;
         return WBT_OK;
     } else {
         // 已生效消息
-        if( !msg->timeout_ev ) {
-            wbt_event_t tmp_ev;
-            tmp_ev.on_timeout = wbt_mq_msg_destory_expired;
-            tmp_ev.fd = -1;
-            tmp_ev.timeout = msg->expire;
-            if((msg->timeout_ev = wbt_event_add(&tmp_ev)) == NULL) {
+        if( !msg->timer.heap_idx ) {
+            msg->timer.on_timeout = wbt_mq_msg_destory_expired;
+            msg->timer.timeout    = msg->expire;
+            if( wbt_timer_add(&msg->timer) != WBT_OK ) {
                 return WBT_ERROR;
             }
-            msg->timeout_ev->ctx = msg;
         }
         
         msg->seq_id = ++wbt_msg_effect_count;
@@ -162,7 +155,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
             subscriber = subscriber_node->subscriber;
 
-            if( subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
+            if( subscriber->ev->timer.on_timeout == wbt_mq_pull_timeout ) {
                 if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
                     // TODO 记录投递失败
                     wbt_log_debug("msg %lld send to %d failed\n", msg->msg_id, subscriber->ev->fd);
@@ -183,7 +176,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
 
         // TODO 这里忽略了投递失败的情况，导致消息不能严格地平均分发
         // 后续应当改进负载均衡算法
-        if( subscriber->ev->on_timeout == wbt_mq_pull_timeout ) {
+        if( subscriber->ev->timer.on_timeout == wbt_mq_pull_timeout ) {
             if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
                 // 直接投递失败，忽略该错误
             }

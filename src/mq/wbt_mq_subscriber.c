@@ -152,10 +152,10 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
         }
 
         /* 等待socket可写 */
-        subscriber->ev->on_timeout = wbt_conn_close;
+        subscriber->ev->timer.on_timeout = wbt_conn_close;
+        subscriber->ev->timer.timeout    = wbt_cur_mtime + wbt_conf.event_timeout;
         subscriber->ev->on_send = wbt_on_send;
-        subscriber->ev->events = EPOLLOUT | EPOLLET;
-        subscriber->ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+        subscriber->ev->events  = EPOLLOUT | EPOLLET;
 
         if(wbt_event_mod(subscriber->ev) != WBT_OK) {
             return WBT_ERROR;

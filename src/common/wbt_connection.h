@@ -26,6 +26,7 @@ extern "C" {
 #include <errno.h>
 
 #include "../webit.h"
+#include "wbt_timer.h"
 #include "../http/wbt_http.h"
 
 /* 视情况，可能需要管理 conn 
@@ -35,13 +36,14 @@ typedef struct wbt_conn_s {
 */
 
 wbt_status wbt_conn_init();
-wbt_status wbt_conn_close(wbt_event_t *ev);
 wbt_status wbt_conn_cleanup();
+
+wbt_status wbt_conn_close(wbt_timer_t *timer);
 
 wbt_status wbt_on_accept(wbt_event_t *ev);
 wbt_status wbt_on_recv(wbt_event_t *ev);
 wbt_status wbt_on_send(wbt_event_t *ev);
-//wbt_status wbt_on_close(wbt_event_t *ev);
+wbt_status wbt_on_close(wbt_event_t *ev);
 
 ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len);
 ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len);

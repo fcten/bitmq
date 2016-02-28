@@ -95,7 +95,13 @@ wbt_status wbt_conn_close_listen() {
     return WBT_OK;
 }
 
-wbt_status wbt_conn_close(wbt_event_t *ev) {
+wbt_status wbt_conn_close(wbt_timer_t *timer) {
+    wbt_event_t *ev = wbt_timer_entry(timer, wbt_event_t, timer);
+
+    return wbt_on_close(ev);
+}
+
+wbt_status wbt_on_close(wbt_event_t *ev) {
     //wbt_log_debug("connection %d close.",ev->fd);
     
     if( wbt_module_on_close(ev) != WBT_OK ) {
@@ -124,12 +130,12 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         //wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
 
         wbt_event_t *p_ev, tmp_ev;
-        tmp_ev.on_timeout = wbt_conn_close;
+        tmp_ev.timer.on_timeout = wbt_conn_close;
+        tmp_ev.timer.timeout    = wbt_cur_mtime + wbt_conf.event_timeout;
         tmp_ev.on_recv = wbt_on_recv;
         tmp_ev.on_send = NULL;
-        tmp_ev.events = EPOLLIN | EPOLLET;
-        tmp_ev.fd = conn_sock;
-        tmp_ev.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+        tmp_ev.events  = EPOLLIN | EPOLLET;
+        tmp_ev.fd      = conn_sock;
 
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
             return WBT_ERROR;
@@ -138,7 +144,7 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         wbt_connection_count ++;
         
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
-            wbt_conn_close(p_ev);
+            wbt_on_close(p_ev);
             return WBT_OK;
         }
     }
@@ -201,7 +207,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
     if( !bReadOk ) {
         /* 读取出错，或者客户端主动断开了连接 */
-        wbt_conn_close(ev);
+        wbt_on_close(ev);
         return WBT_OK;
     }
 
@@ -209,7 +215,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     if( wbt_module_on_recv(ev) != WBT_OK ) {
         /* 严重的错误，直接断开连接 */
         /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。 */
-        wbt_conn_close(ev);
+        wbt_on_close(ev);
         return WBT_OK;
     }
     
@@ -221,7 +227,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     //wbt_log_debug("send data to connection %d.", ev->fd);
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
-        wbt_conn_close(ev);
+        wbt_on_close(ev);
         return WBT_OK;
     }
     

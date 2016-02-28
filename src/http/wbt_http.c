@@ -188,7 +188,7 @@ send_complete:
 
         ev->on_recv = wbt_on_recv;
         ev->events = EPOLLIN | EPOLLET;
-        ev->timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -196,7 +196,7 @@ send_complete:
     } else {
         /* 非 keep-alive 连接，直接关闭 */
         /* 这个模块总是被最后调用，所以这里直接关闭并返回 WBT_OK。返回 WBT_ERROR 感觉怪怪的。 */
-        wbt_conn_close(ev);
+        wbt_on_close(ev);
     }
     
     return WBT_OK;
@@ -754,7 +754,7 @@ wbt_status wbt_http_generater( wbt_event_t *ev ) {
                 /* 等待socket可写 */
                 ev->on_send = wbt_on_send;
                 ev->events = EPOLLOUT | EPOLLET;
-                ev->timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+                ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
                 if(wbt_event_mod(ev) != WBT_OK) {
                     return WBT_ERROR;

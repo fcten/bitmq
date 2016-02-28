@@ -17,10 +17,10 @@ extern "C" {
 
 #include "../webit.h"
 #include "wbt_memory.h"
-#include "wbt_event.h"
+#include "wbt_timer.h"
 
 typedef struct {
-    wbt_event_t **heap;
+    wbt_timer_t **heap;
     unsigned int size;    /* 已有元素个数 */
     unsigned int max;     /* 最大元素个数 */
 } wbt_heap_t;
@@ -28,9 +28,9 @@ typedef struct {
 /* 建立一个空堆 */
 wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size);
 /* 向堆中插入一个新元素 */
-wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_event_t * node);
+wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_timer_t * node);
 /* 获取堆顶元素 */
-wbt_event_t * wbt_heap_get(wbt_heap_t * p);
+wbt_timer_t * wbt_heap_get(wbt_heap_t * p);
 /* 删除堆顶元素 */
 wbt_status wbt_heap_delete(wbt_heap_t * p);
 /* 删除指定元素 */

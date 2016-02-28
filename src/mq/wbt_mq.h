@@ -15,6 +15,7 @@ extern "C" {
 #include "../webit.h"
 #include "../common/wbt_log.h"
 #include "../common/wbt_time.h"
+#include "../common/wbt_timer.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_heap.h"
 #include "../common/wbt_list.h"
@@ -54,7 +55,7 @@ typedef struct wbt_msg_s {
     // 过期时间
     time_t expire;
     // 超时事件
-    wbt_event_t *timeout_ev;
+    wbt_timer_t timer;
     // 优先级
     // 数值较小的消息会被优先处理
     //unsigned int priority:4;
@@ -139,7 +140,7 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev);
 wbt_status wbt_mq_login(wbt_event_t *ev);
 wbt_status wbt_mq_push(wbt_event_t *ev);
 wbt_status wbt_mq_pull(wbt_event_t *ev);
-wbt_status wbt_mq_pull_timeout(wbt_event_t *ev);
+wbt_status wbt_mq_pull_timeout(wbt_timer_t *timer);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
 
 time_t wbt_mq_uptime();
