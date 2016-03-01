@@ -10,6 +10,7 @@
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
 #include "wbt_mq_status.h"
+#include "wbt_mq_persistence.h"
 #include "../json/wbt_json.h"
 
 wbt_str_t wbt_str_message = wbt_string("message");
@@ -36,9 +37,21 @@ wbt_module_t wbt_module_mq = {
 };
 
 wbt_status wbt_mq_init() {
-    wbt_mq_channel_init();
-    wbt_mq_subscriber_init();
-    wbt_mq_msg_init();
+    if( wbt_mq_persist_init() !=WBT_OK ) {
+        return WBT_ERROR;
+    }
+
+    if( wbt_mq_channel_init() !=WBT_OK ) {
+        return WBT_ERROR;
+    }
+
+    if( wbt_mq_subscriber_init() !=WBT_OK ) {
+        return WBT_ERROR;
+    }
+
+    if( wbt_mq_msg_init() !=WBT_OK ) {
+        return WBT_ERROR;
+    }
     
     wbt_mq_uptime();
 
@@ -300,7 +313,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     }
 
     // 创建消息并初始化
-    wbt_msg_t * msg = wbt_mq_msg_create();
+    wbt_msg_t * msg = wbt_mq_msg_create(0);
     if( msg == NULL ) {
         // 返回投递失败
         json_delete_object(t.root);
@@ -319,7 +332,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     
     json_delete_object(t.root);
 
-    // TODO 持久化该消息
+    // TEST 持久化该消息
+    wbt_mq_persist(msg);
     
     // 投递消息
     if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {

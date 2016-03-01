@@ -22,11 +22,15 @@ static wbt_mq_id wbt_msg_create_count = 0;
 static wbt_mq_id wbt_msg_effect_count = 0;
 static wbt_mq_id wbt_msg_delete_count = 0;
 
-wbt_msg_t * wbt_mq_msg_create() {
+wbt_msg_t * wbt_mq_msg_create(int msg_id) {
     wbt_msg_t * msg = wbt_calloc(sizeof(wbt_msg_t));
     
     if( msg ) {
-        msg->msg_id = ++wbt_msg_create_count;
+        if( msg_id ) {
+            msg->msg_id = msg_id;
+        } else {
+            msg->msg_id = ++wbt_msg_create_count;
+        }
         msg->seq_id = 0;
         msg->create = wbt_cur_mtime;
         

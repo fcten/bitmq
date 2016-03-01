@@ -42,8 +42,6 @@ typedef long long unsigned int wbt_mq_id;
 typedef struct wbt_msg_s {
     // 消息 ID
     wbt_mq_id msg_id;
-    // 消息生效顺序
-    wbt_mq_id seq_id;
     // 消息生产者所订阅的频道 ID
     wbt_mq_id producer_id;
     // 消息消费者所订阅的频道 ID
@@ -54,8 +52,6 @@ typedef struct wbt_msg_s {
     time_t effect;
     // 过期时间
     time_t expire;
-    // 超时事件
-    wbt_timer_t timer;
     // 优先级
     // 数值较小的消息会被优先处理
     //unsigned int priority:4;
@@ -63,6 +59,12 @@ typedef struct wbt_msg_s {
     // 1、负载均衡模式：有多个消费者。消息以负载均衡的方式投递给某一个消费者。
     // 2、广播模式：有多个消费者。消息以广播的方式投递给所有消费者。
     unsigned int delivery_mode:4;
+    // 消息长度
+    size_t data_len;
+    // 消息生效顺序
+    wbt_mq_id seq_id;
+    // 超时事件
+    wbt_timer_t timer;
     // 投递次数
     unsigned int delivery_count;
     // 消费次数
@@ -72,7 +74,6 @@ typedef struct wbt_msg_s {
     //unsigned int reference_count;
     // 消息内容
     void * data;
-    size_t data_len;
 } wbt_msg_t;
 
 typedef struct wbt_msg_list_s {

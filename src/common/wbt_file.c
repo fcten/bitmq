@@ -26,8 +26,6 @@ wbt_file_t tmp;
 
 wbt_rbtree_t wbt_file_rbtree;
 
-extern wbt_rbtree_node_t *wbt_rbtree_node_nil;
-
 extern wbt_atomic_t wbt_wating_to_exit;
 
 void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
@@ -38,7 +36,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
         
         wbt_file_t * tmp_file = (wbt_file_t *)node->value.str;
         if( tmp_file->refer == 0 && wbt_cur_mtime - tmp_file->last_use_mtime > 10000 ) {
-            wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str);
+            wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str.s);
             close(tmp_file->fd);
             wbt_free(tmp_file->ptr);
             wbt_free(tmp_file->gzip_ptr);
@@ -233,6 +231,19 @@ wbt_status wbt_unlock_fd(int fd) {
 
 int wbt_lock_create( const char *name ) {
     return open( name, O_RDWR | O_CREAT | O_CLOEXEC, S_IRWXU );
+}
+
+ssize_t wbt_file_size(wbt_str_t * file_path) {
+    struct stat statbuff;  
+    if(stat(file_path->str, &statbuff) < 0){  
+        return -1;
+    }else{  
+        if( S_ISDIR(statbuff.st_mode) ) {
+            return -1;
+        } else {
+            return statbuff.st_size;
+        }
+    }
 }
 
 ssize_t wbt_file_read( wbt_file_t *file ) {

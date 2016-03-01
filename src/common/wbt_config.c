@@ -25,6 +25,9 @@ wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
 wbt_str_t wbt_conf_option_on = wbt_string("on");
 wbt_str_t wbt_conf_option_off = wbt_string("off");
 
+wbt_str_t wbt_conf_option_always = wbt_string("always");
+wbt_str_t wbt_conf_option_everysec = wbt_string("everysec");
+
 /* 供 setproctitle 显示使用，如果路径过长则会被截断 */
 wbt_str_t wbt_config_file_path;
 wbt_str_t wbt_config_file_content;
@@ -84,14 +87,14 @@ wbt_status wbt_conf_init() {
         if( ( m_value = wbt_conf_get_v("secure_key") ) != NULL ) {
             wbt_conf.secure_key = *m_value;
         } else {
-            wbt_log_add("secure_key option must be defined in config file\n");
+            wbt_log_add("option secure_key is required\n");
             return WBT_ERROR;
         }
         
         if( ( m_value = wbt_conf_get_v("secure_crt") ) != NULL ) {
             wbt_conf.secure_crt = *m_value;
         } else {
-            wbt_log_add("secure_crt option must be defined in config file\n");
+            wbt_log_add("option secure_crt is required\n");
             return WBT_ERROR;
         }
     }
@@ -112,6 +115,27 @@ wbt_status wbt_conf_init() {
         }
     }
 
+    wbt_conf.aof_crc = 0;
+    if( ( m_value = wbt_conf_get_v("aof_crc") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
+            wbt_conf.aof_crc = 1;
+        }
+    }
+
+    wbt_conf.aof_fsync = AOF_FSYNC_NO;
+    if( ( m_value = wbt_conf_get_v("aof_fsync") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_off ) == 0 ) {
+            wbt_conf.aof_fsync = AOF_FSYNC_NO;
+        } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_always ) == 0 ) {
+            wbt_conf.aof_fsync = AOF_FSYNC_ALWAYS;
+        } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_everysec ) == 0 ) {
+            wbt_conf.aof_fsync = AOF_FSYNC_EVERYSEC;
+        } else {
+            wbt_log_add("option aof_fsync is illegal ( expect off / always / everysec )\n");
+            return WBT_ERROR;
+        }
+    }
+    
     wbt_conf.keep_alive_timeout = 600000;
     if( ( value = wbt_conf_get("keep_alive_timeout") ) != NULL ) {
         wbt_conf.keep_alive_timeout = atoi(value);
@@ -142,7 +166,7 @@ wbt_status wbt_conf_init() {
         wbt_conf.root = *m_value;
         // TODO 检查 root 是否存在
     } else {
-        wbt_log_add("root option must be defined in config file\n");
+        wbt_log_add("option root is required\n");
         return WBT_ERROR;
     }
     

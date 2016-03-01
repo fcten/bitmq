@@ -20,21 +20,30 @@ extern "C" {
 typedef enum { 
     WBT_RBT_COLOR_RED = 0, 
     WBT_RBT_COLOR_BLACK = 1 
-} wbt_rbtree_color;
+} wbt_rbtree_color_t;
+
+typedef struct wbt_rbtree_key_s {
+    int len;
+    union {
+        char *s;
+        unsigned int *i;
+        unsigned long long int *l;
+    } str;
+} wbt_rbtree_key_t;
 
 typedef struct wbt_rbtree_node_s {
     struct wbt_rbtree_node_s * left;
     struct wbt_rbtree_node_s * right;
     // 在 gcc 中，unsigned long int 总是和指针长度一致
     unsigned long int parent_color;
-    wbt_str_t key;
+    wbt_rbtree_key_t key;
     wbt_str_t value;
 } wbt_rbtree_node_t;
 
 #define wbt_rbtree_parent(r)   ((wbt_rbtree_node_t *)((r)->parent_color & ~3))
 #define wbt_rbtree_color(r)    ((r)->parent_color & 1)
-#define wbt_rbtree_is_red(r)   (r?!wbt_rbtree_color(r):0)
-#define wbt_rbtree_is_black(r) (r? wbt_rbtree_color(r):1)
+#define wbt_rbtree_is_red(r)   (!wbt_rbtree_color(r))
+#define wbt_rbtree_is_black(r) wbt_rbtree_color(r)
 #define wbt_rbtree_set_red(r)  do { (r)->parent_color &= ~1; } while (0)
 #define wbt_rbtree_set_black(r)  do { (r)->parent_color |= 1; } while (0)
 
@@ -53,6 +62,8 @@ void wbt_rbtree_delete(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node);
 
 wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key);
 void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key);
+wbt_rbtree_node_t * wbt_rbtree_get_min(wbt_rbtree_t *rbt);
+wbt_rbtree_node_t * wbt_rbtree_get_max(wbt_rbtree_t *rbt);
 wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key);
 wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key);
 wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key);

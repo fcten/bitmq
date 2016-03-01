@@ -264,6 +264,12 @@ wbt_status wbt_event_dispatch() {;
     }
     
     while (!wbt_wating_to_exit || wbt_connection_count) {
+        /* 检查并执行超时事件 */
+        timeout = wbt_timer_process();
+        if( timeout == 0 ) {
+            timeout = -1;
+        }
+
         /* 把监听socket加入epoll中 */
         if( !is_accept_add && !wbt_wating_to_exit ) {
             if( wbt_events.max-wbt_events.top == 2 ) { // TODO 判断是否有请求正在处理
@@ -362,12 +368,6 @@ wbt_status wbt_event_dispatch() {;
                     return WBT_ERROR;
                 }
             }
-        }
-        
-        /* 检查并执行超时事件 */
-        timeout = wbt_timer_process();
-        if( timeout == 0 ) {
-            timeout = -1;
         }
     }
 

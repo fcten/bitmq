@@ -22,6 +22,8 @@ typedef struct wbt_conf_s {
     int secure;         // 是否启用 https
     int sendfile;       // 是否使用 sendfile
     int gzip;           // 是否使用 gzip
+    int aof_crc;        // 持久化是否采用 crc 校验
+    int aof_fsync;      // 持久化刷盘策略
     int keep_alive_timeout; // 长连接超时时间 毫秒
     int event_timeout;      // 事件超时时间 毫秒
     int max_open_files;     // 最多打开的句柄数量
@@ -34,6 +36,10 @@ typedef struct wbt_conf_s {
     wbt_str_t secure_key;  // 私钥文件
     wbt_str_t secure_crt;  // 证书文件
 } wbt_conf_t;
+
+#define AOF_FSYNC_NO       0
+#define AOF_FSYNC_ALWAYS   1
+#define AOF_FSYNC_EVERYSEC 2
 
 extern wbt_conf_t wbt_conf;
 
