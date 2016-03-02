@@ -10,10 +10,10 @@
 #include "wbt_mq_subscriber.h"
 
 // 存储所有已接收到的消息
-static wbt_rbtree_t wbt_mq_messages;
+static wbt_rb_t wbt_mq_messages;
 
 wbt_status wbt_mq_msg_init() {
-    wbt_rbtree_init(&wbt_mq_messages, WBT_RBTREE_KEY_LONGLONG);
+    wbt_rb_init(&wbt_mq_messages, WBT_RB_KEY_LONGLONG);
 
     return WBT_OK;
 }
@@ -36,7 +36,7 @@ wbt_msg_t * wbt_mq_msg_create(int msg_id) {
         
         wbt_str_t msg_key;
         wbt_variable_to_str(msg->msg_id, msg_key);
-        wbt_rbtree_node_t * msg_node = wbt_rbtree_insert(&wbt_mq_messages, &msg_key);
+        wbt_rb_node_t * msg_node = wbt_rb_insert(&wbt_mq_messages, &msg_key);
         if( msg_node == NULL ) {
             wbt_free(msg);
             return NULL;
@@ -52,7 +52,7 @@ wbt_msg_t * wbt_mq_msg_create(int msg_id) {
 wbt_msg_t * wbt_mq_msg_get(wbt_mq_id msg_id) {
     wbt_str_t msg_key;
     wbt_variable_to_str(msg_id, msg_key);
-    wbt_rbtree_node_t * msg_node = wbt_rbtree_get(&wbt_mq_messages, &msg_key);
+    wbt_rb_node_t * msg_node = wbt_rb_get(&wbt_mq_messages, &msg_key);
     if( msg_node == NULL ) {
         // TODO 调用持久化接口，从磁盘中读取并缓存到内存中
         return NULL;
@@ -80,9 +80,9 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
 
     wbt_str_t msg_key;
     wbt_variable_to_str(msg->msg_id, msg_key);
-    wbt_rbtree_node_t * msg_node = wbt_rbtree_get( &wbt_mq_messages, &msg_key );
+    wbt_rb_node_t * msg_node = wbt_rb_get( &wbt_mq_messages, &msg_key );
     if( msg_node ) {
-        wbt_rbtree_delete( &wbt_mq_messages, msg_node );
+        wbt_rb_delete( &wbt_mq_messages, msg_node );
     }
     
     wbt_msg_delete_count ++;

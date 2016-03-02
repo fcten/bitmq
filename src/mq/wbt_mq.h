@@ -121,7 +121,7 @@ typedef struct wbt_channel_s {
     // 订阅者数量
     unsigned int subscriber_count;
     // 消息队列
-    wbt_rbtree_t queue;
+    wbt_rb_t queue;
 } wbt_channel_t;
 
 typedef struct wbt_channel_list_s {

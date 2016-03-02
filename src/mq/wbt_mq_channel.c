@@ -9,10 +9,10 @@
 #include "wbt_mq_msg.h"
 
 // 存储所有可用频道
-static wbt_rbtree_t wbt_mq_channels;
+static wbt_rb_t wbt_mq_channels;
 
 wbt_status wbt_mq_channel_init() {
-    wbt_rbtree_init(&wbt_mq_channels, WBT_RBTREE_KEY_LONGLONG);
+    wbt_rb_init(&wbt_mq_channels, WBT_RB_KEY_LONGLONG);
 
     return WBT_OK;
 }
@@ -24,7 +24,7 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         channel->channel_id = channel_id;
         channel->create = wbt_cur_mtime;
         
-        wbt_rbtree_init(&channel->queue, WBT_RBTREE_KEY_LONGLONG);
+        wbt_rb_init(&channel->queue, WBT_RB_KEY_LONGLONG);
 
         channel->subscriber_list = wbt_calloc(sizeof(wbt_subscriber_list_t));
         if( channel->subscriber_list ) {
@@ -37,7 +37,7 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         
         wbt_str_t channel_key;
         wbt_variable_to_str(channel->channel_id, channel_key);
-        wbt_rbtree_node_t * channel_node = wbt_rbtree_insert(&wbt_mq_channels, &channel_key);
+        wbt_rb_node_t * channel_node = wbt_rb_insert(&wbt_mq_channels, &channel_key);
         if( channel_node == NULL ) {
             wbt_free(channel->subscriber_list);
             wbt_free(channel);
@@ -53,7 +53,7 @@ wbt_channel_t * wbt_mq_channel_get(wbt_mq_id channel_id) {
     wbt_channel_t * channel;
     wbt_str_t channel_key;
     wbt_variable_to_str(channel_id, channel_key);
-    wbt_rbtree_node_t * channel_node = wbt_rbtree_get(&wbt_mq_channels, &channel_key);
+    wbt_rb_node_t * channel_node = wbt_rb_get(&wbt_mq_channels, &channel_key);
 
     if( channel_node == NULL ) {
         channel = wbt_mq_channel_create(channel_id);
@@ -79,13 +79,13 @@ void wbt_mq_channel_destory(wbt_channel_t *channel) {
         wbt_free(channel->subscriber_list);
     }
     
-    wbt_rbtree_destroy_ignore_value(&channel->queue);
+    wbt_rb_destroy_ignore_value(&channel->queue);
 
     wbt_str_t channel_key;
     wbt_variable_to_str(channel->channel_id, channel_key);
-    wbt_rbtree_node_t * channel_node = wbt_rbtree_get( &wbt_mq_channels, &channel_key );
+    wbt_rb_node_t * channel_node = wbt_rb_get( &wbt_mq_channels, &channel_key );
     if( channel_node ) {
-        wbt_rbtree_delete( &wbt_mq_channels, channel_node );
+        wbt_rb_delete( &wbt_mq_channels, channel_node );
     }
 }
 
@@ -120,7 +120,7 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
     return WBT_OK;
 }
 
-void wbt_mq_channel_print_r(wbt_rbtree_node_t *node, json_object_t * obj, int *max) {
+void wbt_mq_channel_print_r(wbt_rb_node_t *node, json_object_t * obj, int *max) {
     if( node && *max ) {
         wbt_mq_channel_print_r(node->left, obj, max);
         
@@ -157,10 +157,10 @@ json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
 /* 输出指定频道的所有堆积消息（默认最多输出 100 条） */
 void wbt_mq_channel_msg_print(wbt_channel_t *channel, json_object_t * obj) {
     int max = 100;
-    wbt_rbtree_node_t *node;
+    wbt_rb_node_t *node;
     wbt_msg_t *msg;
       
-    for (node = wbt_rbtree_first(&channel->queue); node; node = wbt_rbtree_next(node)) {
+    for (node = wbt_rb_first(&channel->queue); node; node = wbt_rb_next(node)) {
         msg = (wbt_msg_t *)node->value.str;
         json_append(obj, NULL, 0, JSON_LONGLONG, &msg->msg_id, 0);
         if( --max <= 0 ) {
@@ -194,7 +194,7 @@ long long int wbt_mq_channel_status_active() {
 wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
     wbt_str_t key;
     wbt_variable_to_str(msg->seq_id, key);
-    wbt_rbtree_node_t *node = wbt_rbtree_insert(&channel->queue, &key);
+    wbt_rb_node_t *node = wbt_rb_insert(&channel->queue, &key);
     if( node == NULL ) {
         // seq_id 重复或者内存不足
         return WBT_ERROR;
@@ -208,11 +208,11 @@ wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
 void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
     wbt_str_t key;
     wbt_variable_to_str(msg->seq_id, key);
-    wbt_rbtree_node_t *node = wbt_rbtree_get(&channel->queue, &key);
+    wbt_rb_node_t *node = wbt_rb_get(&channel->queue, &key);
     if( node == NULL ) {
         return;
     }
     
     node->value.str = NULL;
-    wbt_rbtree_delete(&channel->queue, node);
+    wbt_rb_delete(&channel->queue, node);
 }

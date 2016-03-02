@@ -388,12 +388,12 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
 
     // 遍历所订阅的频道，获取可投递消息
     wbt_channel_list_t *channel_node;
-    wbt_rbtree_node_t *node;
+    wbt_rb_node_t *node;
     wbt_msg_t *msg = NULL;
     wbt_str_t key;
     wbt_list_for_each_entry(channel_node, &subscriber->channel_list->head, head) {
         wbt_variable_to_str(channel_node->seq_id, key);
-        node = wbt_rbtree_get_greater(&channel_node->channel->queue, &key);
+        node = wbt_rb_get_greater(&channel_node->channel->queue, &key);
         if( node ) {
             msg = (wbt_msg_t *)node->value.str;
             break;
@@ -413,7 +413,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
             // 消息本身不能被释放
             node->value.str = NULL;
-            wbt_rbtree_delete(&channel_node->channel->queue, node);
+            wbt_rb_delete(&channel_node->channel->queue, node);
         }
 
         // 更新消息处理进度

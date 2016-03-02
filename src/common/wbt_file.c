@@ -24,11 +24,11 @@ wbt_file_t tmp;
 
 #define WBT_MAX_OPEN_FILES 1024
 
-wbt_rbtree_t wbt_file_rbtree;
+wbt_rb_t wbt_file_rbtree;
 
 extern wbt_atomic_t wbt_wating_to_exit;
 
-void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
+void wbt_file_cleanup_recursive(wbt_rb_node_t *node) {
     /* 从叶节点递归处理至根节点 */
     if(node) {
         wbt_file_cleanup_recursive(node->left);
@@ -40,7 +40,7 @@ void wbt_file_cleanup_recursive(wbt_rbtree_node_t *node) {
             close(tmp_file->fd);
             wbt_free(tmp_file->ptr);
             wbt_free(tmp_file->gzip_ptr);
-            wbt_rbtree_delete(&wbt_file_rbtree, node);
+            wbt_rb_delete(&wbt_file_rbtree, node);
         }
     }
 }
@@ -72,7 +72,7 @@ wbt_status wbt_file_exit() {
 
 wbt_status wbt_file_init() {
     /* 初始化一个红黑树用以保存已打开的文件句柄 */
-    wbt_rbtree_init(&wbt_file_rbtree, WBT_RBTREE_KEY_STRING);
+    wbt_rb_init(&wbt_file_rbtree, WBT_RB_KEY_STRING);
 
     /* 添加一个定时任务用以清理过期的文件句柄 */
     wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
@@ -103,7 +103,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         return &tmp;
     }
 
-    wbt_rbtree_node_t *file =  wbt_rbtree_get(&wbt_file_rbtree, file_path);
+    wbt_rb_node_t *file =  wbt_rb_get(&wbt_file_rbtree, file_path);
     if( file == NULL ) {
         struct stat statbuff;  
         if(stat(file_path->str, &statbuff) < 0){  
@@ -127,12 +127,12 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                 tmp.last_modified =  statbuff.st_mtime;
 
                 if( tmp.fd > 0 ) {
-                    file = wbt_rbtree_insert(&wbt_file_rbtree, file_path);
+                    file = wbt_rb_insert(&wbt_file_rbtree, file_path);
 
                     file->value.str = wbt_calloc(sizeof(wbt_file_t));
                     if( file->value.str == NULL ) {
                         // TODO 如果这里失败了，该文件将永远不会被关闭
-                        wbt_rbtree_delete(&wbt_file_rbtree, file);
+                        wbt_rb_delete(&wbt_file_rbtree, file);
                     } else {
                         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 

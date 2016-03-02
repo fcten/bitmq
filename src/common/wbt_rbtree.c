@@ -18,27 +18,27 @@
  * 5）对每个结点，从该结点到其子孙结点的所有路径上包含相同数目的黑结点。
  */
 
-static inline void wbt_rbtree_set_parent(wbt_rbtree_node_t *node, wbt_rbtree_node_t *parent) {  
+static inline void wbt_rbtree_set_parent(wbt_rb_node_t *node, wbt_rb_node_t *parent) {  
     node->parent_color = (node->parent_color & 3) | (unsigned long int)parent;  
 }
 
-static inline void wbt_rbtree_set_color(wbt_rbtree_node_t *node, wbt_rbtree_color_t color) {
+static inline void wbt_rbtree_set_color(wbt_rb_node_t *node, wbt_rb_color_t color) {
     node->parent_color = (node->parent_color & ~1) | color;
 }
 
-static inline void wbt_rbtree_set_parent_color(wbt_rbtree_node_t *node, wbt_rbtree_node_t *parent, wbt_rbtree_color_t color) {
+static inline void wbt_rbtree_set_parent_color(wbt_rb_node_t *node, wbt_rb_node_t *parent, wbt_rb_color_t color) {
     node->parent_color = (unsigned long int)parent | color;
 }
 
-static int wbt_rbtree_compare(wbt_rbtree_t *rbt, wbt_rbtree_key_t *key1, wbt_rbtree_key_t *key2) {
+static int wbt_rbtree_compare(wbt_rb_t *rbt, wbt_rb_key_t *key1, wbt_rb_key_t *key2) {
     switch( rbt->key_type ) {
-        case WBT_RBTREE_KEY_INTEGER:
+        case WBT_RB_KEY_INTEGER:
             if( *key1->str.i > *key2->str.i ) {
                 return *key1->str.i - *key2->str.i;
             } else {
                 return -(*key2->str.i - *key1->str.i);
             }
-        case WBT_RBTREE_KEY_LONGLONG:
+        case WBT_RB_KEY_LONGLONG:
             if( *key1->str.l > *key2->str.l ) {
                 return *key1->str.l - *key2->str.l;
             } else {
@@ -49,8 +49,8 @@ static int wbt_rbtree_compare(wbt_rbtree_t *rbt, wbt_rbtree_key_t *key1, wbt_rbt
     }
 }
 
-static inline void wbt_rbtree_rotate_left(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {
-    wbt_rbtree_node_t  *temp;
+static inline void wbt_rbtree_rotate_left(wbt_rb_t *rbt, wbt_rb_node_t *node) {
+    wbt_rb_node_t  *temp;
 
     temp = node->right;
     node->right = temp->left;
@@ -59,22 +59,22 @@ static inline void wbt_rbtree_rotate_left(wbt_rbtree_t *rbt, wbt_rbtree_node_t *
         wbt_rbtree_set_parent(temp->left, node);
     }
 
-    wbt_rbtree_set_parent(temp, wbt_rbtree_parent(node));
+    wbt_rbtree_set_parent(temp, wbt_rb_parent(node));
 
     if (node == rbt->root) {
         rbt->root = temp;
-    } else if (node == wbt_rbtree_parent(node)->left) {
-        wbt_rbtree_parent(node)->left = temp;
+    } else if (node == wbt_rb_parent(node)->left) {
+        wbt_rb_parent(node)->left = temp;
     } else {
-        wbt_rbtree_parent(node)->right = temp;
+        wbt_rb_parent(node)->right = temp;
     }
 
     temp->left = node;
     wbt_rbtree_set_parent(node, temp);
 }
 
-static inline void wbt_rbtree_rotate_right(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {
-    wbt_rbtree_node_t  *temp;
+static inline void wbt_rbtree_rotate_right(wbt_rb_t *rbt, wbt_rb_node_t *node) {
+    wbt_rb_node_t  *temp;
 
     temp = node->left;
     node->left = temp->right;
@@ -83,90 +83,90 @@ static inline void wbt_rbtree_rotate_right(wbt_rbtree_t *rbt, wbt_rbtree_node_t 
         wbt_rbtree_set_parent(temp->right, node);
     }
 
-    wbt_rbtree_set_parent(temp, wbt_rbtree_parent(node));
+    wbt_rbtree_set_parent(temp, wbt_rb_parent(node));
 
     if (node == rbt->root) {
         rbt->root = temp;
-    } else if (node == wbt_rbtree_parent(node)->right) {
-        wbt_rbtree_parent(node)->right = temp;
+    } else if (node == wbt_rb_parent(node)->right) {
+        wbt_rb_parent(node)->right = temp;
     } else {
-        wbt_rbtree_parent(node)->left = temp;
+        wbt_rb_parent(node)->left = temp;
     }
 
     temp->right = node;
     wbt_rbtree_set_parent(node, temp);
 }
 
-void wbt_rbtree_insert_fixup(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {  
-    wbt_rbtree_node_t *parent, *gparent;  
+void wbt_rbtree_insert_fixup(wbt_rb_t *rbt, wbt_rb_node_t *node) {  
+    wbt_rb_node_t *parent, *gparent;  
   
-    while ((parent = wbt_rbtree_parent(node)) && wbt_rbtree_is_red(parent)) {
-        gparent = wbt_rbtree_parent(parent); 
+    while ((parent = wbt_rb_parent(node)) && wbt_rb_is_red(parent)) {
+        gparent = wbt_rb_parent(parent); 
   
         if (parent == gparent->left) {  
             {
-                register wbt_rbtree_node_t *uncle = gparent->right; 
-                if (uncle && wbt_rbtree_is_red(uncle)) {  
-                    wbt_rbtree_set_black(uncle);
-                    wbt_rbtree_set_black(parent);
-                    wbt_rbtree_set_red(gparent);
+                register wbt_rb_node_t *uncle = gparent->right; 
+                if (uncle && wbt_rb_is_red(uncle)) {  
+                    wbt_rb_set_black(uncle);
+                    wbt_rb_set_black(parent);
+                    wbt_rb_set_red(gparent);
                     node = gparent;
                     continue;
                 }  
             }
   
             if (parent->right == node) {  
-                register wbt_rbtree_node_t *tmp;  
+                register wbt_rb_node_t *tmp;  
                 wbt_rbtree_rotate_left(rbt, parent);
                 tmp = parent;
                 parent = node;  
                 node = tmp;  
             }  
   
-            wbt_rbtree_set_black(parent);
-            wbt_rbtree_set_red(gparent);
+            wbt_rb_set_black(parent);
+            wbt_rb_set_red(gparent);
             wbt_rbtree_rotate_right(rbt, gparent);
         } else {
             {
-                register wbt_rbtree_node_t *uncle = gparent->left;  
-                if (uncle && wbt_rbtree_is_red(uncle)) {  
-                    wbt_rbtree_set_black(uncle);  
-                    wbt_rbtree_set_black(parent);  
-                    wbt_rbtree_set_red(gparent);  
+                register wbt_rb_node_t *uncle = gparent->left;  
+                if (uncle && wbt_rb_is_red(uncle)) {  
+                    wbt_rb_set_black(uncle);  
+                    wbt_rb_set_black(parent);  
+                    wbt_rb_set_red(gparent);  
                     node = gparent;  
                     continue;  
                 }
             }
   
             if (parent->left == node) {  
-                register wbt_rbtree_node_t *tmp;  
+                register wbt_rb_node_t *tmp;  
                 wbt_rbtree_rotate_right(rbt, parent);  
                 tmp = parent;  
                 parent = node;  
                 node = tmp;  
             }  
   
-            wbt_rbtree_set_black(parent);  
-            wbt_rbtree_set_red(gparent);  
+            wbt_rb_set_black(parent);  
+            wbt_rb_set_red(gparent);  
             wbt_rbtree_rotate_left(rbt, gparent);  
         }
     }
   
-    wbt_rbtree_set_black(rbt->root);  
+    wbt_rb_set_black(rbt->root);  
 }
 
-void wbt_rbtree_init(wbt_rbtree_t *rbt, wbt_rbtree_key_type_t type) {
+void wbt_rb_init(wbt_rb_t *rbt, wbt_rb_key_type_t type) {
     /*rbt->max = 1024;*/
     rbt->size = 0;
     rbt->root = NULL;
     rbt->key_type = type;
 }
 
-wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *tmp_node, *tail_node;
+wbt_rb_node_t * wbt_rb_insert(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *tmp_node, *tail_node;
     int ret;
 
-    tmp_node = wbt_malloc(sizeof(wbt_rbtree_node_t));
+    tmp_node = wbt_malloc(sizeof(wbt_rb_node_t));
     if( tmp_node == NULL ) {
         return NULL;
     }
@@ -180,14 +180,14 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
 
     tmp_node->left = tmp_node->right = NULL;
     wbt_rbtree_set_parent(tmp_node, NULL);
-    wbt_rbtree_set_red(tmp_node);
+    wbt_rb_set_red(tmp_node);
 
     if( rbt->root == NULL ) {
         rbt->root = tmp_node;
     } else {
         tail_node = rbt->root;
         while(1) {
-            ret = wbt_rbtree_compare(rbt, (wbt_rbtree_key_t *)key, &tail_node->key);
+            ret = wbt_rbtree_compare(rbt, (wbt_rb_key_t *)key, &tail_node->key);
             if( ret == 0 ) {
                 /* 键值已经存在 */
                 return NULL;
@@ -224,10 +224,10 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
 }
 
 // 在红黑树 rbt 中删除结点 node
-void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
-    wbt_rbtree_node_t * y = node; // 将要被删除的结点 
-    wbt_rbtree_node_t * x = NULL; // y 的唯一子节点
-    wbt_rbtree_node_t * x_parent = NULL;
+void wbt_rb_delete(wbt_rb_t * rbt, wbt_rb_node_t * node) {
+    wbt_rb_node_t * y = node; // 将要被删除的结点 
+    wbt_rb_node_t * x = NULL; // y 的唯一子节点
+    wbt_rb_node_t * x_parent = NULL;
 
     // 这里我们确定了要删除的节点 y，并确定了其唯一字节点 x，注意 x 可能为 NULL
     if (y->left == 0) {             // node has at most one non-null child. y == node.  
@@ -250,11 +250,11 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
         y->left = node->left;
 
         if (y != node->right) {
-            x_parent = wbt_rbtree_parent(y);
+            x_parent = wbt_rb_parent(y);
             if (x) {
-                wbt_rbtree_set_parent(x, wbt_rbtree_parent(y));
+                wbt_rbtree_set_parent(x, wbt_rb_parent(y));
             }
-            wbt_rbtree_parent(y)->left = x;      // y must be a left child
+            wbt_rb_parent(y)->left = x;      // y must be a left child
 
             y->right = node->right;
             wbt_rbtree_set_parent(node->right, y);
@@ -264,95 +264,95 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
 
         if (rbt->root == node) {
             rbt->root = y;
-        } else if (wbt_rbtree_parent(node)->left == node) {
-            wbt_rbtree_parent(node)->left = y;
+        } else if (wbt_rb_parent(node)->left == node) {
+            wbt_rb_parent(node)->left = y;
         } else {
-            wbt_rbtree_parent(node)->right = y;
+            wbt_rb_parent(node)->right = y;
         }
-        wbt_rbtree_set_parent(y, wbt_rbtree_parent(node));
+        wbt_rbtree_set_parent(y, wbt_rb_parent(node));
 
         // 交换 y 与 node 的颜色
-        wbt_rbtree_color_t tmp = wbt_rbtree_color(y);
-        wbt_rbtree_set_color(y, wbt_rbtree_color(node));
+        wbt_rb_color_t tmp = wbt_rb_color(y);
+        wbt_rbtree_set_color(y, wbt_rb_color(node));
         wbt_rbtree_set_color(node, tmp);
 
         y = node;  
         // y now points to node to be actually deleted  
     } else {                        // y == node
-        x_parent = wbt_rbtree_parent(y);  
+        x_parent = wbt_rb_parent(y);  
         if (x) {
-            wbt_rbtree_set_parent(x, wbt_rbtree_parent(y));
+            wbt_rbtree_set_parent(x, wbt_rb_parent(y));
         }
         if (rbt->root == node) {
             rbt->root = x;  
         } else {
-            if (wbt_rbtree_parent(node)->left == node) {
-                wbt_rbtree_parent(node)->left = x;  
+            if (wbt_rb_parent(node)->left == node) {
+                wbt_rb_parent(node)->left = x;  
             } else {
-                wbt_rbtree_parent(node)->right = x;
+                wbt_rb_parent(node)->right = x;
             }
         }
     }
 
     // 删除黑色结点后，导致黑色缺失，违背性质4,故对树进行调整 
-    if( wbt_rbtree_is_black(y) ) {
-        while (x != rbt->root && (!x || wbt_rbtree_is_black(x))) {
+    if( wbt_rb_is_black(y) ) {
+        while (x != rbt->root && (!x || wbt_rb_is_black(x))) {
             if (x == x_parent->left) {
-                wbt_rbtree_node_t* uncle = x_parent->right;
-                if(wbt_rbtree_is_red(uncle)) {
-                    wbt_rbtree_set_black(uncle);
-                    wbt_rbtree_set_red(x_parent);
+                wbt_rb_node_t* uncle = x_parent->right;
+                if(wbt_rb_is_red(uncle)) {
+                    wbt_rb_set_black(uncle);
+                    wbt_rb_set_red(x_parent);
                     wbt_rbtree_rotate_left(rbt, x_parent);  
                     uncle = x_parent->right;  
                 }  
-                if ((!uncle->left  || wbt_rbtree_is_black(uncle->left)) &&
-                    (!uncle->right || wbt_rbtree_is_black(uncle->right))) {
-                    wbt_rbtree_set_red(uncle);
+                if ((!uncle->left  || wbt_rb_is_black(uncle->left)) &&
+                    (!uncle->right || wbt_rb_is_black(uncle->right))) {
+                    wbt_rb_set_red(uncle);
                     x = x_parent;
-                    x_parent = wbt_rbtree_parent(x_parent);
+                    x_parent = wbt_rb_parent(x_parent);
                 } else {  
-                    if (!uncle->right || wbt_rbtree_is_black(uncle->right)) {  
+                    if (!uncle->right || wbt_rb_is_black(uncle->right)) {  
                         if (uncle->left) {
-                            wbt_rbtree_set_black(uncle->left);
+                            wbt_rb_set_black(uncle->left);
                         }
-                        wbt_rbtree_set_red(uncle);
+                        wbt_rb_set_red(uncle);
                         wbt_rbtree_rotate_right(rbt, uncle);
                         uncle = x_parent->right;
                     }
-                    wbt_rbtree_set_color(uncle, wbt_rbtree_color(x_parent));
-                    wbt_rbtree_set_black(x_parent);
+                    wbt_rbtree_set_color(uncle, wbt_rb_color(x_parent));
+                    wbt_rb_set_black(x_parent);
                     if (uncle->right) {
-                        wbt_rbtree_set_black(uncle->right);
+                        wbt_rb_set_black(uncle->right);
                     }
                     wbt_rbtree_rotate_left(rbt, x_parent);  
                     break;
                 }
             } else {                  // same as above, with right <-> left.  
-                wbt_rbtree_node_t* uncle = x_parent->left;
-                if (wbt_rbtree_is_red(uncle)) {
-                    wbt_rbtree_set_black(uncle);
-                    wbt_rbtree_set_red(x_parent);
+                wbt_rb_node_t* uncle = x_parent->left;
+                if (wbt_rb_is_red(uncle)) {
+                    wbt_rb_set_black(uncle);
+                    wbt_rb_set_red(x_parent);
                     wbt_rbtree_rotate_right(rbt, x_parent);  
                     uncle = x_parent->left;  
                 }
-                if ((!uncle->right || wbt_rbtree_is_black(uncle->right)) &&  
-                    (!uncle->left  || wbt_rbtree_is_black(uncle->left))) {  
-                    wbt_rbtree_set_red(uncle);
+                if ((!uncle->right || wbt_rb_is_black(uncle->right)) &&  
+                    (!uncle->left  || wbt_rb_is_black(uncle->left))) {  
+                    wbt_rb_set_red(uncle);
                     x = x_parent;  
-                    x_parent = wbt_rbtree_parent(x_parent);
+                    x_parent = wbt_rb_parent(x_parent);
                 } else {  
-                    if (!uncle->left || wbt_rbtree_is_black(uncle->left)) {  
+                    if (!uncle->left || wbt_rb_is_black(uncle->left)) {  
                         if (uncle->right) {
-                            wbt_rbtree_set_black(uncle->right);
+                            wbt_rb_set_black(uncle->right);
                         }
-                        wbt_rbtree_set_red(uncle);
+                        wbt_rb_set_red(uncle);
                         wbt_rbtree_rotate_left(rbt, uncle);  
                         uncle = x_parent->left;  
                     }  
-                    wbt_rbtree_set_color(uncle, wbt_rbtree_color(x_parent));
-                    wbt_rbtree_set_black(x_parent);
+                    wbt_rbtree_set_color(uncle, wbt_rb_color(x_parent));
+                    wbt_rb_set_black(x_parent);
                     if (uncle->left) {
-                        wbt_rbtree_set_black(uncle->left);
+                        wbt_rb_set_black(uncle->left);
                     }
                     wbt_rbtree_rotate_right(rbt, x_parent);  
                     break;  
@@ -360,7 +360,7 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
             }
         }
         if (x) {
-            wbt_rbtree_set_black(x);
+            wbt_rb_set_black(x);
         }
     }
 
@@ -375,14 +375,14 @@ void wbt_rbtree_delete(wbt_rbtree_t * rbt, wbt_rbtree_node_t * node) {
     //wbt_log_debug("rbtree delete\n");
 } 
 
-wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *node;
+wbt_rb_node_t * wbt_rb_get(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *node;
     int ret;
     
     node = rbt->root;
     
     while(node) {
-        ret = wbt_rbtree_compare(rbt, (wbt_rbtree_key_t *)key, &node->key);
+        ret = wbt_rbtree_compare(rbt, (wbt_rb_key_t *)key, &node->key);
         if(ret == 0) {
             return node;
         } else if( ret > 0 ) {
@@ -395,8 +395,8 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
     return NULL;
 }
 
-void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t * node = wbt_rbtree_get(rbt, key);
+void * wbt_rb_get_value(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t * node = wbt_rb_get(rbt, key);
     if( node == NULL ) {
         return NULL;
     } else {
@@ -405,13 +405,13 @@ void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key) {
 }
 
 // 获取一个小于 key 的最大的值
-wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *node, *ret = NULL;
+wbt_rb_node_t * wbt_rb_get_lesser(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *node, *ret = NULL;
     
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) >= 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rb_key_t *)key) >= 0) {
             node = node->left;
         } else {
             ret = node;
@@ -423,13 +423,13 @@ wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key) {
 }
 
 // 获取一个小于等于 key 的最大的值
-wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *node, *ret = NULL;
+wbt_rb_node_t * wbt_rb_get_lesser_or_equal(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *node, *ret = NULL;
     
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) > 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rb_key_t *)key) > 0) {
             node = node->left;
         } else {
             ret = node;
@@ -441,13 +441,13 @@ wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t 
 }
 
 // 获取一个大于 key 的最小的值
-wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *node, *ret = NULL;
+wbt_rb_node_t * wbt_rb_get_greater(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *node, *ret = NULL;
     
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) > 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rb_key_t *)key) > 0) {
             wbt_log_debug("%lld > %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
             ret = node;
             node = node->left;
@@ -469,13 +469,13 @@ wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key) {
 }
 
 // 获取一个大于等于 key 的最小的值
-wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key) {
-    wbt_rbtree_node_t *node, *ret = NULL;
+wbt_rb_node_t * wbt_rb_get_greater_or_equal(wbt_rb_t *rbt, wbt_str_t *key) {
+    wbt_rb_node_t *node, *ret = NULL;
     
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) >= 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rb_key_t *)key) >= 0) {
             ret = node;
             node = node->left;
         } else {
@@ -486,8 +486,8 @@ wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t
     return ret;
 }
 
-wbt_rbtree_node_t * wbt_rbtree_get_min(wbt_rbtree_t *rbt) {
-    wbt_rbtree_node_t *node;
+wbt_rb_node_t * wbt_rb_get_min(wbt_rb_t *rbt) {
+    wbt_rb_node_t *node;
     
     node = rbt->root;
     
@@ -502,8 +502,8 @@ wbt_rbtree_node_t * wbt_rbtree_get_min(wbt_rbtree_t *rbt) {
     return node;
 }
 
-wbt_rbtree_node_t * wbt_rbtree_get_max(wbt_rbtree_t *rbt) {
-    wbt_rbtree_node_t *node;
+wbt_rb_node_t * wbt_rb_get_max(wbt_rb_t *rbt) {
+    wbt_rb_node_t *node;
     
     node = rbt->root;
     
@@ -518,8 +518,8 @@ wbt_rbtree_node_t * wbt_rbtree_get_max(wbt_rbtree_t *rbt) {
     return node;
 }
 
-wbt_rbtree_node_t * wbt_rbtree_first(const wbt_rbtree_t *rbt) {
-    wbt_rbtree_node_t *n = rbt->root;  
+wbt_rb_node_t * wbt_rb_first(const wbt_rb_t *rbt) {
+    wbt_rb_node_t *n = rbt->root;  
 
     if(n == NULL) {
         return NULL;
@@ -532,10 +532,10 @@ wbt_rbtree_node_t * wbt_rbtree_first(const wbt_rbtree_t *rbt) {
     return n;  
 }  
   
-wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node) {
-    wbt_rbtree_node_t *parent;  
+wbt_rb_node_t * wbt_rb_next(const wbt_rb_node_t *node) {
+    wbt_rb_node_t *parent;  
   
-    if (wbt_rbtree_parent(node) == node) {
+    if (wbt_rb_parent(node) == node) {
         return NULL;
     }
   
@@ -546,7 +546,7 @@ wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node) {
         while (node->left) {  
             node = node->left;
         }
-        return (wbt_rbtree_node_t *)node;
+        return (wbt_rb_node_t *)node;
     }  
   
     /* No right-hand children.  Everything down and left is 
@@ -555,16 +555,16 @@ wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node) {
        ancestor is a right-hand child of its parent, keep going 
        up. First time it's a left-hand child of its parent, said 
        parent is our 'next' node. */  
-    while ((parent = wbt_rbtree_parent(node)) && node == parent->right) {
+    while ((parent = wbt_rb_parent(node)) && node == parent->right) {
         node = parent;
     }
   
     return parent;  
 }
 
-void wbt_rbtree_print(wbt_rbtree_node_t *node) {
+void wbt_rb_print(wbt_rb_node_t *node) {
     if(node) {
-        wbt_rbtree_print(node->left);
+        wbt_rb_print(node->left);
         if( node->key.len == 4 ) {
             wbt_log_debug("%u\n", (*node->key.str.i));
         } else if( node->key.len == 8 ) {
@@ -572,11 +572,11 @@ void wbt_rbtree_print(wbt_rbtree_node_t *node) {
         } else {
             wbt_log_debug("%.*s\n", node->key.len, node->key.str.s);
         }
-        wbt_rbtree_print(node->right);
+        wbt_rb_print(node->right);
     }
 }
 
-void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
+void wbt_rbtree_destroy_recursive(wbt_rb_node_t *node) {
     if(node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
@@ -587,13 +587,13 @@ void wbt_rbtree_destroy_recursive(wbt_rbtree_node_t *node) {
     }
 }
 
-void wbt_rbtree_destroy(wbt_rbtree_t *rbt) {
+void wbt_rb_destroy(wbt_rb_t *rbt) {
     wbt_rbtree_destroy_recursive(rbt->root);
 
     rbt->size = 0;
 }
 
-void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
+void wbt_rbtree_destroy_recursive_ignore_value(wbt_rb_node_t *node) {
     if(node) {
         wbt_rbtree_destroy_recursive(node->left);
         wbt_rbtree_destroy_recursive(node->right);
@@ -604,7 +604,7 @@ void wbt_rbtree_destroy_recursive_ignore_value(wbt_rbtree_node_t *node) {
     }
 }
 
-void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt) {
+void wbt_rb_destroy_ignore_value(wbt_rb_t *rbt) {
     wbt_rbtree_destroy_recursive_ignore_value(rbt->root);
     
     rbt->size = 0;

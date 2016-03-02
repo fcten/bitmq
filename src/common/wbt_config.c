@@ -32,7 +32,7 @@ wbt_str_t wbt_conf_option_everysec = wbt_string("everysec");
 wbt_str_t wbt_config_file_path;
 wbt_str_t wbt_config_file_content;
 
-wbt_rbtree_t wbt_config_rbtree;
+wbt_rb_t wbt_config_rbtree;
 
 int wbt_conf_line = 1;
 int wbt_conf_charactor = 0;
@@ -40,7 +40,7 @@ int wbt_conf_charactor = 0;
 wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_init() {
-    wbt_rbtree_init(&wbt_config_rbtree, WBT_RBTREE_KEY_STRING);
+    wbt_rb_init(&wbt_config_rbtree, WBT_RB_KEY_STRING);
     
     wbt_config_file_path.len = 64;
     wbt_config_file_path.str = wbt_malloc( wbt_config_file_path.len );
@@ -267,10 +267,10 @@ static wbt_status wbt_conf_parse(wbt_str_t * conf) {
                     status = 0;
                     
                     /* 储存配置信息 */
-                    wbt_rbtree_node_t *option =  wbt_rbtree_get(&wbt_config_rbtree, &key);
+                    wbt_rb_node_t *option =  wbt_rb_get(&wbt_config_rbtree, &key);
                     if( option == NULL ) {
                         /* 新的值 */
-                        option = wbt_rbtree_insert(&wbt_config_rbtree, &key);
+                        option = wbt_rb_insert(&wbt_config_rbtree, &key);
                     } else {
                         /* 已有的值 */
                         wbt_free(option->value.str);
@@ -361,7 +361,7 @@ wbt_str_t * wbt_conf_get_v( const char * name ) {
     wbt_str_t config_name;
     config_name.str = (char *)name;
     config_name.len = strlen(name);
-    wbt_rbtree_node_t * root = wbt_rbtree_get(&wbt_config_rbtree, &config_name);
+    wbt_rb_node_t * root = wbt_rb_get(&wbt_config_rbtree, &config_name);
     if( root == NULL ) {
         return NULL;
     } else {

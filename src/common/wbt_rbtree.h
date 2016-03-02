@@ -18,69 +18,69 @@ extern "C" {
 
 /* 定义红黑树结点颜色颜色类型 */
 typedef enum { 
-    WBT_RBT_COLOR_RED = 0, 
-    WBT_RBT_COLOR_BLACK = 1 
-} wbt_rbtree_color_t;
+    WBT_RB_COLOR_RED = 0, 
+    WBT_RB_COLOR_BLACK = 1 
+} wbt_rb_color_t;
 
 typedef enum { 
-    WBT_RBTREE_KEY_STRING = 0, 
-    WBT_RBTREE_KEY_INTEGER = 1,
-    WBT_RBTREE_KEY_LONGLONG = 2
-} wbt_rbtree_key_type_t;
+    WBT_RB_KEY_STRING = 0, 
+    WBT_RB_KEY_INTEGER = 1,
+    WBT_RB_KEY_LONGLONG = 2
+} wbt_rb_key_type_t;
 
-typedef struct wbt_rbtree_key_s {
+typedef struct wbt_rb_key_s {
     int len;
     union {
         char *s;
         unsigned int *i;
         unsigned long long int *l;
     } str;
-} wbt_rbtree_key_t;
+} wbt_rb_key_t;
 
-typedef struct wbt_rbtree_node_s {
-    struct wbt_rbtree_node_s * left;
-    struct wbt_rbtree_node_s * right;
+typedef struct wbt_rb_node_s {
+    struct wbt_rb_node_s * left;
+    struct wbt_rb_node_s * right;
     // 在 gcc 中，unsigned long int 总是和指针长度一致
     unsigned long int parent_color;
-    wbt_rbtree_key_t key;
+    wbt_rb_key_t key;
     wbt_str_t value;
-} wbt_rbtree_node_t;
+} wbt_rb_node_t;
 
-#define wbt_rbtree_parent(r)   ((wbt_rbtree_node_t *)((r)->parent_color & ~3))
-#define wbt_rbtree_color(r)    ((r)->parent_color & 1)
-#define wbt_rbtree_is_red(r)   (!wbt_rbtree_color(r))
-#define wbt_rbtree_is_black(r) wbt_rbtree_color(r)
-#define wbt_rbtree_set_red(r)  do { (r)->parent_color &= ~1; } while (0)
-#define wbt_rbtree_set_black(r)  do { (r)->parent_color |= 1; } while (0)
+#define wbt_rb_parent(r)   ((wbt_rb_node_t *)((r)->parent_color & ~3))
+#define wbt_rb_color(r)    ((r)->parent_color & 1)
+#define wbt_rb_is_red(r)   (!wbt_rb_color(r))
+#define wbt_rb_is_black(r) wbt_rb_color(r)
+#define wbt_rb_set_red(r)  do { (r)->parent_color &= ~1; } while (0)
+#define wbt_rb_set_black(r)  do { (r)->parent_color |= 1; } while (0)
 
-typedef struct wbt_rbtree_s {
-    wbt_rbtree_node_t * root;
+typedef struct wbt_rb_s {
+    wbt_rb_node_t * root;
     unsigned int size;
-    wbt_rbtree_key_type_t key_type;
-} wbt_rbtree_t;
+    wbt_rb_key_type_t key_type;
+} wbt_rb_t;
 
-void wbt_rbtree_init(wbt_rbtree_t *rbt, wbt_rbtree_key_type_t type);
+void wbt_rb_init(wbt_rb_t *rbt, wbt_rb_key_type_t type);
 
-void wbt_rbtree_print(wbt_rbtree_node_t *node);
+void wbt_rb_print(wbt_rb_node_t *node);
 
-wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_insert(wbt_rb_t *rbt, wbt_str_t *key);
 
-void wbt_rbtree_delete(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node);
+void wbt_rb_delete(wbt_rb_t *rbt, wbt_rb_node_t *node);
 
-wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key);
-void * wbt_rbtree_get_value(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_min(wbt_rbtree_t *rbt);
-wbt_rbtree_node_t * wbt_rbtree_get_max(wbt_rbtree_t *rbt);
-wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key);
-wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_get(wbt_rb_t *rbt, wbt_str_t *key);
+void * wbt_rb_get_value(wbt_rb_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_get_min(wbt_rb_t *rbt);
+wbt_rb_node_t * wbt_rb_get_max(wbt_rb_t *rbt);
+wbt_rb_node_t * wbt_rb_get_lesser(wbt_rb_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_get_lesser_or_equal(wbt_rb_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_get_greater(wbt_rb_t *rbt, wbt_str_t *key);
+wbt_rb_node_t * wbt_rb_get_greater_or_equal(wbt_rb_t *rbt, wbt_str_t *key);
 
-void wbt_rbtree_destroy(wbt_rbtree_t *rbt);
-void wbt_rbtree_destroy_ignore_value(wbt_rbtree_t *rbt);
+void wbt_rb_destroy(wbt_rb_t *rbt);
+void wbt_rb_destroy_ignore_value(wbt_rb_t *rbt);
 
-wbt_rbtree_node_t * wbt_rbtree_first(const wbt_rbtree_t *rbt);
-wbt_rbtree_node_t * wbt_rbtree_next(const wbt_rbtree_node_t *node);
+wbt_rb_node_t * wbt_rb_first(const wbt_rb_t *rbt);
+wbt_rb_node_t * wbt_rb_next(const wbt_rb_node_t *node);
 
 #ifdef	__cplusplus
 }
