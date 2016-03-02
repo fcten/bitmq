@@ -35,7 +35,9 @@ typedef struct wbt_msg_block_s {
     // 投递模式
     // 1、负载均衡模式：有多个消费者。消息以负载均衡的方式投递给某一个消费者。
     // 2、广播模式：有多个消费者。消息以广播的方式投递给所有消费者。
-    unsigned int delivery_mode:4;
+    unsigned int type:2;
+    // 投递质量保证
+    unsigned int qos:2;
     // 消息长度
     size_t data_len;
 } wbt_msg_block_t;

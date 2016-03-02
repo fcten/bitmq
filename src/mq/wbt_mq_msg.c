@@ -22,12 +22,21 @@ static wbt_mq_id wbt_msg_create_count = 0;
 static wbt_mq_id wbt_msg_effect_count = 0;
 static wbt_mq_id wbt_msg_delete_count = 0;
 
+void wbt_mq_msg_update_create_count(wbt_mq_id msg_id) {
+    if( wbt_msg_create_count < msg_id ) {
+        wbt_msg_create_count = msg_id;
+    }
+}
+
 wbt_msg_t * wbt_mq_msg_create(int msg_id) {
     wbt_msg_t * msg = wbt_calloc(sizeof(wbt_msg_t));
     
     if( msg ) {
         if( msg_id ) {
             msg->msg_id = msg_id;
+            if( wbt_msg_create_count < msg_id ) {
+                wbt_msg_create_count = msg_id;
+            }
         } else {
             msg->msg_id = ++wbt_msg_create_count;
         }
@@ -151,7 +160,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         return WBT_ERROR;
     }
 
-    if( msg->delivery_mode == MSG_BROADCAST ) {
+    if( msg->type == MSG_BROADCAST ) {
         // 广播模式，通知该频道下所有的订阅者获取该消息
         // TODO 限制循环次数，订阅数量过多的频道不进行实时投递（数值可以由配置文件设定）
         wbt_subscriber_list_t * subscriber_node;
@@ -166,7 +175,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
                 }
             }
         }
-    } else if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+    } else if( msg->type == MSG_LOAD_BALANCE ) {
         if( wbt_list_empty( &channel->subscriber_list->head ) ) {
             // 频道没有任何订阅者
             return WBT_OK;

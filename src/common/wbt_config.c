@@ -115,6 +115,13 @@ wbt_status wbt_conf_init() {
         }
     }
 
+    wbt_conf.aof = 1;
+    if( ( m_value = wbt_conf_get_v("aof") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_off ) == 0 ) {
+            wbt_conf.aof = 0;
+        }
+    }
+
     wbt_conf.aof_crc = 0;
     if( ( m_value = wbt_conf_get_v("aof_crc") ) != NULL ) {
         if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_on ) == 0 ) {
@@ -122,7 +129,7 @@ wbt_status wbt_conf_init() {
         }
     }
 
-    wbt_conf.aof_fsync = AOF_FSYNC_NO;
+    wbt_conf.aof_fsync = AOF_FSYNC_EVERYSEC;
     if( ( m_value = wbt_conf_get_v("aof_fsync") ) != NULL ) {
         if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_off ) == 0 ) {
             wbt_conf.aof_fsync = AOF_FSYNC_NO;
@@ -135,7 +142,14 @@ wbt_status wbt_conf_init() {
             return WBT_ERROR;
         }
     }
-    
+
+    wbt_conf.aof_fast_boot = 1;
+    if( ( m_value = wbt_conf_get_v("aof_fast_boot") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_off ) == 0 ) {
+            wbt_conf.aof_fast_boot = 0;
+        }
+    }
+
     wbt_conf.keep_alive_timeout = 600000;
     if( ( value = wbt_conf_get("keep_alive_timeout") ) != NULL ) {
         wbt_conf.keep_alive_timeout = atoi(value);

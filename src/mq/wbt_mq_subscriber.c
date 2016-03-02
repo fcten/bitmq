@@ -162,7 +162,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
         }
 
         // 如果是负载均衡消息，则从该频道中暂时移除该消息，以被免重复处理
-        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        if( msg->type == MSG_LOAD_BALANCE ) {
             // 消息本身不能被释放
             node->value.str = NULL;
             wbt_rb_delete(&channel_node->channel->queue, node);

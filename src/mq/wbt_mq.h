@@ -32,10 +32,17 @@ enum {
     MSG_EXPIRED    // 已过期
 };
 
-enum {
-    MSG_BROADCAST, // 广播模式
-    MSG_LOAD_BALANCE   // 负载均衡模式
-};
+typedef enum wbt_msg_type_e {
+    MSG_BROADCAST = 1, // 广播消息
+    MSG_LOAD_BALANCE,  // 负载均衡消息
+    MSG_ACK            // 确认消息
+} wbt_msg_type_t;
+
+typedef enum wbt_msg_qos_e {
+    MSG_AT_LEAST_ONCE = 1,
+    MSG_AT_MOST_ONCE,
+    MSG_EXACTLY_ONCE
+} wbt_msg_qos_t;
 
 typedef long long unsigned int wbt_mq_id;
 
@@ -58,7 +65,9 @@ typedef struct wbt_msg_s {
     // 投递模式
     // 1、负载均衡模式：有多个消费者。消息以负载均衡的方式投递给某一个消费者。
     // 2、广播模式：有多个消费者。消息以广播的方式投递给所有消费者。
-    unsigned int delivery_mode:4;
+    unsigned int type:2;
+    // 投递质量保证
+    unsigned int qos:2;
     // 消息长度
     size_t data_len;
     // 消息生效顺序

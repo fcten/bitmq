@@ -113,7 +113,7 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
 
     // 重新投递发送失败的负载均衡消息
     wbt_msg_t *msg = wbt_mq_msg_get(subscriber->msg_id);
-    if( msg && msg->delivery_mode == MSG_LOAD_BALANCE ) {
+    if( msg && msg->type == MSG_LOAD_BALANCE ) {
         wbt_mq_msg_delivery(msg);
     }
 
@@ -141,7 +141,7 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev) {
     wbt_msg_t *msg = wbt_mq_msg_get(subscriber->msg_id);
     if( msg ) {
         // 如果是负载均衡消息，将该消息移动到 delivered_list 中
-        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        if( msg->type == MSG_LOAD_BALANCE ) {
             wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(subscriber->msg_id);
             if( msg_node == NULL ) {
                 return WBT_ERROR;
@@ -240,9 +240,9 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                     }
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
                     if(node->value.l == MSG_BROADCAST ) {
-                        msg->delivery_mode = MSG_BROADCAST;
+                        msg->type = MSG_BROADCAST;
                     } else if ( node->value.l == MSG_LOAD_BALANCE ) {
-                        msg->delivery_mode = MSG_LOAD_BALANCE;
+                        msg->type = MSG_LOAD_BALANCE;
                     } else {
                         return WBT_ERROR;
                     }
@@ -333,7 +333,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     json_delete_object(t.root);
 
     // TEST 持久化该消息
-    wbt_mq_persist(msg);
+    if( wbt_conf.aof ) {
+        wbt_mq_persist(msg);
+    }
     
     // 投递消息
     if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
@@ -410,7 +412,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         http->resp_body_memory.len = msg->data_len;
         
         // 如果是负载均衡消息，则从该频道中暂时移除该消息，以被免重复处理
-        if( msg->delivery_mode == MSG_LOAD_BALANCE ) {
+        if( msg->type == MSG_LOAD_BALANCE ) {
             // 消息本身不能被释放
             node->value.str = NULL;
             wbt_rb_delete(&channel_node->channel->queue, node);

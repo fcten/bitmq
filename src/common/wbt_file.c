@@ -175,7 +175,7 @@ wbt_status wbt_file_close( wbt_file_t * file ) {
             file->last_use_mtime = wbt_cur_mtime;
         }
         
-        wbt_log_debug("close file: %d %d\n", file->fd, file->refer);
+        //wbt_log_debug("close file: %d %d\n", file->fd, file->refer);
     }
 
     return WBT_OK;
@@ -247,7 +247,7 @@ ssize_t wbt_file_size(wbt_str_t * file_path) {
 }
 
 ssize_t wbt_file_read( wbt_file_t *file ) {
-    if( !file->fd ) {
+    if( file->fd <= 0 ) {
         return -1;
     }
     
