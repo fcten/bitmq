@@ -30,21 +30,22 @@ static inline void wbt_rbtree_set_parent_color(wbt_rbtree_node_t *node, wbt_rbtr
     node->parent_color = (unsigned long int)parent | color;
 }
 
-static int wbt_rbtree_compare(wbt_rbtree_key_t *key1, wbt_rbtree_key_t *key2) {
-    if( key1->len == 4 && key2->len == 4 ) {
-        if( *key1->str.i > *key2->str.i ) {
-            return *key1->str.i - *key2->str.i;
-        } else {
-            return -(*key2->str.i - *key1->str.i);
-        }
-    } else if( key1->len == 8 && key2->len == 8 ) {
-        if( *key1->str.l > *key2->str.l ) {
-            return *key1->str.l - *key2->str.l;
-        } else {
-            return -(*key2->str.l - *key1->str.l);
-        }
-    } else {
-        return wbt_strcmp((wbt_str_t *)key1, (wbt_str_t *)key2);
+static int wbt_rbtree_compare(wbt_rbtree_t *rbt, wbt_rbtree_key_t *key1, wbt_rbtree_key_t *key2) {
+    switch( rbt->key_type ) {
+        case WBT_RBTREE_KEY_INTEGER:
+            if( *key1->str.i > *key2->str.i ) {
+                return *key1->str.i - *key2->str.i;
+            } else {
+                return -(*key2->str.i - *key1->str.i);
+            }
+        case WBT_RBTREE_KEY_LONGLONG:
+            if( *key1->str.l > *key2->str.l ) {
+                return *key1->str.l - *key2->str.l;
+            } else {
+                return -(*key2->str.l - *key1->str.l);
+            }
+        default:
+            return wbt_strcmp((wbt_str_t *)key1, (wbt_str_t *)key2);
     }
 }
 
@@ -154,10 +155,11 @@ void wbt_rbtree_insert_fixup(wbt_rbtree_t *rbt, wbt_rbtree_node_t *node) {
     wbt_rbtree_set_black(rbt->root);  
 }
 
-void wbt_rbtree_init(wbt_rbtree_t *rbt) {
+void wbt_rbtree_init(wbt_rbtree_t *rbt, wbt_rbtree_key_type_t type) {
     /*rbt->max = 1024;*/
     rbt->size = 0;
     rbt->root = NULL;
+    rbt->key_type = type;
 }
 
 wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
@@ -185,7 +187,7 @@ wbt_rbtree_node_t * wbt_rbtree_insert(wbt_rbtree_t *rbt, wbt_str_t *key) {
     } else {
         tail_node = rbt->root;
         while(1) {
-            ret = wbt_rbtree_compare((wbt_rbtree_key_t *)key, &tail_node->key);
+            ret = wbt_rbtree_compare(rbt, (wbt_rbtree_key_t *)key, &tail_node->key);
             if( ret == 0 ) {
                 /* 键值已经存在 */
                 return NULL;
@@ -380,7 +382,7 @@ wbt_rbtree_node_t * wbt_rbtree_get(wbt_rbtree_t *rbt, wbt_str_t *key) {
     node = rbt->root;
     
     while(node) {
-        ret = wbt_rbtree_compare((wbt_rbtree_key_t *)key, &node->key);
+        ret = wbt_rbtree_compare(rbt, (wbt_rbtree_key_t *)key, &node->key);
         if(ret == 0) {
             return node;
         } else if( ret > 0 ) {
@@ -409,7 +411,7 @@ wbt_rbtree_node_t * wbt_rbtree_get_lesser(wbt_rbtree_t *rbt, wbt_str_t *key) {
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(&node->key, (wbt_rbtree_key_t *)key) >= 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) >= 0) {
             node = node->left;
         } else {
             ret = node;
@@ -427,7 +429,7 @@ wbt_rbtree_node_t * wbt_rbtree_get_lesser_or_equal(wbt_rbtree_t *rbt, wbt_str_t 
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(&node->key, (wbt_rbtree_key_t *)key) > 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) > 0) {
             node = node->left;
         } else {
             ret = node;
@@ -445,7 +447,7 @@ wbt_rbtree_node_t * wbt_rbtree_get_greater(wbt_rbtree_t *rbt, wbt_str_t *key) {
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(&node->key, (wbt_rbtree_key_t *)key) > 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) > 0) {
             wbt_log_debug("%lld > %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
             ret = node;
             node = node->left;
@@ -473,7 +475,7 @@ wbt_rbtree_node_t * wbt_rbtree_get_greater_or_equal(wbt_rbtree_t *rbt, wbt_str_t
     node = rbt->root;
     
     while(node) {
-        if(wbt_rbtree_compare(&node->key, (wbt_rbtree_key_t *)key) >= 0) {
+        if(wbt_rbtree_compare(rbt, &node->key, (wbt_rbtree_key_t *)key) >= 0) {
             ret = node;
             node = node->left;
         } else {

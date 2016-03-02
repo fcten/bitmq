@@ -13,7 +13,7 @@
 static wbt_rbtree_t wbt_mq_messages;
 
 wbt_status wbt_mq_msg_init() {
-    wbt_rbtree_init(&wbt_mq_messages);
+    wbt_rbtree_init(&wbt_mq_messages, WBT_RBTREE_KEY_LONGLONG);
 
     return WBT_OK;
 }

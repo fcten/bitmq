@@ -12,7 +12,7 @@
 static wbt_rbtree_t wbt_mq_subscribers;
 
 wbt_status wbt_mq_subscriber_init() {
-    wbt_rbtree_init(&wbt_mq_subscribers);
+    wbt_rbtree_init(&wbt_mq_subscribers, WBT_RBTREE_KEY_LONGLONG);
 
     return WBT_OK;
 }

@@ -72,7 +72,7 @@ wbt_status wbt_file_exit() {
 
 wbt_status wbt_file_init() {
     /* 初始化一个红黑树用以保存已打开的文件句柄 */
-    wbt_rbtree_init(&wbt_file_rbtree);
+    wbt_rbtree_init(&wbt_file_rbtree, WBT_RBTREE_KEY_STRING);
 
     /* 添加一个定时任务用以清理过期的文件句柄 */
     wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));

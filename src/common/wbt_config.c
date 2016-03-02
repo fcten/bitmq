@@ -40,7 +40,7 @@ int wbt_conf_charactor = 0;
 wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_init() {
-    wbt_rbtree_init(&wbt_config_rbtree);
+    wbt_rbtree_init(&wbt_config_rbtree, WBT_RBTREE_KEY_STRING);
     
     wbt_config_file_path.len = 64;
     wbt_config_file_path.str = wbt_malloc( wbt_config_file_path.len );

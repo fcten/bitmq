@@ -22,6 +22,12 @@ typedef enum {
     WBT_RBT_COLOR_BLACK = 1 
 } wbt_rbtree_color_t;
 
+typedef enum { 
+    WBT_RBTREE_KEY_STRING = 0, 
+    WBT_RBTREE_KEY_INTEGER = 1,
+    WBT_RBTREE_KEY_LONGLONG = 2
+} wbt_rbtree_key_type_t;
+
 typedef struct wbt_rbtree_key_s {
     int len;
     union {
@@ -50,9 +56,10 @@ typedef struct wbt_rbtree_node_s {
 typedef struct wbt_rbtree_s {
     wbt_rbtree_node_t * root;
     unsigned int size;
+    wbt_rbtree_key_type_t key_type;
 } wbt_rbtree_t;
 
-void wbt_rbtree_init(wbt_rbtree_t *rbt);
+void wbt_rbtree_init(wbt_rbtree_t *rbt, wbt_rbtree_key_type_t type);
 
 void wbt_rbtree_print(wbt_rbtree_node_t *node);
 

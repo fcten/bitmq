@@ -12,7 +12,7 @@
 static wbt_rbtree_t wbt_mq_channels;
 
 wbt_status wbt_mq_channel_init() {
-    wbt_rbtree_init(&wbt_mq_channels);
+    wbt_rbtree_init(&wbt_mq_channels, WBT_RBTREE_KEY_LONGLONG);
 
     return WBT_OK;
 }
@@ -24,7 +24,7 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         channel->channel_id = channel_id;
         channel->create = wbt_cur_mtime;
         
-        wbt_rbtree_init(&channel->queue);
+        wbt_rbtree_init(&channel->queue, WBT_RBTREE_KEY_LONGLONG);
 
         channel->subscriber_list = wbt_calloc(sizeof(wbt_subscriber_list_t));
         if( channel->subscriber_list ) {
