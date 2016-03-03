@@ -88,8 +88,13 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         // TODO 修改消息相关的内存操作，尝试直接使用读入的内存
         // TODO 使用 mdb 文件加速载入
         // 已过期的消息应当被忽略
-        // TODO 未过期但是已经收到 ACK 的负载均衡消息可能会在 fast_boot 期间被重复处理
-        if( block->expire > wbt_cur_mtime ) {
+        if( block->type == MSG_ACK ) {
+            // 未过期但是已经收到 ACK 的负载均衡消息可能会在 fast_boot 期间被重复处理
+            wbt_msg_t *msg = wbt_mq_msg_get(block->consumer_id);
+            if(msg) {
+                wbt_mq_msg_destory(msg);
+            }
+        } else if( block->expire > wbt_cur_mtime ) {
             msg = wbt_mq_msg_create(block->msg_id);
             if( msg == NULL ) {
                 // * 这里发生失败，可能是因为内存不足，也可能是因为 msg_id 冲突
@@ -291,5 +296,19 @@ wbt_status wbt_mq_persist(wbt_msg_t *msg) {
 }
 
 wbt_status wbt_mq_persist_rewrite() {
+    // * 重写 aof 其实是遍历并导出内存中的所有活跃消息
+    // * 目前不允许对已投递消息做任何修改，所以我们可以将这个操作通过定时事件分步完成。
+    // * 和 fork 新进程的方式相比，这样做可以节省大量的内存。这允许我们更加频繁地执行该
+    // 操作。而我们需要付出的唯一代价是重写后的文件中依然会存在少量刚刚过期的消息
+
+    // 创建并使用新的 aof 文件
     
+    // 记录当前的最大消息 ID max
+    
+    // 在定时任务中，从小到大遍历消息，直至 max
+    
+    // 重写完成，删除旧的 aof 文件
+    // 如果在程序启动时发现了旧的 aof 文件，必须做相应处理
+    
+    return WBT_OK;
 }

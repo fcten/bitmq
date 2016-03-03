@@ -239,12 +239,14 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                         msg->expire = (unsigned int)node->value.l;
                     }
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
-                    if(node->value.l == MSG_BROADCAST ) {
-                        msg->type = MSG_BROADCAST;
-                    } else if ( node->value.l == MSG_LOAD_BALANCE ) {
-                        msg->type = MSG_LOAD_BALANCE;
-                    } else {
-                        return WBT_ERROR;
+                    switch(node->value.l) {
+                        case MSG_BROADCAST:
+                        case MSG_LOAD_BALANCE:
+                        case MSG_ACK:
+                           msg->type = node->value.l;
+                           break;
+                        default:
+                            return WBT_ERROR;
                     }
                 }
                 break;
@@ -332,13 +334,21 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     
     json_delete_object(t.root);
 
-    // TEST 持久化该消息
+    // 持久化该消息
     if( wbt_conf.aof ) {
         wbt_mq_persist(msg);
     }
     
     // 投递消息
-    if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
+    if( msg->type == MSG_ACK ) {
+        wbt_subscriber_t *subscriber = ev->ctx;
+        if( subscriber == NULL ) {
+            http->status = STATUS_403;
+            return WBT_OK;
+        }
+        wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id);
+        wbt_mq_msg_destory( msg );
+    } else if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
         wbt_mq_msg_destory( msg );
         
         http->status = STATUS_403;
@@ -444,16 +454,3 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
         return wbt_mq_pull_timeout(&ev->timer);
     }
 }
-
-wbt_status wbt_mq_ack(wbt_event_t *ev) {
-    // 解析请求
-    wbt_mq_id msg_id;
-    wbt_mq_id subscriber_id;
-    
-    // 该条消息消费成功
-    
-    // 从该订阅者的 delivered_heap 中移除消息
-    
-    return WBT_OK;
-}
-

@@ -180,6 +180,25 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
     return WBT_ERROR;
 }
 
+wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg_id) {
+    wbt_msg_list_t *msg_node;
+    wbt_msg_t *msg;
+    wbt_list_for_each_entry(msg_node, &subscriber->delivered_list->head, head) {
+        if( msg_node->msg_id == msg_id ) {
+            msg = wbt_mq_msg_get(msg_node->msg_id);
+            if( msg ) {
+                wbt_mq_msg_destory(msg);
+            }
+
+            wbt_list_del(&msg_node->head);
+            wbt_mq_msg_destory_node(msg_node);
+            break;
+        }
+    }
+    
+    return WBT_OK;
+}
+
 long long int wbt_mq_subscriber_status_active() {
     return wbt_mq_subscribers.size;
 }
