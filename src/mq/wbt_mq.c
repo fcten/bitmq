@@ -332,6 +332,16 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     }
     
     json_delete_object(t.root);
+    
+    // 如果使用释放 TTL 最小的消息的策略
+    // 如果不使用该策略，并并开启了持久化，那么该消息会暂时存储到文件中
+    // 注意：消息的超时时间并不会改变，如果后续消息长时间得不到处理，可能会直接过期
+    // 如果既不使用该策略，有没有开启持久化，则该条消息会被立刻删除并返回投递失败
+    if( 0 ) {
+        while( wbt_is_oom() ) {
+            // TODO 从超时队列中找到超时时间最小的消息，并删除
+        }
+    }
 
     // 投递消息
     if( msg->type == MSG_ACK || // ACK 消息总是立刻被处理
@@ -365,7 +375,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     } else {
         // 如果当前正在恢复数据，或者内存占用过高，则不进行投递
         // 立刻删除该消息，等待数据恢复到该消息时再进行投递
-        if( !wbt_conf.aof ) {
+        if( !wbt_conf.aof || 0/* TODO 使用直接拒绝消息策略 */ ) {
             // 如果内存占用过高且没有开启持久化
             wbt_mq_msg_destory( msg );
 

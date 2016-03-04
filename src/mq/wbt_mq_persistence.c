@@ -24,6 +24,7 @@ static wbt_str_t wbt_persist_mdp = wbt_string("./data/webit.mdp");
 extern wbt_atomic_t wbt_wating_to_exit;
 
 static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer);
+static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer);
 
 int wbt_mq_persist_aof_lock() {
     return wbt_persist_aof_lock;
@@ -177,17 +178,19 @@ wbt_status wbt_mq_persist_init() {
         wbt_mq_persist_count = 0;
     }
 
-    if( wbt_conf.aof ) {
-        wbt_persist_aof_fd = open(wbt_persist_aof.str,
-                O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
-        if( wbt_persist_aof_fd <= 0 ) {
-            return WBT_ERROR;
-        }
+    if( !wbt_conf.aof ) {
+        return WBT_OK;
+    }
 
-        wbt_persist_aof_size = wbt_file_size(&wbt_persist_aof);
-        if( wbt_persist_aof_size < 0 ) {
-            return WBT_ERROR;
-        }
+    wbt_persist_aof_fd = open(wbt_persist_aof.str,
+            O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+    if( wbt_persist_aof_fd <= 0 ) {
+        return WBT_ERROR;
+    }
+
+    wbt_persist_aof_size = wbt_file_size(&wbt_persist_aof);
+    if( wbt_persist_aof_size < 0 ) {
+        return WBT_ERROR;
     }
 
     // redis 2.4. 以后开始使用后台线程异步刷盘，我们暂时不那么做
@@ -211,8 +214,19 @@ wbt_status wbt_mq_persist_init() {
         if( wbt_timer_add(timer) != WBT_OK ) {
             return WBT_ERROR;
         }
+
+        // TODO 启动后立刻进行重写可能并不合适
+        timer = wbt_malloc(sizeof(wbt_timer_t));
+        timer->on_timeout = wbt_mq_persist_dump;
+        timer->timeout = wbt_cur_mtime + 1; // +1 是为了确保先执行 recovery，再执行 dump
+        timer->heap_idx = 0;
+
+        if( wbt_timer_add(timer) != WBT_OK ) {
+            return WBT_ERROR;
+        }
     } else {
         wbt_mq_persist_recovery(NULL);
+        wbt_mq_persist_dump(NULL);
     }
     
     return WBT_OK;
@@ -334,30 +348,51 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg) {
 // * 目前不允许对已投递消息做任何修改，所以我们可以将这个操作通过定时事件分步完成。
 // * 和 fork 新进程的方式相比，这样做可以节省大量的内存。这允许我们更加频繁地执行该
 // 操作。而我们需要付出的唯一代价是导出的文件中可能会存在少量刚刚过期的消息
-wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
+// TODO 
+static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
+    // 临时文件 fd
+    static int rdp_fd = 0;
+    // 记录当前的最大消息 ID max
+    static wbt_mq_id processed_msg_id = 0;
+
     if( wbt_persist_aof_lock == 1 ) {
         // 如果目前正在从 aof 文件中恢复数据，则 dump 操作必须被推迟
+        // 这是为了保证 dump 完成的时刻，所有未过期消息都在内存中
         if(timer && !wbt_wating_to_exit) {
             /* 重新注册定时事件 */
-            timer->timeout = wbt_cur_mtime + 1000;
+            timer->timeout = wbt_cur_mtime + 60 * 1000;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;
             }
         }
         
+        // 发生数据恢复往往是因为旧的消息被删除了，所以推迟之后，dump 操作应当重新开始
+        rdp_fd = 0;
+        
+        return WBT_OK;
+    } else if( 0 /* 如果当前负载过高 */) {
+        // 如果当前负载过高，则 dump 操作必须被推迟
+        if(timer && !wbt_wating_to_exit) {
+            /* 重新注册定时事件 */
+            timer->timeout = wbt_cur_mtime + 3600 * 1000;
+
+            if(wbt_timer_mod(timer) != WBT_OK) {
+                return WBT_ERROR;
+            }
+        }
+        
+        // 负载过高时，会推迟很长一段时间再尝试，所以推迟之后，dump 操作应当重新开始
+        rdp_fd = 0;
+        
         return WBT_OK;
     }
 
-    // 临时文件 fd
-    static int rdp_fd = 0;
-    // 记录当前的最大消息 ID max
-    static wbt_mq_id processed_msg_id = 0;
     if( !rdp_fd ) {
         // 创建临时文件
         rdp_fd = open(wbt_persist_mdp.str,
                 O_RDWR | O_APPEND | O_CREAT | O_TRUNC | O_CLOEXEC, 0777);
-        if( wbt_persist_aof_fd <= 0 ) {
+        if( rdp_fd <= 0 ) {
             return WBT_ERROR;
         }
         processed_msg_id = 0;
@@ -410,14 +445,35 @@ wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 
         wbt_persist_aof_fd = rdp_fd;
         rdp_fd = 0;
+
+        // 重写完成后，下一次重写将在设定的时间间隔之后运行
+        if(!wbt_wating_to_exit) {
+            if(!timer) {
+                timer = wbt_malloc(sizeof(wbt_timer_t));
+                timer->on_timeout = wbt_mq_persist_dump;
+                timer->heap_idx = 0;
+            }
+
+            /* 重新注册定时事件 */
+            // TODO 从配置文件中读取
+            timer->timeout = wbt_cur_mtime + 6 * 3600 * 1000;
+
+            if(wbt_timer_mod(timer) != WBT_OK) {
+                return WBT_ERROR;
+            }
+        } else {
+            wbt_free(timer);
+        }
     } else {
-        if(timer && !wbt_wating_to_exit) {
+        if(!wbt_wating_to_exit) {
             /* 重新注册定时事件 */
             timer->timeout = wbt_cur_mtime + 50;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;
             }
+        } else {
+            wbt_free(timer);
         }
     }
 
