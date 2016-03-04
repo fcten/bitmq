@@ -74,10 +74,16 @@ wbt_status wbt_timer_del(wbt_timer_t *timer) {
 }
 
 wbt_status wbt_timer_mod(wbt_timer_t *timer) {
+    wbt_timer_t tmp;
+    tmp.on_timeout = timer->on_timeout;
+    tmp.timeout    = timer->timeout;
+
     if( wbt_timer_del(timer) != WBT_OK ) {
         return WBT_ERROR;
     }
     
+    timer->on_timeout = tmp.on_timeout;
+    timer->timeout    = tmp.timeout;
     if( wbt_timer_add(timer) != WBT_OK ) {
         return WBT_ERROR;
     }

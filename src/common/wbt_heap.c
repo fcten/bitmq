@@ -100,7 +100,7 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
 
     // 删除元素后尝试释放空间
     // 为每一个最小堆添加定时 GC 任务太复杂了，我认为目前的做法可以接受
-    if( p->max >= p->size * 4 && p->size >= 128 ) {
+    if( p->max >= p->size * 4 && p->size >= 256 ) {
         p->heap = wbt_realloc( p->heap, sizeof(wbt_timer_t *) * (p->max/2 + 1) );
         p->max /= 2;
 

@@ -157,7 +157,7 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    /* 如果存在超时时间，添加到超时队列中 */
+    /* 如果存在超时事件，添加到超时队列中 */
     if(wbt_timer_add(&t->timer) != WBT_OK) {
         return NULL;
     }
@@ -218,12 +218,9 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
             return WBT_ERROR;
         }
     }
-    
-    /* 删除超时事件 */
-    wbt_timer_del(&ev->timer);
 
-    /* 如果存在超时时间，重新添加到超时队列中 */
-    if(wbt_timer_add(&ev->timer) != WBT_OK) {
+    /* 重新添加到超时队列中 */
+    if(wbt_timer_mod(&ev->timer) != WBT_OK) {
         return WBT_ERROR;
     }
     
@@ -234,7 +231,7 @@ wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
 wbt_status wbt_event_dispatch() {;
-    int timeout = -1, i = 0;
+    int timeout = 0, i = 0;
     wbt_atomic_t is_accept_lock = 0, is_accept_add = 0;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
@@ -263,13 +260,7 @@ wbt_status wbt_event_dispatch() {;
         is_accept_add = 1;
     }
     
-    while (!wbt_wating_to_exit || wbt_connection_count) {
-        /* 检查并执行超时事件 */
-        timeout = wbt_timer_process();
-        if( timeout == 0 ) {
-            timeout = -1;
-        }
-
+    while (!wbt_wating_to_exit) {
         /* 把监听socket加入epoll中 */
         if( !is_accept_add && !wbt_wating_to_exit ) {
             if( wbt_events.max-wbt_events.top == 2 ) { // TODO 判断是否有请求正在处理
@@ -368,6 +359,12 @@ wbt_status wbt_event_dispatch() {;
                     return WBT_ERROR;
                 }
             }
+        }
+
+        /* 检查并执行超时事件 */
+        timeout = wbt_timer_process();
+        if( timeout == 0 ) {
+            timeout = -1;
         }
     }
 

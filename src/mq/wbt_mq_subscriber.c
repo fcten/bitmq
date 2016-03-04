@@ -192,11 +192,12 @@ wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg
 
             wbt_list_del(&msg_node->head);
             wbt_mq_msg_destory_node(msg_node);
-            break;
+
+            return WBT_OK;
         }
     }
     
-    return WBT_OK;
+    return WBT_ERROR;
 }
 
 long long int wbt_mq_subscriber_status_active() {

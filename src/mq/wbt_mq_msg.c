@@ -234,9 +234,13 @@ long long int wbt_mq_msg_status_waiting_ack() {
     return 0;
 }
 
-json_object_t * wbt_mq_msg_print(wbt_msg_t *msg) {
+json_object_t* wbt_mq_msg_print(wbt_msg_t *msg) {
     json_object_t * obj = json_create_object();
     
     
     return obj;
+}
+
+wbt_rb_t* wbt_mq_msg_get_all() {
+    return &wbt_mq_messages;
 }

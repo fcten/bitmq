@@ -44,8 +44,11 @@ typedef struct wbt_msg_block_s {
     
 wbt_status wbt_mq_persist_init();
 
-wbt_status wbt_mq_persist(wbt_msg_t *msg);
+wbt_status wbt_mq_persist_append(wbt_msg_t *msg);
 
+wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer);
+
+int wbt_mq_persist_aof_lock();
 
 #ifdef	__cplusplus
 }

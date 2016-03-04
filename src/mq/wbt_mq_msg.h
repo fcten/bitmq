@@ -35,6 +35,8 @@ long long int wbt_mq_msg_status_waiting_ack();
 
 json_object_t * wbt_mq_msg_print(wbt_msg_t *msg);
 
+wbt_rb_t* wbt_mq_msg_get_all();
+
 void wbt_mq_msg_update_create_count(wbt_mq_id msg_id);
 
 #ifdef	__cplusplus

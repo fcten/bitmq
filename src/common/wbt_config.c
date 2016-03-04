@@ -172,7 +172,7 @@ wbt_status wbt_conf_init() {
     
     wbt_conf.max_memory_usage = 0;
     if( ( value = wbt_conf_get("max_memory_usage") ) != NULL ) {
-        wbt_conf.max_memory_usage = atoll(value);
+        wbt_conf.max_memory_usage = 1024*1024*atoll(value);
     }
 
     wbt_str_set_null(wbt_conf.root); 

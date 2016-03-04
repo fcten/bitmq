@@ -317,7 +317,6 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     // 创建消息并初始化
     wbt_msg_t * msg = wbt_mq_msg_create(0);
     if( msg == NULL ) {
-        // 返回投递失败
         json_delete_object(t.root);
 
         http->status = STATUS_503;
@@ -334,28 +333,62 @@ wbt_status wbt_mq_push(wbt_event_t *ev) {
     
     json_delete_object(t.root);
 
-    // 持久化该消息
-    if( wbt_conf.aof ) {
-        wbt_mq_persist(msg);
-    }
-    
     // 投递消息
-    if( msg->type == MSG_ACK ) {
-        wbt_subscriber_t *subscriber = ev->ctx;
-        if( subscriber == NULL ) {
+    if( msg->type == MSG_ACK || // ACK 消息总是立刻被处理
+        ( wbt_mq_persist_aof_lock() == 0 && !wbt_is_oom() ) ) {
+        if( msg->type == MSG_ACK ) {
+            wbt_subscriber_t *subscriber = ev->ctx;
+            if( subscriber == NULL || wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id) != WBT_OK ) {
+                wbt_mq_msg_destory( msg );
+                http->status = STATUS_403;
+                return WBT_OK;
+            }
+
+            if( wbt_conf.aof ) {
+                wbt_mq_persist_append(msg);
+            }
+
+            wbt_mq_msg_destory( msg );
+        } else if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
+            if( wbt_conf.aof ) {
+                wbt_mq_persist_append(msg);
+            }
+
+            wbt_mq_msg_destory( msg );
             http->status = STATUS_403;
             return WBT_OK;
+        } else {
+            if( wbt_conf.aof ) {
+                wbt_mq_persist_append(msg);
+            }
         }
-        wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id);
-        wbt_mq_msg_destory( msg );
-    } else if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
+    } else {
+        // 如果当前正在恢复数据，或者内存占用过高，则不进行投递
+        // 立刻删除该消息，等待数据恢复到该消息时再进行投递
+        if( !wbt_conf.aof ) {
+            // 如果内存占用过高且没有开启持久化
+            wbt_mq_msg_destory( msg );
+
+            http->status = STATUS_503;
+            return WBT_OK;
+        }
+        wbt_mq_persist_append(msg);
         wbt_mq_msg_destory( msg );
         
-        http->status = STATUS_403;
-        return WBT_OK;
+        // 如果数据恢复并没有在进行，则启动之
+        if(wbt_mq_persist_aof_lock() == 0) {
+            wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
+            timer->on_timeout = wbt_mq_persist_recovery;
+            timer->timeout = wbt_cur_mtime;
+            timer->heap_idx = 0;
+
+            if( wbt_timer_add(timer) != WBT_OK ) {
+                return WBT_ERROR;
+            }
+        }
     }
-    
-    // TODO 返回消息编号
+
+    // TODO 返回 msg_id
     http->status = STATUS_200;
 
     return WBT_OK;

@@ -23,7 +23,7 @@
 
 static size_t wbt_memory_usage = 0;
 
-int wbt_mem_is_oom() { 
+int wbt_is_oom() { 
     if( wbt_conf.max_memory_usage <= 0 ) {
         return 0;
     }

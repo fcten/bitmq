@@ -61,6 +61,8 @@ wbt_status wbt_file_cleanup(wbt_timer_t *timer) {
         if(wbt_timer_mod(timer) != WBT_OK) {
             return WBT_ERROR;
         }
+    } else {
+        wbt_free(timer);
     }
 
     return WBT_OK;

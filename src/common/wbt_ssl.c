@@ -140,6 +140,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
 
 wbt_status wbt_ssl_on_conn( wbt_event_t * ev ) {
     if( !wbt_conf.secure ) {
+        ev->ssl = NULL;
         return WBT_OK;
     }
 
