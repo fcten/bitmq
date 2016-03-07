@@ -13,17 +13,29 @@
 #include "wbt_mq_persistence.h"
 #include "../json/wbt_json.h"
 
-wbt_str_t wbt_str_message = wbt_string("message");
-wbt_str_t wbt_str_channel = wbt_string("channel");
-wbt_str_t wbt_str_subscriber = wbt_string("subscriber");
-wbt_str_t wbt_str_total = wbt_string("total");
-wbt_str_t wbt_str_active = wbt_string("active");
-wbt_str_t wbt_str_delayed = wbt_string("delayed");
-wbt_str_t wbt_str_waiting_ack = wbt_string("waiting_ack");
-wbt_str_t wbt_str_system = wbt_string("system");
-wbt_str_t wbt_str_uptime = wbt_string("uptime");
-wbt_str_t wbt_str_channel_id = wbt_string("channel_id");
-wbt_str_t wbt_str_list = wbt_string("list");
+wbt_str_t wbt_mq_str_message       = wbt_string("message");
+wbt_str_t wbt_mq_str_channel       = wbt_string("channel");
+wbt_str_t wbt_mq_str_subscriber    = wbt_string("subscriber");
+
+wbt_str_t wbt_mq_str_total         = wbt_string("total");
+wbt_str_t wbt_mq_str_active        = wbt_string("active");
+wbt_str_t wbt_mq_str_delayed       = wbt_string("delayed");
+wbt_str_t wbt_mq_str_waiting_ack   = wbt_string("waiting_ack");
+
+wbt_str_t wbt_mq_str_system        = wbt_string("system");
+wbt_str_t wbt_mq_str_uptime        = wbt_string("uptime");
+
+wbt_str_t wbt_mq_str_list          = wbt_string("list");
+
+wbt_str_t wbt_mq_str_msg_id        = wbt_string("msg_id");
+wbt_str_t wbt_mq_str_channel_id    = wbt_string("channel_id");
+wbt_str_t wbt_mq_str_subscriber_id = wbt_string("subscriber_id");
+wbt_str_t wbt_mq_str_consumer_id   = wbt_string("consumer_id");
+wbt_str_t wbt_mq_str_create        = wbt_string("create");
+wbt_str_t wbt_mq_str_effect        = wbt_string("effect");
+wbt_str_t wbt_mq_str_expire        = wbt_string("expire");
+wbt_str_t wbt_mq_str_delivery_mode = wbt_string("delivery_mode");
+wbt_str_t wbt_mq_str_data          = wbt_string("data");
 
 wbt_module_t wbt_module_mq = {
     wbt_string("mq"),
@@ -213,12 +225,6 @@ wbt_status wbt_mq_login(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_str_t wbt_mq_str_consumer_id   = wbt_string("consumer_id");
-wbt_str_t wbt_mq_str_effect        = wbt_string("effect");
-wbt_str_t wbt_mq_str_expire        = wbt_string("expire");
-wbt_str_t wbt_mq_str_delivery_mode = wbt_string("delivery_mode");
-wbt_str_t wbt_mq_str_data          = wbt_string("data");
-
 wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
     json_object_t * node = task->root;
     wbt_str_t key;
@@ -272,7 +278,8 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                     char *p = msg->data;
                     size_t l = msg->data_len;
                     json_print(node->value.p, &p, &l);
-                    msg->data = wbt_realloc( msg->data, msg->data_len-l );
+                    msg->data_len -= l;
+                    msg->data = wbt_realloc( msg->data, msg->data_len );
                 }
                 break;
         }
@@ -456,13 +463,21 @@ wbt_status wbt_mq_pull(wbt_event_t *ev) {
     }
 
     if(msg) {
-        http->resp_body_memory.str = wbt_strdup(msg->data, msg->data_len);
+        json_object_t *obj = wbt_mq_msg_print(msg);
+
+        http->resp_body_memory.len = 10240;
+        http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
         if( http->resp_body_memory.str == NULL ) {
             http->status = STATUS_503;
             return WBT_OK;
         }
+        char *p = http->resp_body_memory.str;
+        size_t l = http->resp_body_memory.len;
+        json_print(obj, &p, &l);
+        http->resp_body_memory.len -= l;
+        http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );
+        
         http->status = STATUS_200;
-        http->resp_body_memory.len = msg->data_len;
         
         // 如果是负载均衡消息，则从该频道中暂时移除该消息，以被免重复处理
         if( msg->type == MSG_LOAD_BALANCE ) {

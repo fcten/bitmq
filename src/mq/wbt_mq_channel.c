@@ -143,13 +143,13 @@ json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
     json_object_t * obj = json_create_object();
     json_object_t * message = json_create_object();
     json_object_t * subscriber = json_create_object();
-    json_append(obj, wbt_str_channel_id.str, wbt_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
-    json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
-    json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
+    json_append(obj, wbt_mq_str_channel_id.str, wbt_mq_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
+    json_append(obj, wbt_mq_str_message.str,    wbt_mq_str_message.len,    JSON_OBJECT,   message,              0);
+    json_append(obj, wbt_mq_str_subscriber.str, wbt_mq_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
 
-    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->queue.size, 0 );
+    json_append(message, wbt_mq_str_total.str, wbt_mq_str_total.len, JSON_INTEGER, &channel->queue.size, 0 );
     
-    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0 );
+    json_append(subscriber, wbt_mq_str_total.str, wbt_mq_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0 );
     
     return obj;
 }

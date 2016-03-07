@@ -136,11 +136,18 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
     }
 
     if(msg) {
-        http->resp_body_memory.str = wbt_strdup(msg->data, msg->data_len);
+        json_object_t *obj = wbt_mq_msg_print(msg);
+
+        http->resp_body_memory.len = 10240;
+        http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
         if( http->resp_body_memory.str == NULL ) {
             return WBT_ERROR;
         }
-        http->resp_body_memory.len = msg->data_len;
+        char *p = http->resp_body_memory.str;
+        size_t l = http->resp_body_memory.len;
+        json_print(obj, &p, &l);
+        http->resp_body_memory.len -= l;
+        http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );
         
         http->status = STATUS_200;
         http->state = STATE_SENDING;

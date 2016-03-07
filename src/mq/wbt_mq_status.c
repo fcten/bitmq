@@ -81,21 +81,21 @@ wbt_status wbt_mq_status_general(wbt_event_t *ev) {
     json_object_t * subscriber = json_create_object();
     json_object_t * system     = json_create_object();
     
-    json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT, message,    0);
-    json_append(obj, wbt_str_channel.str,    wbt_str_channel.len,    JSON_OBJECT, channel,    0);
-    json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT, subscriber, 0);
-    json_append(obj, wbt_str_system.str,     wbt_str_system.len,     JSON_OBJECT, system,     0);
+    json_append(obj, wbt_mq_str_message.str,    wbt_mq_str_message.len,    JSON_OBJECT, message,    0);
+    json_append(obj, wbt_mq_str_channel.str,    wbt_mq_str_channel.len,    JSON_OBJECT, channel,    0);
+    json_append(obj, wbt_mq_str_subscriber.str, wbt_mq_str_subscriber.len, JSON_OBJECT, subscriber, 0);
+    json_append(obj, wbt_mq_str_system.str,     wbt_mq_str_system.len,     JSON_OBJECT, system,     0);
 
-    json_append(message, wbt_str_total.str,       wbt_str_total.len,       JSON_LONGLONG, &message_total,       0);
-    json_append(message, wbt_str_active.str,      wbt_str_active.len,      JSON_LONGLONG, &message_active,      0);
-    json_append(message, wbt_str_delayed.str,     wbt_str_delayed.len,     JSON_LONGLONG, &message_delayed,     0);
-    json_append(message, wbt_str_waiting_ack.str, wbt_str_waiting_ack.len, JSON_LONGLONG, &message_waiting_ack, 0);
+    json_append(message, wbt_mq_str_total.str,       wbt_mq_str_total.len,       JSON_LONGLONG, &message_total,       0);
+    json_append(message, wbt_mq_str_active.str,      wbt_mq_str_active.len,      JSON_LONGLONG, &message_active,      0);
+    json_append(message, wbt_mq_str_delayed.str,     wbt_mq_str_delayed.len,     JSON_LONGLONG, &message_delayed,     0);
+    json_append(message, wbt_mq_str_waiting_ack.str, wbt_mq_str_waiting_ack.len, JSON_LONGLONG, &message_waiting_ack, 0);
 
-    json_append(channel, wbt_str_active.str, wbt_str_active.len, JSON_LONGLONG, &channel_active, 0);
+    json_append(channel, wbt_mq_str_active.str, wbt_mq_str_active.len, JSON_LONGLONG, &channel_active, 0);
 
-    json_append(subscriber, wbt_str_active.str, wbt_str_active.len, JSON_LONGLONG, &subscriber_active, 0);
+    json_append(subscriber, wbt_mq_str_active.str, wbt_mq_str_active.len, JSON_LONGLONG, &subscriber_active, 0);
     
-    json_append(system, wbt_str_uptime.str, wbt_str_uptime.len, JSON_LONGLONG, &system_uptime, 0);
+    json_append(system, wbt_mq_str_uptime.str, wbt_mq_str_uptime.len, JSON_LONGLONG, &system_uptime, 0);
 
     char *ptr = http->resp_body_memory.str;
     size_t len = http->resp_body_memory.len;
@@ -128,8 +128,8 @@ wbt_status wbt_mq_status_channel_general(wbt_event_t *ev) {
     
     json_object_t * obj        = json_create_object();
     json_object_t * list       = json_create_array();
-    json_append(obj, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    list,            0);
-    json_append(obj, wbt_str_total.str, wbt_str_total.len, JSON_LONGLONG, &channel_active, 0);
+    json_append(obj, wbt_mq_str_list.str,  wbt_mq_str_list.len,  JSON_ARRAY,    list,            0);
+    json_append(obj, wbt_mq_str_total.str, wbt_mq_str_total.len, JSON_LONGLONG, &channel_active, 0);
 
     wbt_mq_channel_print_all(list);
     
@@ -184,15 +184,15 @@ wbt_status wbt_mq_status_channel(wbt_event_t *ev) {
     json_object_t * message_list    = json_create_array();
     json_object_t * subscriber_list = json_create_array();
     
-    json_append(obj, wbt_str_channel_id.str, wbt_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
-    json_append(obj, wbt_str_message.str,    wbt_str_message.len,    JSON_OBJECT,   message,              0);
-    json_append(obj, wbt_str_subscriber.str, wbt_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
+    json_append(obj, wbt_mq_str_channel_id.str, wbt_mq_str_channel_id.len, JSON_LONGLONG, &channel->channel_id, 0);
+    json_append(obj, wbt_mq_str_message.str,    wbt_mq_str_message.len,    JSON_OBJECT,   message,              0);
+    json_append(obj, wbt_mq_str_subscriber.str, wbt_mq_str_subscriber.len, JSON_OBJECT,   subscriber,           0);
 
-    json_append(message, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->queue.size, 0);
-    json_append(message, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    message_list,        0);
+    json_append(message, wbt_mq_str_total.str, wbt_mq_str_total.len, JSON_INTEGER, &channel->queue.size, 0);
+    json_append(message, wbt_mq_str_list.str,  wbt_mq_str_list.len,  JSON_ARRAY,    message_list,        0);
 
-    json_append(subscriber, wbt_str_total.str, wbt_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0);
-    json_append(subscriber, wbt_str_list.str,  wbt_str_list.len,  JSON_ARRAY,    subscriber_list,            0);
+    json_append(subscriber, wbt_mq_str_total.str, wbt_mq_str_total.len, JSON_INTEGER, &channel->subscriber_count, 0);
+    json_append(subscriber, wbt_mq_str_list.str,  wbt_mq_str_list.len,  JSON_ARRAY,    subscriber_list,            0);
 
     wbt_mq_channel_msg_print(channel, message_list);
     wbt_mq_channel_subscriber_print(channel, subscriber_list);

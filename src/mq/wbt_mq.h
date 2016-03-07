@@ -155,17 +155,25 @@ wbt_status wbt_mq_ack(wbt_event_t *ev);
 
 time_t wbt_mq_uptime();
 
-extern wbt_str_t wbt_str_message;
-extern wbt_str_t wbt_str_channel;
-extern wbt_str_t wbt_str_subscriber;
-extern wbt_str_t wbt_str_total;
-extern wbt_str_t wbt_str_active;
-extern wbt_str_t wbt_str_delayed;
-extern wbt_str_t wbt_str_waiting_ack;
-extern wbt_str_t wbt_str_system;
-extern wbt_str_t wbt_str_uptime;
-extern wbt_str_t wbt_str_channel_id;
-extern wbt_str_t wbt_str_list;
+extern wbt_str_t wbt_mq_str_message;
+extern wbt_str_t wbt_mq_str_channel;
+extern wbt_str_t wbt_mq_str_subscriber;
+extern wbt_str_t wbt_mq_str_total;
+extern wbt_str_t wbt_mq_str_active;
+extern wbt_str_t wbt_mq_str_delayed;
+extern wbt_str_t wbt_mq_str_waiting_ack;
+extern wbt_str_t wbt_mq_str_system;
+extern wbt_str_t wbt_mq_str_uptime;
+extern wbt_str_t wbt_mq_str_list;
+extern wbt_str_t wbt_mq_str_msg_id;
+extern wbt_str_t wbt_mq_str_channel_id;
+extern wbt_str_t wbt_mq_str_subscriber_id;
+extern wbt_str_t wbt_mq_str_consumer_id;
+extern wbt_str_t wbt_mq_str_create;
+extern wbt_str_t wbt_mq_str_effect;
+extern wbt_str_t wbt_mq_str_expire;
+extern wbt_str_t wbt_mq_str_delivery_mode;
+extern wbt_str_t wbt_mq_str_data;
 
 #ifdef	__cplusplus
 }
