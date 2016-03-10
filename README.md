@@ -56,6 +56,15 @@ Webit 目前只支持 GNU/Linux 平台，并且可能无法在 Linux 2.6 以及�
 
 注意，为了在不关闭程序的情况下更新二进制文件，您总是应当使用符号链接来启动 webit。
 
+## 更新日志
+
+### V0.4.0
+
+`Feature: 新增 status 统计与运维接口
+`Feature: 优化了红黑树和定时器相关操作
+`Feature: 新增持久化支持
+`Feature: 新增 ACK 消息类型
+
 ## 授权协议
 
 Webit 遵循 GPL v2 协议发布。
