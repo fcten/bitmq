@@ -95,7 +95,7 @@ wbt_status wbt_timer_mod(wbt_timer_t *timer) {
 // 返回下一次事件超时剩余时间，如果不存在则返回 0
 time_t wbt_timer_process() {
     if( wbt_timer.size == 0 ) {
-        return 0;
+        return -1;
     }
 
     wbt_timer_t *p = wbt_heap_get(&wbt_timer);
@@ -113,6 +113,6 @@ time_t wbt_timer_process() {
     if(wbt_timer.size > 0) {
         return p->timeout - wbt_cur_mtime;
     } else {
-        return 0;
+        return -1;
     }
 }

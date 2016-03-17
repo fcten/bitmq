@@ -312,6 +312,7 @@ wbt_status wbt_event_dispatch() {;
         
         /* 更新当前时间 */
         wbt_time_update();
+        wbt_time_str_update();
 
         if( is_accept_add ) {
             for (i = 0; i < nfds; ++i) {
@@ -363,9 +364,6 @@ wbt_status wbt_event_dispatch() {;
 
         /* 检查并执行超时事件 */
         timeout = wbt_timer_process();
-        if( timeout == 0 ) {
-            timeout = -1;
-        }
     }
 
     return WBT_OK;

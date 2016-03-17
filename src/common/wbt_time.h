@@ -24,6 +24,7 @@ extern wbt_str_t wbt_time_str_expire;
 
 wbt_status wbt_time_init();
 wbt_status wbt_time_update();
+wbt_status wbt_time_str_update();
 wbt_str_t * wbt_time_to_str( time_t time );
 
 #ifdef	__cplusplus

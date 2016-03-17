@@ -57,6 +57,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/json/wbt_json.o \
 	${OBJECTDIR}/src/mq/wbt_mq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
+	${OBJECTDIR}/src/mq/wbt_mq_dlq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
 	${OBJECTDIR}/src/mq/wbt_mq_persistence.o \
 	${OBJECTDIR}/src/mq/wbt_mq_status.o \
@@ -201,6 +202,11 @@ ${OBJECTDIR}/src/mq/wbt_mq_channel.o: src/mq/wbt_mq_channel.c
 	${MKDIR} -p ${OBJECTDIR}/src/mq
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_channel.o src/mq/wbt_mq_channel.c
+
+${OBJECTDIR}/src/mq/wbt_mq_dlq.o: src/mq/wbt_mq_dlq.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mq
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_dlq.o src/mq/wbt_mq_dlq.c
 
 ${OBJECTDIR}/src/mq/wbt_mq_msg.o: src/mq/wbt_mq_msg.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq

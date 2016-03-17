@@ -139,7 +139,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
 success:
     if(timer && ( n == 0 ) && !wbt_wating_to_exit) {
         /* 重新注册定时事件 */
-        timer->timeout = wbt_cur_mtime + wait_time;
+        timer->timeout += wait_time;
 
         if(wbt_timer_mod(timer) != WBT_OK) {
             goto error;
@@ -278,7 +278,7 @@ static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
     
     if(timer && !wbt_wating_to_exit) {
         /* 重新注册定时事件 */
-        timer->timeout = wbt_cur_mtime + 1 * 1000;
+        timer->timeout += 1 * 1000;
 
         if(wbt_timer_mod(timer) != WBT_OK) {
             return WBT_ERROR;
@@ -360,7 +360,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         // 这是为了保证 dump 完成的时刻，所有未过期消息都在内存中
         if(timer && !wbt_wating_to_exit) {
             /* 重新注册定时事件 */
-            timer->timeout = wbt_cur_mtime + 60 * 1000;
+            timer->timeout += 60 * 1000;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;
@@ -375,7 +375,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         // 如果当前负载过高，则 dump 操作必须被推迟
         if(timer && !wbt_wating_to_exit) {
             /* 重新注册定时事件 */
-            timer->timeout = wbt_cur_mtime + 3600 * 1000;
+            timer->timeout += 3600 * 1000;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;
@@ -456,7 +456,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 
             /* 重新注册定时事件 */
             // TODO 从配置文件中读取
-            timer->timeout = wbt_cur_mtime + 6 * 3600 * 1000;
+            timer->timeout += 6 * 3600 * 1000;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;
@@ -467,7 +467,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
     } else {
         if(!wbt_wating_to_exit) {
             /* 重新注册定时事件 */
-            timer->timeout = wbt_cur_mtime + 50;
+            timer->timeout += 50;
 
             if(wbt_timer_mod(timer) != WBT_OK) {
                 return WBT_ERROR;

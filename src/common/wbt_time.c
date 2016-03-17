@@ -47,6 +47,10 @@ wbt_status wbt_time_update() {
     gettimeofday(&cur_utime, NULL);
     wbt_cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
 
+    return WBT_OK;
+}
+
+wbt_status wbt_time_str_update() {
     time_t now;
     struct tm *timenow;
 

@@ -56,7 +56,7 @@ wbt_status wbt_file_cleanup(wbt_timer_t *timer) {
 
     if(!wbt_wating_to_exit) {
         /* 重新注册定时事件 */
-        timer->timeout = wbt_cur_mtime + 10000;
+        timer->timeout += 10000;
 
         if(wbt_timer_mod(timer) != WBT_OK) {
             return WBT_ERROR;

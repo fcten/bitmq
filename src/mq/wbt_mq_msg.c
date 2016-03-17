@@ -223,7 +223,7 @@ long long int wbt_mq_msg_status_total() {
 }
 
 long long int wbt_mq_msg_status_active() {
-    return (long long int)(wbt_msg_create_count - wbt_msg_delete_count);
+    return (long long int)wbt_mq_messages.size;
 }
 
 long long int wbt_mq_msg_status_delayed() {
