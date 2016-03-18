@@ -21,7 +21,7 @@
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
 
-extern int listen_fd;
+extern int wbt_listen_fd;
 
 extern char **environ;
 int wbt_argc;
@@ -197,7 +197,7 @@ void wbt_master_process() {
             memcpy(wbt_environ, wbt_os_environ, i * sizeof(char *));
 
             wbt_environ[i] = wbt_malloc( 32 * sizeof(char) );
-            snprintf(wbt_environ[i], 32 * sizeof(char), "WBT_LISTEN_FD=%d", listen_fd);
+            snprintf(wbt_environ[i], 32 * sizeof(char), "WBT_LISTEN_FD=%d", wbt_listen_fd);
             
             wbt_environ[i+1] = 
                "SPARE=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"

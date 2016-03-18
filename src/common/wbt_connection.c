@@ -26,7 +26,7 @@ wbt_module_t wbt_module_conn = {
     wbt_conn_cleanup
 };
 
-int listen_fd = -1;
+int wbt_listen_fd = -1;
 
 wbt_status wbt_conn_init() {
     // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
@@ -34,14 +34,14 @@ wbt_status wbt_conn_init() {
     /* 初始化用于监听消息的 Socket 句柄 */
     char * listen_fd_env = getenv("WBT_LISTEN_FD");
     if(listen_fd_env == NULL) {
-        listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if(listen_fd <= 0) {
+        wbt_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if(wbt_listen_fd <= 0) {
             wbt_log_add("create socket failed\n");
 
             return WBT_ERROR;
         }
         /* 把监听socket设置为非阻塞方式 */
-        if( wbt_setnonblocking(listen_fd) != WBT_OK ) {
+        if( wbt_setnonblocking(wbt_listen_fd) != WBT_OK ) {
             wbt_log_add("set nonblocking failed\n");
 
             return WBT_ERROR;
@@ -49,7 +49,7 @@ wbt_status wbt_conn_init() {
 
         /* 在重启程序以及进行热更新时，避免 TIME_WAIT 和 CLOSE_WAIT 状态的连接导致 bind 失败 */
         int on = 1; 
-        if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
+        if(setsockopt(wbt_listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
             wbt_log_add("set SO_REUSEADDR failed\n");  
 
             return WBT_ERROR;
@@ -62,22 +62,22 @@ wbt_status wbt_conn_init() {
         sin.sin_addr.s_addr = INADDR_ANY;
         sin.sin_port = htons(wbt_conf.listen_port);
 
-        if(bind(listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
+        if(bind(wbt_listen_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
             wbt_log_add("bind failed\n");
 
             return WBT_ERROR;
         }
 
-        if(listen(listen_fd, WBT_CONN_BACKLOG) != 0) {
+        if(listen(wbt_listen_fd, WBT_CONN_BACKLOG) != 0) {
             wbt_log_add("listen failed\n");
 
             return WBT_ERROR;
         }
     } else {
-        listen_fd = atoi(listen_fd_env);
+        wbt_listen_fd = atoi(listen_fd_env);
     }
     
-    wbt_log_add("listen fd: %d\n", listen_fd);
+    wbt_log_add("listen fd: %d\n", wbt_listen_fd);
 
     return WBT_OK;
 }
@@ -87,9 +87,9 @@ wbt_status wbt_conn_cleanup() {
 }
 
 wbt_status wbt_conn_close_listen() {
-    if( listen_fd >= 0 ) {
-        close(listen_fd);
-        listen_fd = -1;
+    if( wbt_listen_fd >= 0 ) {
+        close(wbt_listen_fd);
+        wbt_listen_fd = -1;
     }
     
     return WBT_OK;
@@ -121,9 +121,9 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
     struct sockaddr_in remote;
     int conn_sock, addrlen = sizeof(remote);
 #ifdef WBT_USE_ACCEPT4
-    while((conn_sock = accept4(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen, SOCK_NONBLOCK)) >= 0) {
+    while((conn_sock = accept4(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen, SOCK_NONBLOCK)) >= 0) {
 #else
-    while((conn_sock = accept(listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
+    while((conn_sock = accept(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
         wbt_setnonblocking(conn_sock); 
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */

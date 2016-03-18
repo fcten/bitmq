@@ -33,7 +33,12 @@ extern "C" {
  *   6-0: 保留
  */
 
-#define BMTP_CONN 0x1
+#define BMTP_CONN 0x10
+
+#define wbt_bmtp_cmd(b)     (b&240)
+#define wbt_bmtp_version(b) (b&15)
+
+#define wbt_bmtp_auth(b)    (b&128)
 
 /* 
  * +---------+-----------------------------------------------+
@@ -52,7 +57,9 @@ extern "C" {
  *   4-15: 保留
  */
 
-#define BMTP_CONNACK 0x2
+#define BMTP_CONNACK 0x20
+
+#define wbt_bmtp_status(b) (b&15)
 
 /* 
  * +---------+-----------------------------------------------+
@@ -78,10 +85,19 @@ extern "C" {
  *     5: 0-单点消息 1-广播消息
  *   4-0: 保留位
  *
- * Payload: 总是在最后包含 Channel ID（8字节）+消息体（长度+正文）
+ * Payload: Channel ID（8字节）+可变属性+消息长度（2字节）+消息正文
  */
 
-#define BMTP_PUB 0x3
+#define BMTP_PUB 0x30
+
+#define wbt_bmtp_dup(b)     (b&8)
+#define wbt_bmtp_sid(b)     (b&4)
+#define wbt_bmtp_qos(b)     (b&3)
+
+#define wbt_bmtp_delay(b)   (b&128)
+#define wbt_bmtp_expire(b)  (b&128)
+#define wbt_bmtp_type(b)    (b&128)
+
 
 /* 
  * +---------+-----------------------------------------------+
@@ -96,7 +112,7 @@ extern "C" {
  * SID: 是否包含流标识符
  */
 
-#define BMTP_PUBACK 0x4
+#define BMTP_PUBACK 0x40
 
 /* 
  * +---------+-----------------------------------------------+
@@ -111,7 +127,7 @@ extern "C" {
  * SID: 是否包含流标识符
  */
 
-#define BMTP_PUBREL 0x5
+#define BMTP_PUBREL 0x50
 
 /* 
  * +---------+-----------------------------------------------+
@@ -129,7 +145,7 @@ extern "C" {
  * SID: 是否包含流标识符
  */
 
-#define BMTP_PUBEND 0x6
+#define BMTP_PUBEND 0x60
 
 /* 
  * +---------+-----------------------------------------------+
@@ -146,7 +162,7 @@ extern "C" {
  *
  */
 
-#define BMTP_SUB 0x7
+#define BMTP_SUB 0x70
 
 /* 
  * +---------+-----------------------------------------------+
@@ -163,7 +179,7 @@ extern "C" {
  *
  */
 
-#define BMTP_SUBACK 0x8
+#define BMTP_SUBACK 0x80
 
 /* 
  * +---------+-----------------------------------------------+
@@ -180,7 +196,7 @@ extern "C" {
  *
  */
 
-#define BMTP_UNSUB 0x9
+#define BMTP_UNSUB 0x90
 
 /* 
  * +---------+-----------------------------------------------+
@@ -197,7 +213,7 @@ extern "C" {
  *
  */
 
-#define BMTP_UNSUBACK 0xA
+#define BMTP_UNSUBACK 0xA0
 
 /* 
  * +---------+-----------------------------------------------+
@@ -210,7 +226,7 @@ extern "C" {
  *
  */
 
-#define BMTP_PING 0xB
+#define BMTP_PING 0xB0
 
 /* 
  * +---------+-----------------------------------------------+
@@ -223,7 +239,7 @@ extern "C" {
  *
  */
 
-#define BMTP_PINGACK 0xC
+#define BMTP_PINGACK 0xC0
 
 /* 
  * +---------+-----------------------------------------------+
@@ -236,73 +252,15 @@ extern "C" {
  *
  */
 
-#define BMTP_DISCONN 0xF
+#define BMTP_DISCONN 0xF0
 
 typedef struct {
-    unsigned int cmd:4;
+    unsigned int  state;
+    unsigned char header;
+    unsigned char flag;
+    unsigned int  payload_len;
+    unsigned char *payload;
 } wbt_bmtp_t;
-
-typedef struct {
-    unsigned int cmd:4;
-    unsigned int ver:4;
-    unsigned int auth:1;
-} wbt_bmtp_conn_t;
-
-typedef struct {
-    unsigned int cmd:4;
-    unsigned int status:4;
-} wbt_bmtp_connack_t;
-
-typedef struct {
-    unsigned int cmd:4;
-    unsigned int dup:1;
-    unsigned int r1:1;
-    unsigned int qos:2;
-    unsigned int stream:8;
-} wbt_bmtp_pub_t;
-
-typedef struct {
-    unsigned int cmd:4;
-    unsigned int r1:2;
-    unsigned int qos:2;
-    unsigned int stream:8;
-} wbt_bmtp_puback_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_pubrel_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_pubend_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_sub_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_suback_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_unsub_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_unsuback_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_ping_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_pingack_t;
-
-typedef struct {
-    unsigned int cmd:4;
-} wbt_bmtp_disconn_t;
 
 #ifdef	__cplusplus
 }

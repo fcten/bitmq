@@ -31,7 +31,8 @@ extern "C" {
     
 typedef enum {
     WBT_OK,
-    WBT_ERROR
+    WBT_ERROR,
+    WBT_AGAIN
 } wbt_status;
 
 typedef int wbt_atomic_t;

@@ -21,7 +21,7 @@ wbt_module_t wbt_module_event = {
 };
 
 int epoll_fd;
-extern int listen_fd;
+extern int wbt_listen_fd;
 
 extern wbt_atomic_t wbt_wating_to_exit, wbt_connection_count;
 
@@ -250,7 +250,7 @@ wbt_status wbt_event_dispatch() {;
     listen_ev.on_recv = wbt_on_accept;
     listen_ev.on_send = NULL;
     listen_ev.events = EPOLLIN | EPOLLET;
-    listen_ev.fd = listen_fd;
+    listen_ev.fd = wbt_listen_fd;
     
     if( wbt_conf.process == 1 ) {
         //wbt_log_debug("add listen event\n");
@@ -319,7 +319,7 @@ wbt_status wbt_event_dispatch() {;
                 ev = (wbt_event_t *)events[i].data.ptr;
 
                 /* 优先处理 accept */
-                if( ev->fd == listen_fd ) {
+                if( ev->fd == wbt_listen_fd ) {
                     //wbt_log_add("new conn get by %d\n", pid);
                     
                     if( ev->on_recv(ev) != WBT_OK ) {
@@ -345,7 +345,7 @@ wbt_status wbt_event_dispatch() {;
             ev = (wbt_event_t *)events[i].data.ptr;
 
             /* 尝试调用该事件的回调函数 */
-            if( ev->fd == listen_fd ) {
+            if( ev->fd == wbt_listen_fd ) {
                 continue;
             } else if (events[i].events & EPOLLRDHUP) {
                 wbt_on_close(ev);
