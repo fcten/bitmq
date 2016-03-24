@@ -19,6 +19,7 @@ extern wbt_module_t wbt_module_ssl;
 extern wbt_module_t wbt_module_http1_parser;
 extern wbt_module_t wbt_module_mq;
 extern wbt_module_t wbt_module_http1_generater;
+extern wbt_module_t wbt_module_bmtp;
 
 wbt_module_t * wbt_modules[] = {
     &wbt_module_time,
@@ -29,9 +30,10 @@ wbt_module_t * wbt_modules[] = {
     &wbt_module_file,
     &wbt_module_conn,
     &wbt_module_ssl,
-    &wbt_module_http1_parser,
-    &wbt_module_mq,
-    &wbt_module_http1_generater,
+    //&wbt_module_http1_parser,
+    //&wbt_module_mq,
+    //&wbt_module_http1_generater,
+    &wbt_module_bmtp,
     NULL
 };
 

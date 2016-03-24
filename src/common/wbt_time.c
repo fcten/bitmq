@@ -38,6 +38,7 @@ wbt_status wbt_time_init() {
     wbt_time_str_tmp.str = wbt_malloc( wbt_time_str_tmp.len + 1 );
 
     wbt_time_update();
+    wbt_time_str_update();
 
     return WBT_OK;
 }
