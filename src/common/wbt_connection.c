@@ -167,7 +167,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     int nread;
     int bReadOk = 0;
 
-    while( ev->buff_len <= 40960 ) { /* 限制数据包长度 */
+    while( ev->buff_len <= 128 * 1024 ) { /* 限制数据包长度 */
         /* TODO realloc 意味着潜在的内存拷贝行为，目前的代码在接收大请求时效率很低 */
         void * p = wbt_realloc(ev->buff, ev->buff_len + 4096);
         if( p == NULL ) {

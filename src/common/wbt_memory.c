@@ -73,6 +73,11 @@ void * wbt_realloc(void *ptr, size_t size) {
         return wbt_malloc(size);
     }
     
+    if( !size ) {
+        wbt_free(ptr);
+        return NULL;
+    }
+    
     size_t oldsize = wbt_malloc_size(ptr);
 
     void * newptr = realloc(ptr, size);

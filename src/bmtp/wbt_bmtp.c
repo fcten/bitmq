@@ -197,6 +197,13 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         return WBT_ERROR;
                 }
 
+                if( bmtp->recv_offset >= 4096 ) {
+                    wbt_memcpy(ev->buff, ev->buff + bmtp->recv_offset, ev->buff_len - bmtp->recv_offset);
+                    ev->buff = wbt_realloc(ev->buff, ev->buff_len - bmtp->recv_offset);
+                    ev->buff_len -= bmtp->recv_offset;
+                    bmtp->recv_offset = 0;
+                }
+                
                 bmtp->state = STATE_RECV_HEADER;
                 break;
             default:
@@ -227,7 +234,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
         
         if( bmtp->send_length >= 4096 ) {
             wbt_memcpy(bmtp->resp, bmtp->resp + bmtp->send_length, bmtp->resp_length - bmtp->send_length);
-            wbt_realloc(bmtp->resp, bmtp->resp_length - bmtp->send_length);
+            bmtp->resp = wbt_realloc(bmtp->resp, bmtp->resp_length - bmtp->send_length);
             bmtp->resp_length -= bmtp->send_length;
             bmtp->send_length = 0;
         }
@@ -262,6 +269,8 @@ wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
+    
+    wbt_log_debug("new conn\n");
 
     ev->on_send = wbt_on_send;
     ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
@@ -282,16 +291,12 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             bmtp->payload[1] != 'M' ||
             bmtp->payload[2] != 'T' ||
             bmtp->payload[3] != 'P') {
-        bmtp->resp[bmtp->resp_length] = BMTP_CONNACK & 0xF1;
+        bmtp->resp[bmtp->resp_length ++] = BMTP_CONNACK & 0xF1;
         bmtp->is_exit = 1;
     } else {
-        bmtp->resp[bmtp->resp_length] = BMTP_CONNACK & 0xF0;
+        bmtp->resp[bmtp->resp_length ++] = BMTP_CONNACK & 0xF0;
         bmtp->is_conn = 1;
     }
-    
-    bmtp->resp_length ++;
-    
-    wbt_log_debug("new conn\n");
     
     return WBT_OK;
 }
@@ -306,8 +311,28 @@ wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
+    
+    wbt_log_debug("new pub\n");
+    
+    if( wbt_bmtp_qos(bmtp->header) == 0 ) {
+        return WBT_OK;
+    }
 
+    ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
+    ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
+    if(wbt_event_mod(ev) != WBT_OK) {
+        return WBT_ERROR;
+    }
+
+    void *tmp = wbt_realloc( bmtp->resp, bmtp->resp_length + 2 );
+    if( !tmp ) {
+        return WBT_ERROR;
+    }
+    bmtp->resp = tmp;
+
+    bmtp->resp[bmtp->resp_length ++] = BMTP_PUBACK & 0xF0;
+    bmtp->resp[bmtp->resp_length ++] = bmtp->sid;
     
     return WBT_OK;
 }
@@ -322,6 +347,8 @@ wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_on_ping(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
+    
+    wbt_log_debug("new ping\n");
 
     ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
     ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
@@ -336,11 +363,7 @@ wbt_status wbt_bmtp_on_ping(wbt_event_t *ev) {
     }
     bmtp->resp = tmp;
 
-    bmtp->resp[bmtp->resp_length] = BMTP_PINGACK & 0xF0;
-    
-    bmtp->resp_length ++;
-    
-    wbt_log_debug("new ping\n");
+    bmtp->resp[bmtp->resp_length ++] = BMTP_PINGACK & 0xF0;
     
     return WBT_OK;
 }
