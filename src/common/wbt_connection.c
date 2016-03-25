@@ -138,14 +138,14 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         tmp_ev.fd      = conn_sock;
 
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {
-            return WBT_ERROR;
+            continue;
         }
         
         wbt_connection_count ++;
         
         if( wbt_module_on_conn(p_ev) != WBT_OK ) {
             wbt_on_close(p_ev);
-            return WBT_OK;
+            continue;
         }
     }
 
