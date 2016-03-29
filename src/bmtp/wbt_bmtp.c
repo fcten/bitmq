@@ -12,6 +12,7 @@
 #include "../common/wbt_config.h"
 #include "../common/wbt_log.h"
 #include "wbt_bmtp.h"
+#include "wbt_bmtp_sid.h"
 
 enum {
     STATE_CONNECTED,
@@ -39,7 +40,7 @@ wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev);
 
 wbt_status wbt_bmtp_send_conn(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp_send_pub(wbt_event_t *ev);
+wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, int dup, int qos, char *buf, unsigned int len);
 wbt_status wbt_bmtp_send_puback(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev);
@@ -357,8 +358,18 @@ wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status) {
     return wbt_bmtp_send(ev, buf, 1);
 }
 
-wbt_status wbt_bmtp_send_pub(wbt_event_t *ev) {
-    return WBT_OK;
+wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, int dup, int qos, char *data, unsigned int len) {
+    int sid = wbt_bmtp_sid_alloc(ev->data);
+    if( sid < 0 ) {
+        return WBT_ERROR;
+    }
+    
+    char buf[4] = {BMTP_PUB + dup + qos, sid, len >> 8, len};
+    if( wbt_bmtp_send(ev, buf, 4) != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    
+    return wbt_bmtp_send(ev, data, len & 0xFFFF);
 }
 
 wbt_status wbt_bmtp_send_puback(wbt_event_t *ev) {
@@ -393,11 +404,13 @@ wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev) {
 wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     wbt_bmtp_t *bmtp = ev->data;
     
-    ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
-    ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+    if( ev->events != EPOLLOUT | EPOLLIN | EPOLLET ) {
+        ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
     }
 
     void *tmp = wbt_realloc( bmtp->resp, bmtp->resp_length + len );

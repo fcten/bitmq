@@ -88,6 +88,12 @@ extern "C" {
 #define wbt_bmtp_dup(b)     (b&8)
 #define wbt_bmtp_qos(b)     (b&3)
 
+#define BMTP_QOS_AT_MOST_ONCE  0
+#define BMTP_QOS_AT_LEAST_ONCE 1
+#define BMTP_QOS_EXACTLY_ONCE  2
+
+#define BMTP_DUP  8
+
 /* 
  +---------+-----------------------------------------------+
  |   Bit   |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
@@ -155,6 +161,10 @@ typedef struct {
     unsigned int  resp_length;
     unsigned char *resp;
     unsigned int  send_length;
+    
+    unsigned int  last_sid:8;
+    unsigned int  usable_sids:8;
+    unsigned int  page[8];
 } wbt_bmtp_t;
 
 #ifdef	__cplusplus

@@ -36,6 +36,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/bmtp/wbt_bmtp.o \
+	${OBJECTDIR}/src/bmtp/wbt_bmtp_sid.o \
 	${OBJECTDIR}/src/common/wbt_config.o \
 	${OBJECTDIR}/src/common/wbt_connection.o \
 	${OBJECTDIR}/src/common/wbt_crc.o \
@@ -97,6 +98,11 @@ ${OBJECTDIR}/src/bmtp/wbt_bmtp.o: src/bmtp/wbt_bmtp.c
 	${MKDIR} -p ${OBJECTDIR}/src/bmtp
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/bmtp/wbt_bmtp.o src/bmtp/wbt_bmtp.c
+
+${OBJECTDIR}/src/bmtp/wbt_bmtp_sid.o: src/bmtp/wbt_bmtp_sid.c 
+	${MKDIR} -p ${OBJECTDIR}/src/bmtp
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/bmtp/wbt_bmtp_sid.o src/bmtp/wbt_bmtp_sid.c
 
 ${OBJECTDIR}/src/common/wbt_config.o: src/common/wbt_config.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
