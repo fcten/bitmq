@@ -165,7 +165,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         // TODO 限制循环次数，订阅数量过多的频道不进行实时投递（数值可以由配置文件设定）
         wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
-        wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
+        wbt_list_for_each_entry( subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list->head, head ) {
             subscriber = subscriber_node->subscriber;
 
             if( subscriber->ev->timer.on_timeout == wbt_mq_pull_timeout ) {

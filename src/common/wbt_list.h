@@ -46,12 +46,12 @@ typedef struct wbt_list_s {
 	wbt_list_entry((ptr)->prev, type, member)
 
 /* 获取链表的下一个元素 */
-#define wbt_list_next_entry(pos, member) \
-	wbt_list_entry((pos)->member.next, typeof(*(pos)), member)
+#define wbt_list_next_entry(pos, type, member) \
+	wbt_list_entry((pos)->member.next, type, member)
 
 /* 获取链表的上一个元素 */
-#define wbt_list_prev_entry(pos, member) \
-	wbt_list_entry((pos)->member.prev, typeof(*(pos)), member)
+#define wbt_list_prev_entry(pos, type, member) \
+	wbt_list_entry((pos)->member.prev, type, member)
 
 /**
  * 对 wbt_list_t 结构体进行遍历并返回完整结构体的指针
@@ -59,10 +59,10 @@ typedef struct wbt_list_s {
  * @head:               链表头中的 wbt_list_t 指针
  * @member:         wbt_list_t 成员在完整结构体中的名称
  */
-#define wbt_list_for_each_entry(pos, head, member)			\
-	for (pos = wbt_list_first_entry(head, typeof(*pos), member);	\
+#define wbt_list_for_each_entry(pos, type, head, member)			\
+	for (pos = wbt_list_first_entry(head, type, member);	\
 	     &pos->member != (head);					\
-	     pos = wbt_list_next_entry(pos, member))
+	     pos = wbt_list_next_entry(pos, type, member))
 
 static inline void __wbt_list_add(wbt_list_t *list, wbt_list_t *prev, wbt_list_t *next) {
     next->prev = list;

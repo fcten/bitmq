@@ -126,7 +126,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
     wbt_rb_node_t *node;
     wbt_msg_t *msg = NULL;
     wbt_str_t key;
-    wbt_list_for_each_entry(channel_node, &subscriber->channel_list->head, head) {
+    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list->head, head) {
         wbt_variable_to_str(channel_node->seq_id, key);
         node = wbt_rb_get_greater(&channel_node->channel->queue, &key);
         if( node ) {
@@ -190,7 +190,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
 wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg_id) {
     wbt_msg_list_t *msg_node;
     wbt_msg_t *msg;
-    wbt_list_for_each_entry(msg_node, &subscriber->delivered_list->head, head) {
+    wbt_list_for_each_entry(msg_node, wbt_msg_list_t, &subscriber->delivered_list->head, head) {
         if( msg_node->msg_id == msg_id ) {
             msg = wbt_mq_msg_get(msg_node->msg_id);
             if( msg ) {

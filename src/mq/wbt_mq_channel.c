@@ -107,7 +107,7 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
     // TODO 这需要遍历链表，对于大量订阅者的频道来说不可接受。
     // 但是负载均衡模式又需要用到链表，这个地方还需要斟酌
     wbt_subscriber_list_t *subscriber_node;
-    wbt_list_for_each_entry(subscriber_node, &channel->subscriber_list->head, head) {
+    wbt_list_for_each_entry(subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list->head, head) {
         if( subscriber_node->subscriber == subscriber ) {
             wbt_list_del(&subscriber_node->head);
             wbt_free(subscriber_node);
@@ -175,7 +175,7 @@ void wbt_mq_channel_subscriber_print(wbt_channel_t *channel, json_object_t * obj
     if( channel->subscriber_list && !wbt_list_empty(&channel->subscriber_list->head) ) {
         wbt_subscriber_t * subscriber;
         wbt_subscriber_list_t * subscriber_node;
-        wbt_list_for_each_entry( subscriber_node, &channel->subscriber_list->head, head ) {
+        wbt_list_for_each_entry( subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list->head, head ) {
             subscriber = subscriber_node->subscriber;
 
             json_append(obj, NULL, 0, JSON_LONGLONG, &subscriber->subscriber_id, 0);

@@ -74,6 +74,12 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
     }
 
     wbt_bmtp_t *bmtp = ev->data;
+    
+    bmtp->usable_sids = 255;
+
+    wbt_list_init(&bmtp->wait_queue.head);
+    wbt_list_init(&bmtp->send_queue.head);
+    wbt_list_init(&bmtp->ack_queue.head);
 
     bmtp->state = STATE_CONNECTED;
     
@@ -90,11 +96,14 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
     while(!bmtp->is_exit) {
         switch(bmtp->state) {
             case STATE_CONNECTED:
+                bmtp->sid = 0;
+                bmtp->payload = NULL;
+                bmtp->payload_length = 0;
                 bmtp->state = STATE_RECV_HEADER;
                 break;
             case STATE_RECV_HEADER:
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
-                    return WBT_OK;
+                    goto waiting;
                 }
 
                 bmtp->header = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
@@ -212,12 +221,19 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                     bmtp->recv_offset = 0;
                 }
                 
-                bmtp->state = STATE_RECV_HEADER;
+                bmtp->state = STATE_CONNECTED;
                 break;
             default:
                 // 无法识别的状态
                 return WBT_ERROR;
         }
+    }
+    
+waiting:
+    ev->events |= EPOLLIN;
+    ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+    if(wbt_event_mod(ev) != WBT_OK) {
+        return WBT_ERROR;
     }
 
     return WBT_OK;
@@ -226,37 +242,35 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
 wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
-    if( bmtp->resp_length > bmtp->send_length ) {
-        int n = bmtp->resp_length - bmtp->send_length; 
-        ssize_t nwrite = wbt_send(ev, bmtp->resp + bmtp->send_length, n);
-
-        if (nwrite <= 0) {
+    while (!wbt_list_empty(&bmtp->send_queue.head)) {
+        wbt_bmtp_msg_t *msg_node = wbt_list_first_entry(&bmtp->send_queue.head, wbt_bmtp_msg_t, head);
+        int ret = wbt_send(ev, (char *)msg_node->msg + msg_node->offset, msg_node->len - msg_node->offset);
+        if (ret <= 0) {
             if( errno == EAGAIN ) {
                 return WBT_OK;
             } else {
                 return WBT_ERROR;
             }
-        }
-
-        bmtp->send_length += nwrite;
-        
-        if( bmtp->send_length >= 4096 ) {
-            wbt_memcpy(bmtp->resp, bmtp->resp + bmtp->send_length, bmtp->resp_length - bmtp->send_length);
-            bmtp->resp = wbt_realloc(bmtp->resp, bmtp->resp_length - bmtp->send_length);
-            bmtp->resp_length -= bmtp->send_length;
-            bmtp->send_length = 0;
-        }
-
-        if( bmtp->resp_length > bmtp->send_length ) {
-            /* 尚未发送完，缓冲区满 */
-            return WBT_OK;
+        } else {
+            if (ret + msg_node->offset >= msg_node->len) {
+                wbt_list_del(&msg_node->head);
+                if (wbt_bmtp_cmd(msg_node->msg[0]) == BMTP_PUB && wbt_bmtp_qos(msg_node->msg[0]) > 0) {
+                    wbt_list_add_tail(&msg_node->head, &bmtp->ack_queue.head);
+                }
+                else {
+                    wbt_free(msg_node->msg);
+                    wbt_free(msg_node);
+                }
+            } else {
+                msg_node->offset += ret;
+            }
         }
     }
-
+    
     if( bmtp->is_exit ) {
         wbt_on_close(ev);
     } else {
-        ev->events = EPOLLIN | EPOLLET;
+        ev->events &= ~EPOLLOUT;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -270,7 +284,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
 wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     
-    wbt_free(bmtp->resp);
+    // TODO 释放队列
     
     return WBT_OK;
 }
@@ -302,21 +316,51 @@ wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
-    wbt_log_debug("new pub\n");
+    //wbt_log_debug("new pub\n");
     
     wbt_bmtp_t *bmtp = ev->data;
     
     if( wbt_bmtp_qos(bmtp->header) == 0 ) {
         return WBT_OK;
     } else {
+        wbt_bmtp_send_puback(ev);
+        return wbt_bmtp_send_pub(ev, 0, 1, "123", 3);
         return wbt_bmtp_send_puback(ev);
     }
 }
 
 wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
+    
+    //wbt_log_debug("recv puback sid %d\n", bmtp->sid);
 
+    // 搜索 ack_queue
+    wbt_bmtp_msg_t *msg_node;
+    wbt_list_for_each_entry(msg_node, wbt_bmtp_msg_t, &bmtp->ack_queue.head, head) {
+        if (msg_node->msg[1] == bmtp->sid) {
+            wbt_list_del(&msg_node->head);
+            wbt_free(msg_node->msg);
+            wbt_free(msg_node);
+            break;
+        }
+    }
 
+    if (wbt_list_empty(&bmtp->wait_queue.head)) {
+        wbt_bmtp_sid_free(bmtp, bmtp->sid);
+    }
+    else {
+        msg_node = wbt_list_first_entry(&bmtp->wait_queue.head, wbt_bmtp_msg_t, head);
+        msg_node->msg[1] = bmtp->sid;
+        wbt_list_del(&msg_node->head);
+        wbt_list_add_tail(&msg_node->head, &bmtp->send_queue.head);
+
+        ev->events |= EPOLLOUT;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    }
     
     return WBT_OK;
 }
@@ -334,8 +378,8 @@ wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev) {
 wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
-    ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
-    ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+    ev->events |= EPOLLOUT;
+    ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
@@ -360,16 +404,15 @@ wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status) {
 
 wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, int dup, int qos, char *data, unsigned int len) {
     int sid = wbt_bmtp_sid_alloc(ev->data);
-    if( sid < 0 ) {
-        return WBT_ERROR;
-    }
     
-    char buf[4] = {BMTP_PUB + dup + qos, sid, len >> 8, len};
-    if( wbt_bmtp_send(ev, buf, 4) != WBT_OK ) {
-        return WBT_ERROR;
+    char buf[64 * 1024] = {BMTP_PUB + dup + qos, sid, len >> 8, len};
+    if( len > 64 * 1024 - 4 ) {
+        memcpy(buf+4, data, 64 * 1024 - 4);
+        return wbt_bmtp_send(ev, buf, 64 * 1024);
+    } else {
+        memcpy(buf+4, data, len);
+        return wbt_bmtp_send(ev, buf, len + 4);
     }
-    
-    return wbt_bmtp_send(ev, data, len & 0xFFFF);
 }
 
 wbt_status wbt_bmtp_send_puback(wbt_event_t *ev) {
@@ -403,23 +446,33 @@ wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     wbt_bmtp_t *bmtp = ev->data;
+
+    wbt_bmtp_msg_t *msg_node = (wbt_bmtp_msg_t *)wbt_calloc(sizeof(wbt_bmtp_msg_t));
+    if (!msg_node) {
+        return WBT_ERROR;
+    }
+
+    msg_node->msg =(unsigned char *)wbt_malloc(len);
+    if (!msg_node->msg) {
+        wbt_free(msg_node);
+        return WBT_ERROR;
+    }
+    msg_node->len = len;
+    memcpy(msg_node->msg, buf, len);
     
-    if( ev->events != EPOLLOUT | EPOLLIN | EPOLLET ) {
-        ev->events = EPOLLOUT | EPOLLIN | EPOLLET;
-        ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
+    if (wbt_bmtp_cmd(buf[0]) == BMTP_PUB && buf[1] == 0) {
+        wbt_list_add_tail(&msg_node->head, &bmtp->wait_queue.head);
+    }
+    else {
+        wbt_list_add_tail(&msg_node->head, &bmtp->send_queue.head);
+
+        ev->events |= EPOLLOUT;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
         }
     }
-
-    void *tmp = wbt_realloc( bmtp->resp, bmtp->resp_length + len );
-    if( !tmp ) {
-        return WBT_ERROR;
-    }
-    bmtp->resp = tmp;
-    wbt_memcpy(bmtp->resp + bmtp->resp_length, buf, len);
-    bmtp->resp_length += len;
     
     return WBT_OK;
 }

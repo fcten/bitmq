@@ -12,6 +12,9 @@
 extern "C" {
 #endif
 
+#include "../common/wbt_list.h"
+#include "../common/wbt_event.h"
+
 #define BMTP_VERSION 0x1
 
 /*
@@ -146,6 +149,14 @@ extern "C" {
 
 #define BMTP_DISCONN 0xE0
 
+typedef struct wbt_bmtp_msg_s {
+    wbt_list_t head;
+
+    unsigned int  len;
+    unsigned int  offset;
+    unsigned char *msg;
+} wbt_bmtp_msg_t;
+
 typedef struct {
     // 会话状态
     unsigned int  state;
@@ -157,14 +168,14 @@ typedef struct {
     
     unsigned int  is_conn:1;
     unsigned int  is_exit:1;
-
-    unsigned int  resp_length;
-    unsigned char *resp;
-    unsigned int  send_length;
     
     unsigned int  last_sid:8;
     unsigned int  usable_sids:8;
     unsigned int  page[8];
+    
+    wbt_bmtp_msg_t wait_queue;
+    wbt_bmtp_msg_t send_queue;
+    wbt_bmtp_msg_t ack_queue;
 } wbt_bmtp_t;
 
 #ifdef	__cplusplus
