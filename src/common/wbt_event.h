@@ -29,6 +29,13 @@ extern "C" {
 #include "wbt_list.h"
 #include "wbt_timer.h"
 
+enum {
+    WBT_PROTOCOL_UNKNOWN,
+    WBT_PROTOCOL_HTTP,
+    WBT_PROTOCOL_BMTP,
+    WBT_PROTOCOL_LENGTH
+};
+
 typedef struct wbt_event_s {
     int fd;                                         /* 事件句柄 */
     unsigned int events;                            /* 事件类型 */
@@ -38,6 +45,7 @@ typedef struct wbt_event_s {
     SSL * ssl;                                      /* 使用加密连接 */
     void * buff;                                    /* 事件数据缓存（接收到的数据） */
     size_t buff_len;
+    int protocol;
     void * data;                                    /* 供模块使用的自定义指针（http结构体） */
     void * ctx;
 } wbt_event_t;

@@ -165,10 +165,10 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         // TODO 限制循环次数，订阅数量过多的频道不进行实时投递（数值可以由配置文件设定）
         wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
-        wbt_list_for_each_entry( subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list->head, head ) {
+        wbt_list_for_each_entry( subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list.head, head ) {
             subscriber = subscriber_node->subscriber;
 
-            if( subscriber->ev->timer.on_timeout == wbt_mq_pull_timeout ) {
+            if( subscriber->is_ready(subscriber->ev) == WBT_OK ) {
                 if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
                     // TODO 记录投递失败
                     wbt_log_debug("msg %lld send to %d failed\n", msg->msg_id, subscriber->ev->fd);
@@ -176,7 +176,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
             }
         }
     } else if( msg->type == MSG_LOAD_BALANCE ) {
-        if( wbt_list_empty( &channel->subscriber_list->head ) ) {
+        if( wbt_list_empty( &channel->subscriber_list.head ) ) {
             // 频道没有任何订阅者
             return WBT_OK;
         }
@@ -184,19 +184,19 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
         // 负载均衡模式，通知订阅队列中的第一个订阅者获取该消息
         wbt_subscriber_list_t * subscriber_node;
         wbt_subscriber_t * subscriber;
-        subscriber_node = wbt_list_first_entry(&channel->subscriber_list->head, wbt_subscriber_list_t, head);
+        subscriber_node = wbt_list_first_entry(&channel->subscriber_list.head, wbt_subscriber_list_t, head);
         subscriber = subscriber_node->subscriber;
 
         // TODO 这里忽略了投递失败的情况，导致消息不能严格地平均分发
         // 后续应当改进负载均衡算法
-        if( subscriber->ev->timer.on_timeout == wbt_mq_pull_timeout ) {
+        if( subscriber->is_ready(subscriber->ev) == WBT_OK ) {
             if( wbt_mq_subscriber_send_msg(subscriber) != WBT_OK ) {
                 // 直接投递失败，忽略该错误
             }
         }
 
         // 无论是否成功，都应当将该订阅者移动到链表末尾
-        wbt_list_move_tail(&subscriber_node->head, &channel->subscriber_list->head);
+        wbt_list_move_tail(&subscriber_node->head, &channel->subscriber_list.head);
     } else {
         return WBT_ERROR;
     }

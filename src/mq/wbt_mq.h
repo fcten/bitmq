@@ -23,7 +23,7 @@ extern "C" {
 #include "../common/wbt_module.h"
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"
-    
+
 enum {
     MSG_CREATED,   // 已创建
     MSG_EFFECTIVE, // 已生效
@@ -97,6 +97,22 @@ typedef struct wbt_msg_list_s {
     wbt_mq_id msg_id;
 } wbt_msg_list_t;
 
+typedef struct wbt_subscriber_list_s {
+    // 链表结构体
+    wbt_list_t head;
+    // 消息指针
+    struct wbt_subscriber_s * subscriber;
+} wbt_subscriber_list_t;
+
+typedef struct wbt_channel_list_s {
+    // 链表结构体
+    wbt_list_t head;
+    // 消息指针
+    struct wbt_channel_s * channel;
+    // 已处理消息序列号（小于等于该序号的消息已经被处理过）
+    wbt_mq_id seq_id;
+} wbt_channel_list_t;
+
 typedef struct wbt_subscriber_s {
     // 订阅者 ID
     wbt_mq_id subscriber_id;
@@ -105,20 +121,15 @@ typedef struct wbt_subscriber_s {
     // TCP 连接上下文
     wbt_event_t * ev;
     // 所订阅频道 ID
-    struct wbt_channel_list_s * channel_list;
-    // 当前正在处理的消息 ID
-    wbt_mq_id msg_id;
+    struct wbt_channel_list_s channel_list;
     // 已投递消息队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
-    struct wbt_msg_list_s * delivered_list;
+    struct wbt_msg_list_s delivered_list;
+    // 消息投递回调函数
+    // 设置该方法是为了同时支持多种协议
+    wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int);
+    wbt_status (*is_ready)(wbt_event_t *);
 } wbt_subscriber_t;
-
-typedef struct wbt_subscriber_list_s {
-    // 链表结构体
-    wbt_list_t head;
-    // 消息指针
-    wbt_subscriber_t * subscriber;
-} wbt_subscriber_list_t;
 
 typedef struct wbt_channel_s {
     // 频道 ID
@@ -126,21 +137,12 @@ typedef struct wbt_channel_s {
     // 创建时间
     time_t create;
     // 订阅者
-    struct wbt_subscriber_list_s * subscriber_list;
+    struct wbt_subscriber_list_s subscriber_list;
     // 订阅者数量
     unsigned int subscriber_count;
     // 消息队列
     wbt_rb_t queue;
 } wbt_channel_t;
-
-typedef struct wbt_channel_list_s {
-    // 链表结构体
-    wbt_list_t head;
-    // 消息指针
-    wbt_channel_t * channel;
-    // 已处理消息序列号（小于等于该序号的消息已经被处理过）
-    wbt_mq_id seq_id;
-} wbt_channel_list_t;
 
 wbt_status wbt_mq_init();
 wbt_status wbt_mq_on_recv(wbt_event_t *ev);
@@ -148,10 +150,13 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev);
 wbt_status wbt_mq_on_success(wbt_event_t *ev);
 
 wbt_status wbt_mq_login(wbt_event_t *ev);
-wbt_status wbt_mq_push(wbt_event_t *ev);
-wbt_status wbt_mq_pull(wbt_event_t *ev);
-wbt_status wbt_mq_pull_timeout(wbt_timer_t *timer);
+wbt_status wbt_mq_subscribe(wbt_event_t *ev, wbt_mq_id channel_id);
+wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len);
+wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
+
+wbt_status wbt_mq_set_send_cb(wbt_event_t *ev, wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int));
+wbt_status wbt_mq_set_is_ready_cb(wbt_event_t *ev, wbt_status (*is_ready)(wbt_event_t *));
 
 time_t wbt_mq_uptime();
 

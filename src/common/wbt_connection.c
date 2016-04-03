@@ -142,11 +142,6 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         }
         
         wbt_connection_count ++;
-        
-        if( wbt_module_on_conn(p_ev) != WBT_OK ) {
-            wbt_on_close(p_ev);
-            continue;
-        }
     }
 
     if (conn_sock == -1) { 
@@ -209,6 +204,32 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         /* 读取出错，或者客户端主动断开了连接 */
         wbt_on_close(ev);
         return WBT_OK;
+    }
+    
+    if( ev->protocol == WBT_PROTOCOL_UNKNOWN ) {
+        if(ev->buff_len < 5) {
+            return WBT_OK;
+        }
+        
+        char * buff = (char *)ev->buff;
+        
+        // 协议分析
+        if( buff[1] == 'B' &&
+            buff[2] == 'M' &&
+            buff[3] == 'T' &&
+            buff[4] == 'P' ) {
+            ev->protocol = WBT_PROTOCOL_BMTP;
+        } else if(1) {
+            ev->protocol = WBT_PROTOCOL_HTTP;
+        } else {
+            wbt_on_close(ev);
+            return WBT_OK;
+        }
+
+        if( wbt_module_on_conn(ev) != WBT_OK ) {
+            wbt_on_close(ev);
+            return WBT_OK;
+        }
     }
 
     /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */

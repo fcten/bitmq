@@ -24,26 +24,14 @@ wbt_subscriber_t * wbt_mq_subscriber_create() {
     if( subscriber ) {
         subscriber->subscriber_id = ++auto_inc_id;
         subscriber->create = wbt_cur_mtime;
-        subscriber->channel_list = wbt_calloc(sizeof(wbt_channel_list_t));
-        subscriber->delivered_list = wbt_mq_msg_create_node(0);
-        
-        if( subscriber->channel_list &&
-            subscriber->delivered_list ) {
-            wbt_list_init(&subscriber->channel_list->head);
-            wbt_list_init(&subscriber->delivered_list->head);
-        } else {
-            wbt_free(subscriber->channel_list);
-            wbt_free(subscriber->delivered_list);
-            wbt_free(subscriber);
-            return NULL;
-        }
+
+        wbt_list_init(&subscriber->channel_list.head);
+        wbt_list_init(&subscriber->delivered_list.head);
 
         wbt_str_t subscriber_key;
         wbt_variable_to_str(subscriber->subscriber_id, subscriber_key);
         wbt_rb_node_t * subscriber_node = wbt_rb_insert(&wbt_mq_subscribers, &subscriber_key);
         if( subscriber_node == NULL ) {
-            wbt_free(subscriber->channel_list);
-            wbt_free(subscriber->delivered_list);
             wbt_free(subscriber);
             return NULL;
         }
@@ -73,24 +61,18 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         return;
     }
 
-    if( subscriber->channel_list ) {
-        wbt_channel_list_t * pos;
-        while(!wbt_list_empty(&subscriber->channel_list->head)) {
-            pos = wbt_list_first_entry(&subscriber->channel_list->head, wbt_channel_list_t, head);
-            wbt_list_del(&pos->head);
-            wbt_free(pos);
-        }
-        wbt_free(subscriber->channel_list);
+    wbt_channel_list_t * channel_node;
+    while(!wbt_list_empty(&subscriber->channel_list.head)) {
+        channel_node = wbt_list_first_entry(&subscriber->channel_list.head, wbt_channel_list_t, head);
+        wbt_list_del(&channel_node->head);
+        wbt_free(channel_node);
     }
 
-    if( subscriber->delivered_list ) {
-        wbt_msg_list_t * pos;
-        while(!wbt_list_empty(&subscriber->delivered_list->head)) {
-            pos = wbt_list_first_entry(&subscriber->delivered_list->head, wbt_msg_list_t, head);
-            wbt_list_del(&pos->head);
-            wbt_mq_msg_destory_node(pos);
-        }
-        wbt_free(subscriber->delivered_list);
+    wbt_msg_list_t * msg_node;
+    while(!wbt_list_empty(&subscriber->delivered_list.head)) {
+        msg_node = wbt_list_first_entry(&subscriber->delivered_list.head, wbt_msg_list_t, head);
+        wbt_list_del(&msg_node->head);
+        wbt_mq_msg_destory_node(msg_node);
     }
     
     wbt_str_t subscriber_key;
@@ -107,7 +89,7 @@ wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_chann
         return WBT_ERROR;
     }
     channel_node->channel = channel;
-    wbt_list_add(&channel_node->head, &subscriber->channel_list->head);
+    wbt_list_add(&channel_node->head, &subscriber->channel_list.head);
     
     return WBT_OK;
 }
@@ -119,14 +101,12 @@ wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_chann
  * @return 
  */
 wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
-    wbt_http_t * http = subscriber->ev->data;
-
     // 遍历所订阅的频道，获取可投递消息
     wbt_channel_list_t *channel_node;
     wbt_rb_node_t *node;
     wbt_msg_t *msg = NULL;
     wbt_str_t key;
-    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list->head, head) {
+    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list.head, head) {
         wbt_variable_to_str(channel_node->seq_id, key);
         node = wbt_rb_get_greater(&channel_node->channel->queue, &key);
         if( node ) {
@@ -138,48 +118,43 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
     if(msg) {
         json_object_t *obj = wbt_mq_msg_print(msg);
 
-        http->resp_body_memory.len = 10240;
-        http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
-        if( http->resp_body_memory.str == NULL ) {
+        wbt_str_t resp;
+        resp.len = 10240;
+        resp.str = wbt_malloc( resp.len );
+        if( resp.str == NULL ) {
             return WBT_ERROR;
-        }
-        char *p = http->resp_body_memory.str;
-        size_t l = http->resp_body_memory.len;
+        }        
+        char *p = resp.str;
+        size_t l = resp.len;
         json_print(obj, &p, &l);
-        http->resp_body_memory.len -= l;
-        http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );
+        resp.len -= l;
+        resp.str = wbt_realloc( resp.str, resp.len );
         
-        http->status = STATUS_200;
-        http->state = STATE_SENDING;
+        json_delete_object(obj);
         
-        if( wbt_http_process(subscriber->ev) != WBT_OK ) {
-            // 这个方法被调用时，可能正在遍历订阅者链表，这时不能关闭连接
-            // TODO 以合适的方法关闭连接
+        if( subscriber->send( subscriber->ev, resp.str, resp.len, msg->qos, 0 ) != WBT_OK ) {
+            wbt_free(resp.str);
             return WBT_ERROR;
         }
+        wbt_free(resp.str);
 
-        /* 等待socket可写 */
-        subscriber->ev->timer.on_timeout = wbt_conn_close;
-        subscriber->ev->timer.timeout    = wbt_cur_mtime + wbt_conf.event_timeout;
-        subscriber->ev->on_send = wbt_on_send;
-        subscriber->ev->events  = EPOLLOUT | EPOLLET;
-
-        if(wbt_event_mod(subscriber->ev) != WBT_OK) {
-            return WBT_ERROR;
-        }
-
-        // 如果是负载均衡消息，则从该频道中暂时移除该消息，以被免重复处理
+        // 如果是负载均衡消息，将该消息移动到 delivered_list 中
         if( msg->type == MSG_LOAD_BALANCE ) {
             // 消息本身不能被释放
             node->value.str = NULL;
             wbt_rb_delete(&channel_node->channel->queue, node);
+
+            wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(msg->msg_id);
+            if( msg_node == NULL ) {
+                return WBT_ERROR;
+            }
+            wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list.head );
         }
+
+        wbt_mq_msg_inc_delivery(msg);
 
         // 更新消息处理进度
         channel_node->seq_id = msg->seq_id;
-        
-        // 保存当前正在处理的消息指针
-        subscriber->msg_id = msg->msg_id;
 
         return WBT_OK;
     }
@@ -190,7 +165,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
 wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg_id) {
     wbt_msg_list_t *msg_node;
     wbt_msg_t *msg;
-    wbt_list_for_each_entry(msg_node, wbt_msg_list_t, &subscriber->delivered_list->head, head) {
+    wbt_list_for_each_entry(msg_node, wbt_msg_list_t, &subscriber->delivered_list.head, head) {
         if( msg_node->msg_id == msg_id ) {
             msg = wbt_mq_msg_get(msg_node->msg_id);
             if( msg ) {

@@ -194,7 +194,7 @@ void wbt_master_process() {
             for (i = 0; wbt_os_environ[i]; i++) {
             }
             wbt_environ = wbt_malloc( (i + 3) * sizeof(char *) );
-            memcpy(wbt_environ, wbt_os_environ, i * sizeof(char *));
+            wbt_memcpy(wbt_environ, wbt_os_environ, i * sizeof(char *));
 
             wbt_environ[i] = wbt_malloc( 32 * sizeof(char) );
             snprintf(wbt_environ[i], 32 * sizeof(char), "WBT_LISTEN_FD=%d", wbt_listen_fd);
@@ -270,7 +270,7 @@ static wbt_status wbt_save_argv(int argc, char** argv) {
             return WBT_ERROR;
         }
 
-        memcpy((u_char *) wbt_argv[i], (u_char *) argv[i], len);
+        wbt_memcpy((u_char *) wbt_argv[i], (u_char *) argv[i], len);
     }
 
     wbt_argv[i] = NULL;

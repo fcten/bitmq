@@ -16,7 +16,6 @@ extern "C" {
 #include <stdio.h>
     
 #include "../webit.h"
-#include "../http/wbt_http.h"
 #include "wbt_string.h"
 #include "wbt_event.h"
 

@@ -11,6 +11,9 @@
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"
 #include "../common/wbt_log.h"
+#include "../json/wbt_json.h"
+#include "../mq/wbt_mq.h"
+#include "../mq/wbt_mq_msg.h"
 #include "wbt_bmtp.h"
 #include "wbt_bmtp_sid.h"
 
@@ -18,6 +21,7 @@ enum {
     STATE_CONNECTED,
     STATE_RECV_HEADER,
     STATE_RECV_SID,
+    STATE_RECV_CID,
     STATE_RECV_PAYLOAD_LENGTH,
     STATE_RECV_PAYLOAD
 };
@@ -34,18 +38,23 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_connack(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_pub(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_puback(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_sub(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev);
 
 wbt_status wbt_bmtp_send_conn(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, int dup, int qos, char *buf, unsigned int len);
-wbt_status wbt_bmtp_send_puback(wbt_event_t *ev);
+wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, char *buf, unsigned int len, int qos, int dup);
+wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status);
+wbt_status wbt_bmtp_send_sub(wbt_event_t *ev, unsigned long long int channel_id);
+wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status);
 wbt_status wbt_bmtp_send_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev);
 wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len);
+
+wbt_status wbt_bmtp_is_ready(wbt_event_t *ev);
 
 wbt_module_t wbt_module_bmtp = {
     wbt_string("bmtp"),
@@ -68,6 +77,10 @@ wbt_status wbt_bmtp_exit() {
 }
 
 wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
     ev->data = wbt_calloc( sizeof(wbt_bmtp_t) );
     if( ev->data == NULL ) {
         return WBT_ERROR;
@@ -87,6 +100,10 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
     wbt_bmtp_t *bmtp = ev->data;
     
     if( bmtp->is_exit ) {
@@ -117,7 +134,6 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         case BMTP_PING:
                         case BMTP_PINGACK:
                         case BMTP_DISCONN:
-                            bmtp->payload_length = 0;
                             bmtp->state = STATE_RECV_PAYLOAD;
                             break;
                         case BMTP_CONN:
@@ -126,7 +142,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                             break;
                         case BMTP_PUB:
                             if( wbt_bmtp_qos(bmtp->header) == 0 ) {
-                                bmtp->state = STATE_RECV_PAYLOAD;
+                                bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
                             } else {
                                 bmtp->state = STATE_RECV_SID;
                             }
@@ -134,23 +150,37 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         case BMTP_PUBACK:
                             bmtp->state = STATE_RECV_SID;
                             break;
+                        case BMTP_SUB:
+                            bmtp->state = STATE_RECV_CID;
+                            break;
                         default:
                             return WBT_ERROR;
                     }
                 }
                 break;
+            case STATE_RECV_CID:
+                if( bmtp->recv_offset + 4 > ev->buff_len ) {
+                    return WBT_OK;
+                }
+                
+                bmtp->cid  = ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 24;
+                bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 16;
+                bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 8;
+                bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
+                bmtp->state = STATE_RECV_PAYLOAD;
+                break;
             case STATE_RECV_SID:
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
                     return WBT_OK;
                 }
+                
+                bmtp->sid = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
 
                 switch(wbt_bmtp_cmd(bmtp->header)) {
                     case BMTP_PUB:
-                        bmtp->sid = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
                         bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
                         break;
                     case BMTP_PUBACK:
-                        bmtp->sid = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
                         bmtp->state = STATE_RECV_PAYLOAD;
                         break;
                     default:
@@ -192,6 +222,11 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         break;
                     case BMTP_PUBACK:
                         if( wbt_bmtp_on_puback(ev) != WBT_OK ) {
+                            return WBT_ERROR;
+                        }
+                        break;
+                    case BMTP_SUB:
+                        if( wbt_bmtp_on_sub(ev) != WBT_OK ) {
                             return WBT_ERROR;
                         }
                         break;
@@ -240,6 +275,10 @@ waiting:
 }
 
 wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
     wbt_bmtp_t *bmtp = ev->data;
 
     while (!wbt_list_empty(&bmtp->send_queue.head)) {
@@ -282,9 +321,27 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
     wbt_bmtp_t *bmtp = ev->data;
     
-    // TODO 释放队列
+    // TODO 如果不保存会话，则释放队列
+    // TODO 在这里调用 wbt_mq_on_close
+    /*
+    while(!wbt_list_empty(bmtp->wait_queue.head)) {
+        
+    }
+
+    while(!wbt_list_empty(bmtp->send_queue.head)) {
+        
+    }
+
+    while(!wbt_list_empty(bmtp->ack_queue.head)) {
+        
+    }
+    */
     
     return WBT_OK;
 }
@@ -301,10 +358,21 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             bmtp->payload[3] != 'P') {
         bmtp->is_exit = 1;
         return wbt_bmtp_send_connack(ev, 0x1);
-    } else {
-        bmtp->is_conn = 1;
-        return wbt_bmtp_send_connack(ev, 0x0);
     }
+
+    if( wbt_mq_login(ev) != WBT_OK ) {
+        return wbt_bmtp_send_connack(ev, 0x2);
+    }
+    
+    wbt_mq_set_send_cb(ev, wbt_bmtp_send_pub);
+    wbt_mq_set_is_ready_cb(ev, wbt_bmtp_is_ready);
+    
+    bmtp->is_conn = 1;
+    if( wbt_bmtp_send_connack(ev, 0x0) != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
@@ -319,14 +387,66 @@ wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
     //wbt_log_debug("new pub\n");
     
     wbt_bmtp_t *bmtp = ev->data;
-    
+
     if( wbt_bmtp_qos(bmtp->header) == 0 ) {
+        wbt_mq_push(ev, bmtp->payload, bmtp->payload_length);
         return WBT_OK;
     } else {
-        wbt_bmtp_send_puback(ev);
-        return wbt_bmtp_send_pub(ev, 0, 1, "123", 3);
-        return wbt_bmtp_send_puback(ev);
+        if( wbt_mq_push(ev, bmtp->payload, bmtp->payload_length) != WBT_OK ) {
+            // TODO 需要返回更详细的错误原因
+            return wbt_bmtp_send_puback(ev, 0x2);
+        } else {
+            return wbt_bmtp_send_puback(ev, 0x0);
+        }
     }
+}
+
+wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
+    wbt_bmtp_t *bmtp = ev->data;
+
+    // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
+    if( wbt_mq_subscribe(ev, bmtp->cid) != WBT_OK ) {
+        return wbt_bmtp_send_suback(ev, 0x1);
+    }
+    
+    wbt_str_t resp;
+    resp.len = 1024 * 64;
+    resp.str = wbt_malloc( resp.len );
+    if( resp.str == NULL ) {
+        bmtp->is_exit = 1;
+        return wbt_bmtp_send_suback(ev, 0x2);
+    }
+    
+    if( wbt_bmtp_send_suback(ev, 0x0) != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    
+    // BMTP 协议允许一次性推送 255 条消息
+    // 但是为了控制内存消耗，这里还限制了消息总长度
+    wbt_msg_t *msg;
+    int total = 0;
+    while( wbt_mq_pull(ev, &msg) == WBT_OK && msg) {
+        json_object_t *obj = wbt_mq_msg_print(msg);
+
+        char *p = resp.str;
+        size_t l = 1024 * 64;
+        json_print(obj, &p, &l);
+        resp.len = 1024 * 64 - l;
+        
+        json_delete_object(obj);
+  
+        // TODO 如果这里 send 失败了
+        wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+        
+        total += resp.len;
+        if( total >= 1024 * 64 ) {
+            break;
+        }
+    }
+    
+    wbt_free(resp.str);
+
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
@@ -347,6 +467,29 @@ wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
 
     if (wbt_list_empty(&bmtp->wait_queue.head)) {
         wbt_bmtp_sid_free(bmtp, bmtp->sid);
+        
+        wbt_str_t resp;
+        resp.len = 1024 * 64;
+        resp.str = wbt_malloc( resp.len );
+        if( resp.str == NULL ) {
+            return wbt_bmtp_on_disconn(ev);
+        }
+
+        wbt_msg_t *msg;
+        if( wbt_mq_pull(ev, &msg) == WBT_OK && msg) {
+            json_object_t *obj = wbt_mq_msg_print(msg);
+
+            char *p = resp.str;
+            size_t l = 1024 * 64;
+            json_print(obj, &p, &l);
+            resp.len = 1024 * 64 - l;
+            
+            json_delete_object(obj);
+
+            wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+        }
+        
+        wbt_free(resp.str);
     }
     else {
         msg_node = wbt_list_first_entry(&bmtp->wait_queue.head, wbt_bmtp_msg_t, head);
@@ -391,57 +534,68 @@ wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_send_conn(wbt_event_t *ev) {
-    char buf[5] = {BMTP_CONN + BMTP_VERSION, 'B', 'M', 'T', 'P'};
+    char buf[] = {BMTP_CONN + BMTP_VERSION, 'B', 'M', 'T', 'P'};
     
-    return wbt_bmtp_send(ev, buf, 1);
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
 wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status) {
-    char buf[1] = {BMTP_CONNACK + status};
+    char buf[] = {BMTP_CONNACK + status};
     
-    return wbt_bmtp_send(ev, buf, 1);
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
-wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, int dup, int qos, char *data, unsigned int len) {
+wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup) {
     int sid = wbt_bmtp_sid_alloc(ev->data);
     
-    char buf[64 * 1024] = {BMTP_PUB + dup + qos, sid, len >> 8, len};
     if( len > 64 * 1024 - 4 ) {
-        memcpy(buf+4, data, 64 * 1024 - 4);
-        return wbt_bmtp_send(ev, buf, 64 * 1024);
-    } else {
-        memcpy(buf+4, data, len);
-        return wbt_bmtp_send(ev, buf, len + 4);
+        len = 64 * 1024 - 4;
     }
+
+    char *buf = wbt_malloc(len+4);
+    buf[0] = BMTP_PUB + dup + qos;
+    buf[1] = sid;
+    buf[2] = len >> 8;
+    buf[3] = len;
+    wbt_memcpy(buf+4, data, len);
+    return wbt_bmtp_send(ev, buf, len+4);
 }
 
-wbt_status wbt_bmtp_send_puback(wbt_event_t *ev) {
+wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status) {
     wbt_bmtp_t *bmtp = ev->data;
     
-    char buf[2] = {BMTP_PUBACK, bmtp->sid};
+    char buf[] = {BMTP_PUBACK + status, bmtp->sid};
     
-    return wbt_bmtp_send(ev, buf, sizeof(buf));
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
+}
+
+wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status) {
+    wbt_bmtp_t *bmtp = ev->data;
+    
+    char buf[] = {BMTP_SUBACK + status, bmtp->cid << 24, bmtp->cid << 16, bmtp->cid << 8, bmtp->cid};
+    
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
 wbt_status wbt_bmtp_send_ping(wbt_event_t *ev) {
-    char buf[1] = {BMTP_PING};
+    char buf[] = {BMTP_PING};
     
-    return wbt_bmtp_send(ev, buf, 1);
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
 wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev) {
-    char buf[1] = {BMTP_PINGACK};
+    char buf[] = {BMTP_PINGACK};
     
-    return wbt_bmtp_send(ev, buf, sizeof(buf));
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
 wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     bmtp->is_exit = 1;
 
-    char buf[1] = {BMTP_DISCONN};
+    char buf[] = {BMTP_DISCONN};
     
-    return wbt_bmtp_send(ev, buf, sizeof(buf));
+    return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
 
 wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
@@ -452,13 +606,8 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
         return WBT_ERROR;
     }
 
-    msg_node->msg =(unsigned char *)wbt_malloc(len);
-    if (!msg_node->msg) {
-        wbt_free(msg_node);
-        return WBT_ERROR;
-    }
     msg_node->len = len;
-    memcpy(msg_node->msg, buf, len);
+    msg_node->msg = buf;
     
     if (wbt_bmtp_cmd(buf[0]) == BMTP_PUB && buf[1] == 0) {
         wbt_list_add_tail(&msg_node->head, &bmtp->wait_queue.head);
@@ -475,4 +624,15 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     }
     
     return WBT_OK;
+}
+
+wbt_status wbt_bmtp_is_ready(wbt_event_t *ev) {
+    wbt_bmtp_t *bmtp = ev->data;
+    
+    if( wbt_list_empty(&bmtp->send_queue.head) &&
+        wbt_list_empty(&bmtp->ack_queue.head) ) {
+        return WBT_OK;
+    } else {
+        return WBT_ERROR;
+    }
 }

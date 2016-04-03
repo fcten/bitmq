@@ -38,7 +38,7 @@ wbt_module_t wbt_module_http1_generater = {
     NULL,
     wbt_http_generater,
     wbt_http_on_send,
-    NULL,
+    NULL
 };
 
 wbt_str_t wbt_file_path;
@@ -60,6 +60,10 @@ wbt_status wbt_http_exit() {
 }
 
 wbt_status wbt_http_on_conn( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_HTTP ) {
+        return WBT_OK;
+    }
+
     ev->data = wbt_calloc( sizeof(wbt_http_t) );
     if( ev->data == NULL ) {
         return WBT_ERROR;
@@ -73,6 +77,10 @@ wbt_status wbt_http_on_conn( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_on_send( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_HTTP ) {
+        return WBT_OK;
+    }
+
     int nwrite, n;
     wbt_http_t *http = ev->data;
     
@@ -204,6 +212,10 @@ send_complete:
 
 /* 释放 http 结构体中动态分配的内存 */
 wbt_status wbt_http_on_close( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_HTTP ) {
+        return WBT_OK;
+    }
+
     wbt_http_header_t *header, *next;
     wbt_http_t *http = ev->data;
     
@@ -619,6 +631,10 @@ wbt_status wbt_http_generate_response_header( wbt_http_t * http ) {
 }
 
 wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_HTTP ) {
+        return WBT_OK;
+    }
+
     wbt_http_t * http = ev->data;
     //wbt_log_debug("%.*s\n",ev->buff.len, (char *)ev->buff.ptr);
 
@@ -734,6 +750,10 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
 }
 
 wbt_status wbt_http_generater( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_HTTP ) {
+        return WBT_OK;
+    }
+
     wbt_http_t * http = ev->data;
 
     if( !http ) {

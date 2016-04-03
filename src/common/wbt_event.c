@@ -13,6 +13,7 @@
 #include "wbt_module.h"
 #include "wbt_time.h"
 #include "wbt_config.h"
+#include "wbt_file.h"
 
 wbt_module_t wbt_module_event = {
     wbt_string("event"),
@@ -144,6 +145,9 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     t->buff_len = 0;
     t->data = NULL;
     t->ctx  = NULL;
+    
+    t->protocol = 0;
+    t->ssl = NULL;
 
     /* 注册epoll事件 */
     if(t->fd >= 0) {
@@ -190,6 +194,8 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
 
     wbt_free(ev->data);
     ev->data = NULL;
+    
+    ev->protocol = 0;
 
     /* 删除epoll事件 */
     if(ev->fd >= 0) {

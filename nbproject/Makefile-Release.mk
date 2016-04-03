@@ -55,13 +55,13 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_timer.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
+	${OBJECTDIR}/src/http/wbt_http_mq.o \
 	${OBJECTDIR}/src/json/wbt_json.o \
 	${OBJECTDIR}/src/mq/wbt_mq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_channel.o \
 	${OBJECTDIR}/src/mq/wbt_mq_dlq.o \
 	${OBJECTDIR}/src/mq/wbt_mq_msg.o \
 	${OBJECTDIR}/src/mq/wbt_mq_persistence.o \
-	${OBJECTDIR}/src/mq/wbt_mq_status.o \
 	${OBJECTDIR}/src/mq/wbt_mq_subscriber.o \
 	${OBJECTDIR}/src/os/linux/wbt_os_util.o \
 	${OBJECTDIR}/src/os/linux/wbt_process.o \
@@ -194,6 +194,11 @@ ${OBJECTDIR}/src/http/wbt_http_consts.o: src/http/wbt_http_consts.c
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/http/wbt_http_consts.o src/http/wbt_http_consts.c
 
+${OBJECTDIR}/src/http/wbt_http_mq.o: src/http/wbt_http_mq.c 
+	${MKDIR} -p ${OBJECTDIR}/src/http
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/http/wbt_http_mq.o src/http/wbt_http_mq.c
+
 ${OBJECTDIR}/src/json/wbt_json.o: src/json/wbt_json.c 
 	${MKDIR} -p ${OBJECTDIR}/src/json
 	${RM} "$@.d"
@@ -223,11 +228,6 @@ ${OBJECTDIR}/src/mq/wbt_mq_persistence.o: src/mq/wbt_mq_persistence.c
 	${MKDIR} -p ${OBJECTDIR}/src/mq
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_persistence.o src/mq/wbt_mq_persistence.c
-
-${OBJECTDIR}/src/mq/wbt_mq_status.o: src/mq/wbt_mq_status.c 
-	${MKDIR} -p ${OBJECTDIR}/src/mq
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/mq/wbt_mq_status.o src/mq/wbt_mq_status.c
 
 ${OBJECTDIR}/src/mq/wbt_mq_subscriber.o: src/mq/wbt_mq_subscriber.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mq
