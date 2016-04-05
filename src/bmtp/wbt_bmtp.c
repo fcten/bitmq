@@ -546,19 +546,32 @@ wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status) {
 }
 
 wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup) {
-    int sid = wbt_bmtp_sid_alloc(ev->data);
-    
-    if( len > 64 * 1024 - 4 ) {
-        len = 64 * 1024 - 4;
-    }
+    if( qos > 0 ) {
+        int sid = wbt_bmtp_sid_alloc(ev->data);
 
-    char *buf = wbt_malloc(len+4);
-    buf[0] = BMTP_PUB + dup + qos;
-    buf[1] = sid;
-    buf[2] = len >> 8;
-    buf[3] = len;
-    wbt_memcpy(buf+4, data, len);
-    return wbt_bmtp_send(ev, buf, len+4);
+        if( len > 64 * 1024 - 4 ) {
+            len = 64 * 1024 - 4;
+        }
+
+        char *buf = wbt_malloc(len+4);
+        buf[0] = BMTP_PUB + dup + qos;
+        buf[1] = sid;
+        buf[2] = len >> 8;
+        buf[3] = len;
+        wbt_memcpy(buf+4, data, len);
+        return wbt_bmtp_send(ev, buf, len+4);
+    } else {
+        if( len > 64 * 1024 - 3 ) {
+            len = 64 * 1024 - 3;
+        }
+
+        char *buf = wbt_malloc(len+3);
+        buf[0] = BMTP_PUB + dup + qos;
+        buf[1] = len >> 8;
+        buf[2] = len;
+        wbt_memcpy(buf+3, data, len);
+        return wbt_bmtp_send(ev, buf, len+3);
+    }
 }
 
 wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status) {
@@ -609,7 +622,9 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     msg_node->len = len;
     msg_node->msg = buf;
     
-    if (wbt_bmtp_cmd(buf[0]) == BMTP_PUB && buf[1] == 0) {
+    if (wbt_bmtp_cmd(buf[0]) == BMTP_PUB &&
+        wbt_bmtp_qos(buf[0]) > 0 &&
+        buf[1] == 0) {
         wbt_list_add_tail(&msg_node->head, &bmtp->wait_queue.head);
     }
     else {
