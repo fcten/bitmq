@@ -200,8 +200,6 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                 }
                 break;
             case JSON_ARRAY:
-                
-                break;
             case JSON_OBJECT:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
                     msg->data_len = 10240;
@@ -238,6 +236,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     t.callback = NULL;
 
     if( json_parser(&t) != 0 ) {
+        json_delete_object(t.root);
+        
         return WBT_ERROR;
     }
 

@@ -392,6 +392,41 @@ wbt_status wbt_http_mq_status_system_general(wbt_event_t *ev) {
 }
 
 wbt_status wbt_http_mq_status_message(wbt_event_t *ev) {
+    wbt_http_t * http = ev->data;
+    
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
+    
+    wbt_str_t msg_id_str;
+    msg_id_str.str = http_uri.str + 19;
+    msg_id_str.len = http_uri.len - 19;
+    wbt_mq_id msg_id = wbt_str_to_ull(&msg_id_str, 10);
+    
+    wbt_msg_t *msg = wbt_mq_msg_get(msg_id);
+    if(msg == NULL) {
+        http->status = STATUS_404;
+        return WBT_OK;
+    }
+    
+    http->resp_body_memory.len = 1024 * 64;
+    http->resp_body_memory.str = wbt_malloc(http->resp_body_memory.len);
+    if( http->resp_body_memory.str == NULL ) {
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+    
+    json_object_t *obj = wbt_mq_msg_print(msg);
+
+    char *p = http->resp_body_memory.str;
+    size_t l = 1024 * 64;
+    json_print(obj, &p, &l);
+    http->resp_body_memory.len = 1024 * 64 - l;
+    http->resp_body_memory.str = wbt_realloc( http->resp_body_memory.str, http->resp_body_memory.len );    
+
+    json_delete_object(obj);
+    
+    http->status = STATUS_200;
+    
     return WBT_OK;
 }
 
