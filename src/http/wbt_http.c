@@ -92,7 +92,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
     //setsockopt( ev->fd, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
     /* 测试 keep-alive 性能时，使用 TCP_NODELAY 立即发送小数据，否则会阻塞 40 毫秒 */
-    setsockopt( ev->fd, SOL_TCP, TCP_NODELAY, &on, sizeof ( on ) );
+    setsockopt( ev->fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof ( on ) );
 
     /* 如果存在 response，发送 response */
     if( http->resp_header.len - http->header_offset > 0 ) {

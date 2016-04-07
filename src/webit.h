@@ -33,8 +33,10 @@ extern "C" {
 #define LF      "\n"
 #define CRLF    CR LF
 
+#ifndef WIN32
 #define WBT_USE_ACCEPT4
-    
+#endif
+
 typedef enum {
     WBT_OK,
     WBT_ERROR

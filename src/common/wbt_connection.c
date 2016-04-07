@@ -5,6 +5,11 @@
  * Created on 2014年8月25日, 下午3:57
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include "../webit.h"
 #include "../event/wbt_event.h"
 #include "wbt_connection.h"
 #include "wbt_string.h"
@@ -18,15 +23,13 @@
 
 wbt_atomic_t wbt_connection_count = 0;
 
-wbt_status wbt_setnonblocking(int sock);
-
 wbt_module_t wbt_module_conn = {
     wbt_string("connection"),
     wbt_conn_init,
     wbt_conn_cleanup
 };
 
-int wbt_listen_fd = -1;
+wbt_socket_t wbt_listen_fd = -1;
 
 wbt_status wbt_conn_init() {
     // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
@@ -41,7 +44,7 @@ wbt_status wbt_conn_init() {
             return WBT_ERROR;
         }
         /* 把监听socket设置为非阻塞方式 */
-        if( wbt_setnonblocking(wbt_listen_fd) != WBT_OK ) {
+        if( wbt_nonblocking(wbt_listen_fd) == -1 ) {
             wbt_log_add("set nonblocking failed\n");
 
             return WBT_ERROR;
@@ -119,12 +122,13 @@ wbt_status wbt_on_close(wbt_event_t *ev) {
 
 wbt_status wbt_on_accept(wbt_event_t *ev) {
     struct sockaddr_in remote;
-    int conn_sock, addrlen = sizeof(remote);
+    int addrlen = sizeof(remote);
+    wbt_socket_t conn_sock;
 #ifdef WBT_USE_ACCEPT4
     while((conn_sock = accept4(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen, SOCK_NONBLOCK)) >= 0) {
 #else
     while((conn_sock = accept(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
-        wbt_setnonblocking(conn_sock); 
+        wbt_nonblocking(conn_sock); 
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
         //wbt_log_add("%s\n", inet_ntoa(remote.sin_addr));
@@ -271,21 +275,6 @@ wbt_status wbt_on_close(wbt_event_t *ev) {
     return WBT_OK;
 }
 */
-
-/* 将句柄设置为非阻塞 */
-wbt_status wbt_setnonblocking(int sock) {
-    int opts;
-    opts = fcntl(sock,F_GETFL);
-    if (opts < 0) {
-        return WBT_ERROR;
-    }
-    opts = opts|O_NONBLOCK;
-    if (fcntl(sock, F_SETFL, opts) < 0) {
-        return WBT_ERROR;
-    }
-    
-    return WBT_OK;
-}
 
 ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
     int ret;

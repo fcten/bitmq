@@ -75,6 +75,7 @@ endif (UNIX)
 if (WIN32 OR CYGWIN)
 	set (WBT_SRCS ${WBT_SRCS}
 	event/wbt_event_select.h
+    os/win32/wbt_os_util.c
     os/win32/wbt_os_util.h)
 endif (WIN32 OR CYGWIN)
 

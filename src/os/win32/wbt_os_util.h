@@ -16,10 +16,12 @@ extern "C" {
 #include <stdint.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <windows.h>
 
 #define wbt_inline __inline
 
-typedef DWORD wbt_err_t;
+typedef DWORD  wbt_err_t;
+typedef SOCKET wbt_socket_t;
 
 #define ssize_t long
     
@@ -67,6 +69,9 @@ typedef DWORD wbt_err_t;
 
 int wbt_get_file_path_by_fd(int fd, void * buf, size_t buf_len);
 int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
+
+int wbt_nonblocking(wbt_socket_t s);
+int wbt_blocking(wbt_socket_t s);
 
 #ifdef	__cplusplus
 }

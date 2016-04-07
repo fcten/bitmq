@@ -30,3 +30,14 @@ int wbt_get_self(void * buf, size_t buf_len) {
 
     return readlink("/proc/self/exe", buf, buf_len);
 }
+
+int wbt_nonblocking(wbt_socket_t s) {
+    int nb = 1;
+    return ioctl(s, FIONBIO, &nb);
+}
+
+
+int wbt_blocking(wbt_socket_t s) {
+    int nb = 0;
+    return ioctl(s, FIONBIO, &nb);
+}

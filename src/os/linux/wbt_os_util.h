@@ -34,6 +34,7 @@ extern "C" {
 #define wbt_inline inline
 
 typedef int wbt_err_t;
+typedef int wbt_socket_t;
 
 #define WBT_EPERM         EPERM
 #define WBT_ENOENT        ENOENT
@@ -93,6 +94,9 @@ typedef int wbt_err_t;
 
 int wbt_get_file_path_by_fd(int fd, void * buf, size_t buf_len);
 int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
+
+int wbt_nonblocking(wbt_socket_t s);
+int wbt_blocking(wbt_socket_t s);
 
 #ifdef	__cplusplus
 }
