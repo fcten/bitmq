@@ -61,6 +61,7 @@ set (WBT_SRCS
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}
+	event/wbt_event_epoll.h
     os/linux/wbt_os_util.c
     os/linux/wbt_os_util.h
     os/linux/wbt_process.c
@@ -73,6 +74,7 @@ endif (UNIX)
 
 if (WIN32 OR CYGWIN)
 	set (WBT_SRCS ${WBT_SRCS}
+	event/wbt_event_select.h
     os/win32/wbt_os_util.h)
 endif (WIN32 OR CYGWIN)
 

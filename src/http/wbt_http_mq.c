@@ -156,7 +156,7 @@ wbt_status wbt_http_mq_pull_timeout(wbt_timer_t *timer) {
         ev->timer.on_timeout = wbt_conn_close;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
         ev->on_send = wbt_on_send;
-        ev->events = EPOLLOUT | EPOLLET;
+        ev->events = WBT_EV_WRITE | WBT_EV_ET;
 
         if(wbt_event_mod(ev) != WBT_OK) {
             return WBT_ERROR;
@@ -243,7 +243,7 @@ wbt_status wbt_http_mq_send(wbt_event_t *ev, char *data, unsigned int len, int q
     ev->timer.on_timeout = wbt_conn_close;
     ev->timer.timeout    = wbt_cur_mtime + wbt_conf.event_timeout;
     ev->on_send = wbt_on_send;
-    ev->events  = EPOLLOUT | EPOLLET;
+    ev->events  = WBT_EV_WRITE | WBT_EV_ET;
 
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;

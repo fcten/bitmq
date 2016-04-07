@@ -8,6 +8,8 @@
 #include "wbt_gzip.h"
 #include "wbt_memory.h"
 
+#ifndef WIN32
+
 /* 使用自定义的内存分配策略 */  
 void *wbt_gzip_alloc OF((void *, unsigned, unsigned));  
 void wbt_gzip_free OF((void *, void *));
@@ -117,3 +119,5 @@ int wbt_gzip_decompress(Byte *zdata, uLong nzdata, Byte *data, uLong *ndata) {
     deflateEnd(&d_stream);
     return Z_OK;
 }
+
+#endif

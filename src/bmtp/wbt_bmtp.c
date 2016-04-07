@@ -265,7 +265,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
     }
     
 waiting:
-    ev->events |= EPOLLIN;
+    ev->events |= WBT_EV_READ;
     ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
@@ -309,7 +309,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
     if( bmtp->is_exit ) {
         wbt_on_close(ev);
     } else {
-        ev->events &= ~EPOLLOUT;
+        ev->events &= ~WBT_EV_WRITE;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -497,7 +497,7 @@ wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
         wbt_list_del(&msg_node->head);
         wbt_list_add_tail(&msg_node->head, &bmtp->send_queue.head);
 
-        ev->events |= EPOLLOUT;
+        ev->events |= WBT_EV_WRITE;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -521,7 +521,7 @@ wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev) {
 wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
-    ev->events |= EPOLLOUT;
+    ev->events |= WBT_EV_WRITE;
     ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
     if(wbt_event_mod(ev) != WBT_OK) {
@@ -630,7 +630,7 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     else {
         wbt_list_add_tail(&msg_node->head, &bmtp->send_queue.head);
 
-        ev->events |= EPOLLOUT;
+        ev->events |= WBT_EV_WRITE;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {

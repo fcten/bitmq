@@ -24,6 +24,12 @@ extern "C" {
 #include "../common/wbt_list.h"
 #include "../common/wbt_timer.h"
 
+#ifndef WIN32
+#include "wbt_event_epoll.h"
+#else
+#include "wbt_event_select.h"
+#endif
+
 enum {
     WBT_PROTOCOL_UNKNOWN,
     WBT_PROTOCOL_HTTP,

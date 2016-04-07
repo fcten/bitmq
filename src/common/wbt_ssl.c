@@ -95,7 +95,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
         printf ("SSL connection using %s\n", SSL_get_cipher (ev->ssl));
 
         ev->on_recv = wbt_on_recv;
-        ev->events = EPOLLIN | EPOLLET;
+        ev->events = WBT_EV_READ | WBT_EV_ET;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -112,7 +112,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
 
     if( err == SSL_ERROR_WANT_READ ) {
         ev->on_recv = wbt_ssl_handshake;
-        ev->events = EPOLLIN | EPOLLET;
+        ev->events = WBT_EV_READ | WBT_EV_ET;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -122,7 +122,7 @@ wbt_status wbt_ssl_handshake(wbt_event_t *ev) {
         return WBT_OK;
     } else if( err == SSL_ERROR_WANT_WRITE ) {
         ev->on_send = wbt_ssl_handshake;
-        ev->events = EPOLLOUT | EPOLLET;
+        ev->events = WBT_EV_WRITE | WBT_EV_ET;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.event_timeout;
 
         if(wbt_event_mod(ev) != WBT_OK) {

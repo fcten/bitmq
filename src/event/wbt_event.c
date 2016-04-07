@@ -255,7 +255,7 @@ wbt_status wbt_event_dispatch() {;
 
     listen_ev.on_recv = wbt_on_accept;
     listen_ev.on_send = NULL;
-    listen_ev.events = EPOLLIN | EPOLLET;
+    listen_ev.events = WBT_EV_READ | WBT_EV_ET;
     listen_ev.fd = wbt_listen_fd;
     
     if( wbt_conf.process == 1 ) {
@@ -353,14 +353,12 @@ wbt_status wbt_event_dispatch() {;
             /* 尝试调用该事件的回调函数 */
             if( ev->fd == wbt_listen_fd ) {
                 continue;
-            } else if (events[i].events & EPOLLRDHUP) {
-                wbt_on_close(ev);
-            } else if ((events[i].events & EPOLLIN) && ev->on_recv) {
+            } else if ((events[i].events & WBT_EV_READ) && ev->on_recv) {
                 if( ev->on_recv(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_recv);
                     return WBT_ERROR;
                 }
-            } else if ((events[i].events & EPOLLOUT) && ev->on_send) {
+            } else if ((events[i].events & WBT_EV_WRITE) && ev->on_send) {
                 if( ev->on_send(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_send);
                     return WBT_ERROR;

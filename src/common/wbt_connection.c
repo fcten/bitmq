@@ -134,7 +134,7 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         tmp_ev.timer.timeout    = wbt_cur_mtime + wbt_conf.event_timeout;
         tmp_ev.on_recv = wbt_on_recv;
         tmp_ev.on_send = wbt_on_send;
-        tmp_ev.events  = EPOLLIN | EPOLLET;
+        tmp_ev.events  = WBT_EV_READ | WBT_EV_ET;
         tmp_ev.fd      = conn_sock;
 
         if((p_ev = wbt_event_add(&tmp_ev)) == NULL) {

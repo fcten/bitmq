@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include "../webit.h"
 #include "wbt_rbtree.h"
 #include "wbt_memory.h"
 #include "wbt_string.h"
@@ -18,15 +19,15 @@
  * 5）对每个结点，从该结点到其子孙结点的所有路径上包含相同数目的黑结点。
  */
 
-static inline void wbt_rbtree_set_parent(wbt_rb_node_t *node, wbt_rb_node_t *parent) {  
+static wbt_inline void wbt_rbtree_set_parent(wbt_rb_node_t *node, wbt_rb_node_t *parent) {  
     node->parent_color = (node->parent_color & 3) | (unsigned long int)parent;  
 }
 
-static inline void wbt_rbtree_set_color(wbt_rb_node_t *node, wbt_rb_color_t color) {
+static wbt_inline void wbt_rbtree_set_color(wbt_rb_node_t *node, wbt_rb_color_t color) {
     node->parent_color = (node->parent_color & ~1) | color;
 }
 
-static inline void wbt_rbtree_set_parent_color(wbt_rb_node_t *node, wbt_rb_node_t *parent, wbt_rb_color_t color) {
+static wbt_inline void wbt_rbtree_set_parent_color(wbt_rb_node_t *node, wbt_rb_node_t *parent, wbt_rb_color_t color) {
     node->parent_color = (unsigned long int)parent | color;
 }
 
@@ -49,7 +50,7 @@ static int wbt_rbtree_compare(wbt_rb_t *rbt, wbt_rb_key_t *key1, wbt_rb_key_t *k
     }
 }
 
-static inline void wbt_rbtree_rotate_left(wbt_rb_t *rbt, wbt_rb_node_t *node) {
+static wbt_inline void wbt_rbtree_rotate_left(wbt_rb_t *rbt, wbt_rb_node_t *node) {
     wbt_rb_node_t  *temp;
 
     temp = node->right;
@@ -73,7 +74,7 @@ static inline void wbt_rbtree_rotate_left(wbt_rb_t *rbt, wbt_rb_node_t *node) {
     wbt_rbtree_set_parent(node, temp);
 }
 
-static inline void wbt_rbtree_rotate_right(wbt_rb_t *rbt, wbt_rb_node_t *node) {
+static wbt_inline void wbt_rbtree_rotate_right(wbt_rb_t *rbt, wbt_rb_node_t *node) {
     wbt_rb_node_t  *temp;
 
     temp = node->left;
