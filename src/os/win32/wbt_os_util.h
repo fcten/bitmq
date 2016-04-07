@@ -19,6 +19,8 @@ extern "C" {
 
 #define wbt_inline __inline
 
+typedef DWORD wbt_err_t;
+
 #define ssize_t long
     
 #define WBT_EPERM                  ERROR_ACCESS_DENIED
