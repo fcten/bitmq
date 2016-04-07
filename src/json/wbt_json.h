@@ -40,11 +40,11 @@ typedef struct json_object_s {
     json_type_t object_type:4; /* 该属性只能是 JSON_OBJECT 或者 JSON_ARRAY */
     json_type_t value_type:4;
     
-#ifdef __x86_64__
+#if (defined __x86_64__) || (defined _WIN64)
     /* 64 */
     size_t key_len:18;      // 64 位下一般不需要考虑长度不够的问题了
     size_t value_len:38;
-#elif __i386__
+#else
     /* 32 */
     size_t key_len:8;       // key 最长 255 字节
     size_t value_len:16;    // value 最长 65535 字节

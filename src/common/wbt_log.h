@@ -15,7 +15,6 @@ extern "C" {
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
-#include <unistd.h>
 #include <fcntl.h>
 
 #include "../webit.h"

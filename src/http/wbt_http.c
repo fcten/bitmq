@@ -5,8 +5,6 @@
  * Created on 2014年10月24日, 下午3:30
  */
 
-#include <sys/sendfile.h>
-
 #include "../common/wbt_module.h"
 #include "../common/wbt_memory.h"
 #include "../common/wbt_log.h"
