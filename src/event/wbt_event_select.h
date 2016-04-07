@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-#define WBT_EV_READ     0
-#define WBT_EV_WRITE    1
+#define WBT_EV_READ     1
+#define WBT_EV_WRITE    2
 
 #define WBT_EV_ET       0
 

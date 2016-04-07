@@ -302,7 +302,12 @@ wbt_status wbt_event_dispatch() {;
             wbt_conn_close_listen();
         }
         
-        int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout); 
+        int nfds = epoll_wait(epoll_fd, events, WBT_MAX_EVENTS, timeout);
+
+        /* 更新当前时间 */
+        wbt_time_update();
+        wbt_time_str_update();
+        
         if (nfds == -1) {
             if (errno == EINTR) {
                 // 被信号中断
@@ -315,10 +320,6 @@ wbt_status wbt_event_dispatch() {;
             }
         }
         //wbt_log_debug("%d event happened.\n",nfds);
-        
-        /* 更新当前时间 */
-        wbt_time_update();
-        wbt_time_str_update();
 
         if( is_accept_add ) {
             for (i = 0; i < nfds; ++i) {
@@ -353,12 +354,14 @@ wbt_status wbt_event_dispatch() {;
             /* 尝试调用该事件的回调函数 */
             if( ev->fd == wbt_listen_fd ) {
                 continue;
-            } else if ((events[i].events & WBT_EV_READ) && ev->on_recv) {
+            }
+            if ((events[i].events & WBT_EV_READ) && ev->on_recv) {
                 if( ev->on_recv(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_recv);
                     return WBT_ERROR;
                 }
-            } else if ((events[i].events & WBT_EV_WRITE) && ev->on_send) {
+            }
+            if ((events[i].events & WBT_EV_WRITE) && ev->on_send) {
                 if( ev->on_send(ev) != WBT_OK ) {
                     wbt_log_add("call %p failed\n", ev->on_send);
                     return WBT_ERROR;

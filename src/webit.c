@@ -16,7 +16,7 @@
 #include "common/wbt_rbtree.h"
 #include "common/wbt_config.h"
 
-extern int wbt_listen_fd;
+extern wbt_socket_t wbt_listen_fd;
 
 extern char **environ;
 int wbt_argc;
@@ -412,7 +412,7 @@ int main(int argc, char** argv) {
     
 #else
 
-    // TODO 启动 Windows 服务并启动 wbt_event_dispatch
+	wbt_event_dispatch();
 
 #endif
     

@@ -37,7 +37,6 @@ set (WBT_SRCS
 	common/wbt_time.h
 	common/wbt_timer.c
 	common/wbt_timer.h
-	event/wbt_event.c
 	event/wbt_event.h
 	http/wbt_http.c
 	http/wbt_http.h
@@ -61,6 +60,7 @@ set (WBT_SRCS
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}
+	event/wbt_event_epoll.c
 	event/wbt_event_epoll.h
     os/linux/wbt_os_util.c
     os/linux/wbt_os_util.h
@@ -74,6 +74,7 @@ endif (UNIX)
 
 if (WIN32 OR CYGWIN)
 	set (WBT_SRCS ${WBT_SRCS}
+	event/wbt_event_select.c
 	event/wbt_event_select.h
     os/win32/wbt_os_util.c
     os/win32/wbt_os_util.h)
