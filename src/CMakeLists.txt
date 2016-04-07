@@ -13,8 +13,6 @@ set (WBT_SRCS
 	common/wbt_connection.h
 	common/wbt_crc.c
 	common/wbt_crc.h
-	common/wbt_event.c
-	common/wbt_event.h
 	common/wbt_file.c
 	common/wbt_file.h
 	common/wbt_gzip.c
@@ -39,6 +37,8 @@ set (WBT_SRCS
 	common/wbt_time.h
 	common/wbt_timer.c
 	common/wbt_timer.h
+	event/wbt_event.c
+	event/wbt_event.h
 	http/wbt_http.c
 	http/wbt_http.h
 	http/wbt_http_consts.c
