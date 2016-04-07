@@ -15,19 +15,17 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../../webit.h"
-
 #define WBT_MAX_PROCESS 1024
 
 typedef struct wbt_proc_s {
     pid_t pid;
 } wbt_proc_t;
 
-wbt_status wbt_proc_push(pid_t pid);
-pid_t      wbt_proc_pop();
-wbt_status wbt_proc_fork( void (*proc)() );
-wbt_status wbt_proc_create( void (*proc)(), int num );
-wbt_status wbt_proc_remove(pid_t pid);
+int   wbt_proc_push(pid_t pid);
+pid_t wbt_proc_pop();
+int   wbt_proc_fork( void (*proc)() );
+int   wbt_proc_create( void (*proc)(), int num );
+void  wbt_proc_remove(pid_t pid);
 
 #ifdef	__cplusplus
 }

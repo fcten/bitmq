@@ -18,7 +18,7 @@ extern "C" {
 
 #include "../../webit.h"
 
-wbt_status wbt_init_proc_title();
+int wbt_init_proc_title();
 void wbt_set_proc_title(const char *title);
 
 #ifdef	__cplusplus

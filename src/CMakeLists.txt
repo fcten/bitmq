@@ -57,7 +57,10 @@ set (WBT_SRCS
     mq/wbt_mq_persistence.c
     mq/wbt_mq_persistence.h
     mq/wbt_mq_subscriber.c
-    mq/wbt_mq_subscriber.h
+    mq/wbt_mq_subscriber.h)
+
+if (UNIX)
+	set (WBT_SRCS ${WBT_SRCS}
     os/linux/wbt_os_util.c
     os/linux/wbt_os_util.h
     os/linux/wbt_process.c
@@ -66,17 +69,19 @@ set (WBT_SRCS
     os/linux/wbt_setproctitle.h
     os/linux/wbt_terminal.c
     os/linux/wbt_terminal.h)
+endif (UNIX)
+
+if (WIN32 OR CYGWIN)
+	set (WBT_SRCS ${WBT_SRCS}
+    os/win32/wbt_os_util.h)
+endif (WIN32 OR CYGWIN)
 
 add_executable(webit ${WBT_SRCS})
 
 set (WBT_LIBS ${WBT_LIBS} ${OPENSSL_LIBRARIES})
 
 if (UNIX)
-	if (APPLE)
-		set (WBT_LIBS ${WBT_LIBS} dl z)
-	else (APPLE)
-		set (WBT_LIBS ${WBT_LIBS} dl z)
-	endif (APPLE)
+	set (WBT_LIBS ${WBT_LIBS} dl z)
 endif (UNIX)
 
 if (WIN32)

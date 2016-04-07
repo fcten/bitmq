@@ -27,6 +27,10 @@ extern "C" {
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 
+#include "wbt_setproctitle.h"
+#include "wbt_terminal.h"
+#include "wbt_process.h"    
+    
 #define wbt_inline inline
 
 typedef int wbt_err_t;

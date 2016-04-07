@@ -15,7 +15,7 @@ extern char **wbt_os_environ;
 
 char *wbt_argv_last;
 
-wbt_status wbt_init_proc_title() {
+int wbt_init_proc_title() {
     size_t size = 0;
     int i;
     char * p;
@@ -25,7 +25,7 @@ wbt_status wbt_init_proc_title() {
     }
  
     if( ( p = wbt_malloc(size*sizeof(char)) ) == NULL ) {
-        return WBT_ERROR;
+        return -1;
     }
     
     wbt_argv_last = wbt_os_argv[0];
@@ -50,7 +50,7 @@ wbt_status wbt_init_proc_title() {
 
     wbt_argv_last --;
 
-    return WBT_OK;
+    return 0;
 }
  
 void wbt_set_proc_title(const char *title) {

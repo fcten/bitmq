@@ -8,11 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "os/linux/wbt_setproctitle.h"
-#include "os/linux/wbt_os_util.h"
-#include "os/linux/wbt_terminal.h"
-#include "os/linux/wbt_process.h"
-
 #include "webit.h"
 #include "common/wbt_string.h"
 #include "common/wbt_memory.h"
