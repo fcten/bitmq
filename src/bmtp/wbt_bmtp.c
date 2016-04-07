@@ -285,7 +285,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
         wbt_bmtp_msg_t *msg_node = wbt_list_first_entry(&bmtp->send_queue.head, wbt_bmtp_msg_t, head);
         int ret = wbt_send(ev, (char *)msg_node->msg + msg_node->offset, msg_node->len - msg_node->offset);
         if (ret <= 0) {
-            if( errno == EAGAIN ) {
+            if( wbt_socket_errno == WBT_EAGAIN ) {
                 return WBT_OK;
             } else {
                 return WBT_ERROR;

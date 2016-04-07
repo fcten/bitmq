@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#include "../webit.h"
+
 typedef struct wbt_list_s {  
     struct wbt_list_s *next, *prev;  
 } wbt_list_t;
@@ -64,35 +66,35 @@ typedef struct wbt_list_s {
 	     &pos->member != (head);					\
 	     pos = wbt_list_next_entry(pos, type, member))
 
-static inline void __wbt_list_add(wbt_list_t *list, wbt_list_t *prev, wbt_list_t *next) {
+static wbt_inline void __wbt_list_add(wbt_list_t *list, wbt_list_t *prev, wbt_list_t *next) {
     next->prev = list;
     list->next = next;
     list->prev = prev;
     prev->next = list;
 }
 
-static inline void __wbt_list_del(wbt_list_t *prev, wbt_list_t *next) {
+static wbt_inline void __wbt_list_del(wbt_list_t *prev, wbt_list_t *next) {
     next->prev = prev;
     prev->next = next;
 }
   
-static inline void wbt_list_add(wbt_list_t *list, wbt_list_t *head) {
+static wbt_inline void wbt_list_add(wbt_list_t *list, wbt_list_t *head) {
     __wbt_list_add(list, head, head->next);
 }
 
-static inline void wbt_list_add_tail(wbt_list_t *list, wbt_list_t *head) {
+static wbt_inline void wbt_list_add_tail(wbt_list_t *list, wbt_list_t *head) {
     __wbt_list_add(list, head->prev, head);
 }  
 
-static inline void wbt_list_del(wbt_list_t *entry) {
+static wbt_inline void wbt_list_del(wbt_list_t *entry) {
     __wbt_list_del(entry->prev, entry->next);
 }
 
-static inline int wbt_list_empty(const wbt_list_t *head) {
+static wbt_inline int wbt_list_empty(const wbt_list_t *head) {
 	return head->next == head;
 }
 
-static inline void wbt_list_move_tail(wbt_list_t *list, wbt_list_t *head) {
+static wbt_inline void wbt_list_move_tail(wbt_list_t *list, wbt_list_t *head) {
 	wbt_list_del(list);
 	wbt_list_add_tail(list, head);
 }

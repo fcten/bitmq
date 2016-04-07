@@ -15,6 +15,12 @@ extern "C" {
 #include <stdio.h>
 #include <stdint.h>
 
+#ifndef WIN32
+#include "os/linux/wbt_os_util.h"
+#else
+#include "os/win32/wbt_os_util.h"
+#endif
+
 #define WBT_DEBUG
 
 #define WBT_VERSION         "0.5.0"
@@ -31,8 +37,7 @@ extern "C" {
     
 typedef enum {
     WBT_OK,
-    WBT_ERROR,
-    WBT_AGAIN
+    WBT_ERROR
 } wbt_status;
 
 typedef int wbt_atomic_t;

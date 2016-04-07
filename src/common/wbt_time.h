@@ -12,8 +12,7 @@
 extern "C" {
 #endif
 
-#include <sys/time.h>
-
+#include "../webit.h"
 #include "wbt_memory.h"
 #include "wbt_string.h"
     

@@ -5,6 +5,8 @@
  * Created on 2015年4月29日, 下午4:35
  */
 
+#include "../../webit.h"
+#include "../../common/wbt_memory.h"
 #include "wbt_os_util.h"
 
 int wbt_get_file_path_by_fd(int fd, void * buf, size_t buf_len) {

@@ -16,6 +16,8 @@ extern "C" {
 #include <stdarg.h>
 #include <string.h>
 
+#include "../webit.h"
+
 typedef struct {
     /* 使用 int 而不是 unsigned int，方便进行运算和比较 */
     int len;
@@ -59,7 +61,7 @@ int wbt_stricmp( wbt_str_t *str1, wbt_str_t *str2);
 
 void wbt_strcat( wbt_str_t * dest, wbt_str_t * src, int max_len );
 
-static inline unsigned int wbt_strlen(const char *s) {
+static wbt_inline unsigned int wbt_strlen(const char *s) {
     return strlen(s);
 }
 

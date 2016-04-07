@@ -144,8 +144,16 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         wbt_connection_count ++;
     }
 
-    if (conn_sock == -1) { 
-        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR) {
+    if (conn_sock == -1) {
+        wbt_err_t err = wbt_socket_errno;
+
+        if (err == WBT_EAGAIN) {
+            return WBT_OK;
+        } else if (err == WBT_ECONNABORTED) {
+            wbt_log_add("accept failed\n");
+
+            return WBT_ERROR;
+        } else if (err == WBT_EMFILE || err == WBT_ENFILE) {
             wbt_log_add("accept failed\n");
 
             return WBT_ERROR;
@@ -175,7 +183,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
         nread = wbt_recv(ev, ev->buff + ev->buff_len - 4096, 4096);
         if(nread <= 0) {
-            if(errno == EAGAIN) {
+            wbt_err_t err = wbt_socket_errno;
+            if(err == WBT_EAGAIN) {
                 // 当前缓冲区已无数据可读
                 bReadOk = 1;
                 
@@ -184,7 +193,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
                 ev->buff_len -= 4096;
                 
                 break;
-            } else if (errno == ECONNRESET) {
+            } else if (err == WBT_ECONNRESET) {
                 // 对方发送了RST
                 break;
             } else {
@@ -280,11 +289,11 @@ wbt_status wbt_setnonblocking(int sock) {
 
 ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
     int ret;
-    int err;
+    wbt_err_t err;
     char ebuf[256];
     unsigned long e;
 
-    errno = 0;
+    wbt_set_errno(0);
 
     if(ev->ssl) {
         ret = SSL_read(ev->ssl, buf, len);
@@ -292,18 +301,18 @@ ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
             err = SSL_get_error(ev->ssl, ret);
             if(err == SSL_ERROR_WANT_READ) {
                 ret = -1;
-                errno = EAGAIN;
+                wbt_set_errno(WBT_EAGAIN);
             } else if(err == SSL_ERROR_WANT_WRITE) {
                 ret = -1;
                 //ev->want_write = true;
-                errno = EAGAIN;
+                wbt_set_errno(WBT_EAGAIN);
             } else {
                 e = ERR_get_error();
                 while(e){
                     wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
                     e = ERR_get_error();
                 }
-                errno = EPROTO;
+                wbt_set_errno(WBT_ENOPROTOOPT);
             }
         }
         return (ssize_t )ret;
@@ -315,11 +324,11 @@ ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
 
 ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len) {
     int ret;
-    int err;
+    wbt_err_t err;
     char ebuf[256];
     unsigned long e;
 
-    errno = 0;
+    wbt_set_errno(0);
 
     if(ev->ssl){
         //ev->want_write = false;
@@ -328,18 +337,18 @@ ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len) {
             err = SSL_get_error(ev->ssl, ret);
             if(err == SSL_ERROR_WANT_READ){
                 ret = -1;
-                errno = EAGAIN;
+                wbt_set_errno(WBT_EAGAIN);
             }else if(err == SSL_ERROR_WANT_WRITE){
                 ret = -1;
                 //mosq->want_write = true;
-                errno = EAGAIN;
+                wbt_set_errno(WBT_EAGAIN);
             }else{
                 e = ERR_get_error();
                 while(e){
                     wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
                     e = ERR_get_error();
                 }
-                errno = EPROTO;
+                wbt_set_errno(WBT_ENOPROTOOPT);
             }
         }
         return (ssize_t )ret;

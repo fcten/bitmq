@@ -24,7 +24,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg);
 wbt_msg_list_t * wbt_mq_msg_create_node(wbt_mq_id msg_id);
 void wbt_mq_msg_destory_node(wbt_msg_list_t *node);
 
-static inline void wbt_mq_msg_inc_delivery(wbt_msg_t *msg) {
+static wbt_inline void wbt_mq_msg_inc_delivery(wbt_msg_t *msg) {
     msg->delivery_count ++;
 }
 

@@ -102,7 +102,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         nwrite = wbt_send(ev, http->resp_header.str + http->header_offset, n);
 
         if (nwrite <= 0) {
-            if( errno == EAGAIN ) {
+            if( wbt_socket_errno == WBT_EAGAIN ) {
                 return WBT_OK;
             } else {
                 return WBT_ERROR;
@@ -150,7 +150,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     }
 
     if (nwrite <= 0) {
-        if( errno == EAGAIN ) {
+        if( wbt_socket_errno == WBT_EAGAIN ) {
             return WBT_OK;
         } else {
             return WBT_ERROR;
