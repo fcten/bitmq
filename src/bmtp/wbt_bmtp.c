@@ -6,7 +6,7 @@
  */
 
 #include "../webit.h"
-#include "../common/wbt_event.h"
+#include "../event/wbt_event.h"
 #include "../common/wbt_module.h"
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"

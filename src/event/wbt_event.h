@@ -21,8 +21,8 @@ extern "C" {
 #include <openssl/ssl.h>
 
 #include "../webit.h"
-#include "wbt_list.h"
-#include "wbt_timer.h"
+#include "../common/wbt_list.h"
+#include "../common/wbt_timer.h"
 
 enum {
     WBT_PROTOCOL_UNKNOWN,

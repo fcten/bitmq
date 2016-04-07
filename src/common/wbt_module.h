@@ -16,8 +16,8 @@ extern "C" {
 #include <stdio.h>
     
 #include "../webit.h"
+#include "../event/wbt_event.h"
 #include "wbt_string.h"
-#include "wbt_event.h"
 
 typedef struct wbt_module_s {
     wbt_str_t   name;

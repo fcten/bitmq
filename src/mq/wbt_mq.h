@@ -19,10 +19,10 @@ extern "C" {
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_heap.h"
 #include "../common/wbt_list.h"
-#include "../common/wbt_event.h"
 #include "../common/wbt_module.h"
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"
+#include "../event/wbt_event.h"
 
 enum {
     MSG_CREATED,   // 已创建

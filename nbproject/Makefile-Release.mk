@@ -40,7 +40,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_config.o \
 	${OBJECTDIR}/src/common/wbt_connection.o \
 	${OBJECTDIR}/src/common/wbt_crc.o \
-	${OBJECTDIR}/src/common/wbt_event.o \
 	${OBJECTDIR}/src/common/wbt_file.o \
 	${OBJECTDIR}/src/common/wbt_gzip.o \
 	${OBJECTDIR}/src/common/wbt_heap.o \
@@ -53,6 +52,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_string.o \
 	${OBJECTDIR}/src/common/wbt_time.o \
 	${OBJECTDIR}/src/common/wbt_timer.o \
+	${OBJECTDIR}/src/event/wbt_event.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/http/wbt_http_mq.o \
@@ -119,11 +119,6 @@ ${OBJECTDIR}/src/common/wbt_crc.o: src/common/wbt_crc.c
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_crc.o src/common/wbt_crc.c
 
-${OBJECTDIR}/src/common/wbt_event.o: src/common/wbt_event.c 
-	${MKDIR} -p ${OBJECTDIR}/src/common
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_event.o src/common/wbt_event.c
-
 ${OBJECTDIR}/src/common/wbt_file.o: src/common/wbt_file.c 
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
@@ -183,6 +178,11 @@ ${OBJECTDIR}/src/common/wbt_timer.o: src/common/wbt_timer.c
 	${MKDIR} -p ${OBJECTDIR}/src/common
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_timer.o src/common/wbt_timer.c
+
+${OBJECTDIR}/src/event/wbt_event.o: src/event/wbt_event.c 
+	${MKDIR} -p ${OBJECTDIR}/src/event
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/event/wbt_event.o src/event/wbt_event.c
 
 ${OBJECTDIR}/src/http/wbt_http.o: src/http/wbt_http.c 
 	${MKDIR} -p ${OBJECTDIR}/src/http

@@ -17,7 +17,7 @@ extern "C" {
 #include "../common/wbt_memory.h"
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
-#include "../common/wbt_event.h"
+#include "../event/wbt_event.h"
 
 typedef enum { 
     METHOD_UNKNOWN,

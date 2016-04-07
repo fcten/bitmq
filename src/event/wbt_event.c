@@ -6,14 +6,14 @@
  */
 
 #include "wbt_event.h"
-#include "wbt_string.h"
-#include "wbt_heap.h"
-#include "wbt_log.h"
-#include "wbt_connection.h"
-#include "wbt_module.h"
-#include "wbt_time.h"
-#include "wbt_config.h"
-#include "wbt_file.h"
+#include "../common/wbt_string.h"
+#include "../common/wbt_heap.h"
+#include "../common/wbt_log.h"
+#include "../common/wbt_connection.h"
+#include "../common/wbt_module.h"
+#include "../common/wbt_time.h"
+#include "../common/wbt_config.h"
+#include "../common/wbt_file.h"
 
 wbt_module_t wbt_module_event = {
     wbt_string("event"),

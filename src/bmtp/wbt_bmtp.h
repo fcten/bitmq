@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #include "../common/wbt_list.h"
-#include "../common/wbt_event.h"
+#include "../event/wbt_event.h"
 
 #define BMTP_VERSION 0x1
 

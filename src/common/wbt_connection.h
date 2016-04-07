@@ -19,8 +19,7 @@ extern "C" {
 #include <errno.h>
 
 #include "../webit.h"
-#include "wbt_timer.h"
-#include "wbt_event.h"
+#include "../event/wbt_event.h"
 
 /* 视情况，可能需要管理 conn 
 typedef struct wbt_conn_s {
