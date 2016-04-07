@@ -28,6 +28,8 @@ char** wbt_os_environ;
 wbt_atomic_t wbt_wating_to_exit = 0;
 wbt_atomic_t wbt_wating_to_update = 0;
 
+#ifndef WIN32
+
 void wbt_signal(int signo, siginfo_t *info, void *context) {
     wbt_log_add("received singal: %d\n", signo);
 
@@ -228,6 +230,8 @@ void wbt_master_process() {
     wbt_exit(0);
 }
 
+#endif
+
 void wbt_exit(int exit_code) {
     wbt_wating_to_exit = 1;
 
@@ -288,6 +292,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+#ifndef WIN32
+
     /* 更新终端尺寸 */
     wbt_term_update_size();
     
@@ -330,13 +336,21 @@ int main(int argc, char** argv) {
     }
 
     wbt_init_proc_title();
-    
+
+#else
+
+    wbt_conf.daemon = 1;
+
+#endif
+
     /* 初始化所有组件 */
     wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
     if( wbt_module_init() != WBT_OK ) {
         wbt_log_print( "\n\n" );
         return 1;
     }
+
+#ifndef WIN32
 
     /* 设置程序允许打开的最大文件句柄数 */
     struct rlimit rlim;
@@ -395,6 +409,12 @@ int main(int argc, char** argv) {
     } else {
         wbt_worker_process();
     }
+    
+#else
+
+    // TODO 启动 Windows 服务并启动 wbt_event_dispatch
+
+#endif
     
     return 0;
 }

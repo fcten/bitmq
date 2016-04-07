@@ -7,7 +7,6 @@
 
 #include "wbt_log.h"
 #include "wbt_module.h"
-#include "../os/linux/wbt_terminal.h"
 
 wbt_module_t wbt_module_log = {
     wbt_string("log"),
