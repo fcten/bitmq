@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_mq_persistence.c
  * Author: fcten
  *
@@ -11,8 +11,8 @@
 
 static wbt_mq_id wbt_mq_persist_count = 0;
 
-static int wbt_persist_mid_fd = 0;
-static int wbt_persist_aof_fd = 0;
+static wbt_fd_t wbt_persist_mid_fd = 0;
+static wbt_fd_t wbt_persist_aof_fd = 0;
 static ssize_t wbt_persist_aof_size = 0;
 
 static wbt_str_t wbt_persist_mid = wbt_string("./data/webit.mid");
@@ -31,7 +31,7 @@ int wbt_mq_persist_aof_lock() {
 }
 
 wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
-    wbt_persist_aof_lock == 1;
+    wbt_persist_aof_lock = 1;
     
     wbt_msg_block_t *block;
     wbt_msg_t *msg;
@@ -56,7 +56,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             break;
         }
 
-        nread = pread(wbt_persist_aof_fd, block, sizeof(wbt_msg_block_t), offset);
+		nread = wbt_read_file(wbt_persist_aof_fd, block, sizeof(wbt_msg_block_t), offset);
         if( nread == 0 ) {
             break;
         } else if( nread != sizeof(wbt_msg_block_t) ) {
@@ -66,7 +66,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         }
 
         if( wbt_conf.aof_crc ) {
-            if( pread(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t) ) {
+			if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t)) {
                 goto error;
             } else {
                 offset += sizeof(uint32_t);
@@ -82,14 +82,14 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         if(!data) {
             goto error;
         }
-        if( pread(wbt_persist_aof_fd, data, block->data_len, offset) != block->data_len ) {
+		if (wbt_read_file(wbt_persist_aof_fd, data, block->data_len, offset) != block->data_len) {
             goto error;
         } else {
             offset += block->data_len;
         }
 
         if( wbt_conf.aof_crc ) {
-            if( pread(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t) ) {
+			if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t)) {
                 goto error;
             } else {
                 offset += sizeof(uint32_t);
@@ -136,7 +136,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         n --;
     }
 
-success:
+//success:
     if(timer && ( n == 0 ) && !wbt_wating_to_exit) {
         /* 重新注册定时事件 */
         timer->timeout += wait_time;
@@ -166,12 +166,12 @@ error:
 wbt_status wbt_mq_persist_init() {
     // 无论是否启用持久化，mid 都应当被保存，这样可以避免 msg_id 冲突（或减小其发生概率）
 	wbt_persist_mid_fd = wbt_open_datafile(wbt_persist_mid.str);
-    if( wbt_persist_mid_fd <= 0 ) {
+	if ((int)wbt_persist_mid_fd <= 0) {
         return WBT_ERROR;
     }
     
     // 读取 mid
-    if( pread(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0) == sizeof(wbt_mq_persist_count) ) {
+	if (wbt_read_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0) == sizeof(wbt_mq_persist_count)) {
         wbt_mq_msg_update_create_count(wbt_mq_persist_count);
     } else {
         wbt_mq_persist_count = 0;
@@ -182,11 +182,11 @@ wbt_status wbt_mq_persist_init() {
     }
 
 	wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
-    if( wbt_persist_aof_fd <= 0 ) {
+    if( (int)wbt_persist_aof_fd <= 0 ) {
         return WBT_ERROR;
     }
 
-    wbt_persist_aof_size = wbt_file_size(&wbt_persist_aof);
+	wbt_persist_aof_size = wbt_get_file_size(wbt_persist_aof_fd);
     if( wbt_persist_aof_size < 0 ) {
         return WBT_ERROR;
     }
@@ -242,7 +242,7 @@ wbt_status wbt_mq_persist_check(ssize_t nwrite, size_t len) {
                             (long long)nwrite,
                             (long long)sizeof(wbt_msg_block_t));
 
-            if (ftruncate(wbt_persist_aof_fd, wbt_persist_aof_size) == -1) {
+			if (wbt_truncate_file(wbt_persist_aof_fd, wbt_persist_aof_size) == -1) {
                 wbt_log_add("Could not remove short write "
                                 "from the append-only file. The file may be corrupted. "
                                 "ftruncate: %s", strerror(errno));
@@ -258,17 +258,17 @@ wbt_status wbt_mq_persist_check(ssize_t nwrite, size_t len) {
 static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
     if( wbt_persist_aof_fd ) {
         // TODO 尝试使用 fdatasync
-        if( fsync(wbt_persist_aof_fd) != 0 ) {
+        if( wbt_sync_file(wbt_persist_aof_fd) != 0 ) {
             // 如果该操作失败，可能是磁盘故障
         }
     }
     
     if( wbt_persist_mid_fd ) {
-        ssize_t nwrite = pwrite(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0);
+		ssize_t nwrite = wbt_write_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0);
         if( nwrite < 0 ) {
             // TODO 记录该失败
         } else {
-            if( fdatasync(wbt_persist_mid_fd) != 0 ) {
+			if (wbt_sync_file_data(wbt_persist_mid_fd) != 0) {
                 // 如果该操作失败，可能是磁盘故障
             }
         }
@@ -288,8 +288,8 @@ static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_persist_append_to_file(int fd, wbt_msg_t *msg) {
-    ssize_t nwrite = write(fd, msg, sizeof(wbt_msg_block_t));
+wbt_status wbt_mq_persist_append_to_file(wbt_fd_t fd, wbt_msg_t *msg) {
+    ssize_t nwrite = wbt_append_file(fd, msg, sizeof(wbt_msg_block_t));
     if( wbt_mq_persist_check( nwrite, sizeof(wbt_msg_block_t) ) != WBT_OK ) {
         return WBT_ERROR;
     }
@@ -297,13 +297,13 @@ wbt_status wbt_mq_persist_append_to_file(int fd, wbt_msg_t *msg) {
     if( wbt_conf.aof_crc ) {
         uint32_t crc32 = wbt_crc32( (char *)msg, sizeof(wbt_msg_block_t) );
 
-        nwrite = write(fd, &crc32, sizeof(uint32_t));
+        nwrite = wbt_append_file(fd, &crc32, sizeof(uint32_t));
         if( wbt_mq_persist_check( nwrite, sizeof(crc32) ) != WBT_OK ) {
             return WBT_ERROR;
         }
     }
 
-    nwrite = write(fd, msg->data, msg->data_len);
+	nwrite = wbt_append_file(fd, msg->data, msg->data_len);
     if( wbt_mq_persist_check( nwrite, msg->data_len ) != WBT_OK ) {
         return WBT_ERROR;
     }
@@ -311,7 +311,7 @@ wbt_status wbt_mq_persist_append_to_file(int fd, wbt_msg_t *msg) {
     if( wbt_conf.aof_crc ) {
         uint32_t crc32 = wbt_crc32( (char *)msg->data, msg->data_len );
 
-        nwrite = write(fd, &crc32, sizeof(uint32_t));
+		nwrite = wbt_append_file(fd, &crc32, sizeof(uint32_t));
         if( wbt_mq_persist_check( nwrite, sizeof(crc32) ) != WBT_OK ) {
             return WBT_ERROR;
         }
@@ -349,7 +349,7 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg) {
 // TODO 
 static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
     // 临时文件 fd
-    static int rdp_fd = 0;
+    static wbt_fd_t rdp_fd = 0;
     // 记录当前的最大消息 ID max
     static wbt_mq_id processed_msg_id = 0;
 
@@ -389,8 +389,9 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
     if( !rdp_fd ) {
         // 创建临时文件
 		rdp_fd = wbt_open_tmpfile(wbt_persist_mdp.str);
-        if( rdp_fd <= 0 ) {
-            return WBT_ERROR;
+        if( (int)rdp_fd <= 0 ) {
+			wbt_log_add("Could not open mdp file: %d\n", wbt_errno);
+			return WBT_ERROR;
         }
         processed_msg_id = 0;
     }
@@ -425,23 +426,38 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         // 如果刷盘策略为 AOF_FSYNC_EVERYSEC，我们什么都不做，只需要等待定时任务执行 fsync(2)。
         // 如果刷盘策略为 AOF_FSYNC_NO，我们什么都不做。
         if( wbt_conf.aof_fsync == AOF_FSYNC_ALWAYS ) {
-            fsync(rdp_fd);
+			wbt_sync_file(rdp_fd);
         }
 
         // 旧的 aof 文件已经无用了，不需要保证数据落盘，所以直接 close 即可
-        if( close(wbt_persist_aof_fd) < 0 ) {
+        if( wbt_close_file(wbt_persist_aof_fd) < 0 ) {
             return WBT_ERROR;
         }
 
-        // 用 mdp 文件覆盖 aof 文件
+#ifdef WIN32
+		wbt_delete_file(wbt_persist_aof.str);
+
+		if (wbt_close_file(rdp_fd) < 0) {
+			return WBT_ERROR;
+		}
+#endif
+
+		// 用 mdp 文件覆盖 aof 文件
         if( rename(wbt_persist_mdp.str, wbt_persist_aof.str) < 0 ) {
             wbt_log_add("Could not rename mdp file. "
-                            "rename: %s", strerror(errno));
+                            "rename: %s\n", strerror(errno));
             return WBT_ERROR;
         }
 
-        wbt_persist_aof_fd = rdp_fd;
-        rdp_fd = 0;
+#ifdef WIN32
+		wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
+		if( wbt_persist_aof_fd <= 0 ) {
+			return WBT_ERROR;
+		}
+#else
+		wbt_persist_aof_fd = rdp_fd;
+#endif
+		rdp_fd = 0;
 
         // 重写完成后，下一次重写将在设定的时间间隔之后运行
         if(!wbt_wating_to_exit) {
@@ -449,6 +465,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
                 timer = wbt_malloc(sizeof(wbt_timer_t));
                 timer->on_timeout = wbt_mq_persist_dump;
                 timer->heap_idx = 0;
+				timer->timeout = wbt_cur_mtime;
             }
 
             /* 重新注册定时事件 */

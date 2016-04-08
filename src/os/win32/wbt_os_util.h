@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_os_util.h
  * Author: Fcten
  *
@@ -15,6 +15,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdint.h>
 #include <signal.h>
+#include <time.h>
 #include <sys/types.h>
 #include <windows.h>
 
@@ -25,6 +26,7 @@ typedef SOCKET wbt_socket_t;
 typedef HANDLE wbt_fd_t;
 
 #define ssize_t long
+#define snprintf _snprintf
     
 #define WBT_EPERM                  ERROR_ACCESS_DENIED
 #define WBT_ENOENT                 ERROR_FILE_NOT_FOUND
@@ -74,12 +76,38 @@ int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
 int wbt_nonblocking(wbt_socket_t s);
 int wbt_blocking(wbt_socket_t s);
 
+int wbt_close_socket(wbt_socket_t s);
+
 int wbt_trylock_fd(wbt_fd_t fd);
 int wbt_lock_fd(wbt_fd_t fd);
 int wbt_unlock_fd(wbt_fd_t fd);
 wbt_fd_t wbt_lock_create(const char *name);
 
 wbt_fd_t wbt_open_logfile(const char *name);
+wbt_fd_t wbt_open_datafile(const char *name);
+wbt_fd_t wbt_open_tmpfile(const char *name);
+wbt_fd_t wbt_open_file(const char *name);
+
+int wbt_delete_file(const char *name);
+
+ssize_t wbt_read_file(wbt_fd_t fd, void *buf, size_t count, off_t offset);
+ssize_t wbt_write_file(wbt_fd_t fd, const void *buf, size_t count, off_t offset);
+ssize_t wbt_append_file(wbt_fd_t fd, const void *buf, size_t count);
+
+ssize_t wbt_get_file_size(wbt_fd_t fd);
+time_t wbt_get_file_last_write_time(wbt_fd_t fd);
+
+int wbt_close_file(wbt_fd_t fd);
+
+int wbt_truncate_file(wbt_fd_t fd, off_t length);
+int wbt_sync_file(wbt_fd_t fd);
+int wbt_sync_file_data(wbt_fd_t fd);
+
+void wbt_msleep(int ms);
+
+int gettimeofday(struct timeval *tp, void *tzp);
+
+int wbt_getpid();
 
 #ifdef	__cplusplus
 }

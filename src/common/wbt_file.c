@@ -1,4 +1,4 @@
- /* 
+﻿ /* 
  * File:   wbt_file.c
  * Author: Fcten
  *
@@ -37,7 +37,7 @@ void wbt_file_cleanup_recursive(wbt_rb_node_t *node) {
         wbt_file_t * tmp_file = (wbt_file_t *)node->value.str;
         if( tmp_file->refer == 0 && wbt_cur_mtime - tmp_file->last_use_mtime > 10000 ) {
             wbt_log_debug("closed fd:%d %.*s\n", tmp_file->fd, node->key.len, node->key.str.s);
-            close(tmp_file->fd);
+            wbt_close_file(tmp_file->fd);
             wbt_free(tmp_file->ptr);
             wbt_free(tmp_file->gzip_ptr);
             wbt_rb_delete(&wbt_file_rbtree, node);
@@ -100,14 +100,15 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
         /* 由于接收数据长度存在限制，这里无需担心溢出 */
         wbt_log_debug("file path too long\n");
 
-        tmp.fd = -3;
+        tmp.fd = (wbt_fd_t)-3;
         
         return &tmp;
     }
 
     wbt_rb_node_t *file =  wbt_rb_get(&wbt_file_rbtree, file_path);
     if( file == NULL ) {
-        struct stat statbuff;  
+#ifndef WIN32
+		struct stat statbuff;  
         if(stat(file_path->str, &statbuff) < 0){  
             /* 文件访问失败 */
             tmp.size = 0;
@@ -156,7 +157,33 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                 }
             }
         }
-    } else {
+#else
+		tmp.fd = wbt_open_file(file_path->str);
+		if (tmp.fd == INVALID_HANDLE_VALUE) {
+			tmp.fd = (wbt_fd_t)-1;
+		}
+		else {
+			file = wbt_rb_insert(&wbt_file_rbtree, file_path);
+
+			file->value.str = wbt_calloc(sizeof(wbt_file_t));
+			if (file->value.str == NULL) {
+				// TODO 如果这里失败了，该文件将永远不会被关闭
+				wbt_rb_delete(&wbt_file_rbtree, file);
+			}
+			else {
+				wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
+
+				tmp_file->fd = tmp.fd;
+				tmp_file->refer = 1;
+				tmp_file->size = wbt_get_file_size(tmp.fd);
+				tmp_file->last_modified = wbt_get_file_last_write_time(tmp.fd);
+
+				wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+				return tmp_file;
+			}
+		}
+#endif
+	} else {
         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
         tmp_file->refer ++;
 
@@ -184,7 +211,8 @@ wbt_status wbt_file_close( wbt_file_t * file ) {
 }
 
 ssize_t wbt_file_size(wbt_str_t * file_path) {
-    struct stat statbuff;  
+#ifndef WIN32
+	struct stat statbuff;  
     if(stat(file_path->str, &statbuff) < 0){  
         return -1;
     }else{  
@@ -194,6 +222,12 @@ ssize_t wbt_file_size(wbt_str_t * file_path) {
             return statbuff.st_size;
         }
     }
+#else
+	wbt_fd_t fd = wbt_open_file(file_path->str);
+	ssize_t size = wbt_get_file_size(fd);
+	wbt_close_file(fd);
+	return size;
+#endif
 }
 
 ssize_t wbt_file_read( wbt_file_t *file ) {
@@ -206,7 +240,7 @@ ssize_t wbt_file_read( wbt_file_t *file ) {
         if( !file->ptr ) {
             return -1;
         }
-        return pread(file->fd, file->ptr, file->size, 0);
+        return wbt_read_file(file->fd, file->ptr, file->size, 0);
     }
     
     return 0;

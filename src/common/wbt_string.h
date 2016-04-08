@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_string.h
  * Author: Fcten
  *

@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_crc.c
  * Author: fcten
  *

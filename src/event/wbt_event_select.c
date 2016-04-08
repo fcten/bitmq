@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_event.c
  * Author: Fcten
  *
@@ -247,8 +247,9 @@ wbt_status wbt_event_mod(wbt_event_t *ev) {
 wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
-wbt_status wbt_event_dispatch() {;
-    int timeout = 0, i = 0;
+wbt_status wbt_event_dispatch() {
+	time_t timeout = 0;
+	unsigned int i = 0;
     wbt_atomic_t is_accept_lock = 0, is_accept_add = 0;
     wbt_event_t *ev;
 
@@ -333,7 +334,7 @@ wbt_status wbt_event_dispatch() {;
 			* one handle to a socket.  Otherwise select() returns WSAEINVAL.
 			*/
 
-			wbt_msleep(timeout);
+			wbt_msleep((int)timeout);
 
 			nfds = 0;
 		}
@@ -355,7 +356,7 @@ wbt_status wbt_event_dispatch() {;
 		if (nfds > 0) {
 
 			if (is_accept_add) {
-				for (i = 0; i < wbt_events.top; ++i) {
+				for (i = wbt_events.top + 1; i < wbt_events.max; ++i) {
 					ev = wbt_events.available[i];
 
 					/* 优先处理 accept */
@@ -381,7 +382,7 @@ wbt_status wbt_event_dispatch() {;
 				}
 			}
 
-			for (i = 0; i < wbt_events.top; ++i) {
+			for (i = wbt_events.top + 1; i < wbt_events.max; ++i) {
 				ev = wbt_events.available[i];
 
 				/* 尝试调用该事件的回调函数 */
@@ -426,7 +427,7 @@ static void wbt_event_repair_fd_sets() {
 		if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
 			err = wbt_socket_errno;
 
-			ngx_log_error("invalid descriptor #%d in read fd_set", s);
+			wbt_log_debug("invalid descriptor #%d in read fd_set", s);
 
 			FD_CLR(s, &read_fd_set);
 		}
@@ -440,7 +441,7 @@ static void wbt_event_repair_fd_sets() {
 		if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
 			err = wbt_socket_errno;
 
-			ngx_log_error("invalid descriptor #%d in write fd_set", s);
+			wbt_log_debug("invalid descriptor #%d in write fd_set", s);
 
 			FD_CLR(s, &write_fd_set);
 		}

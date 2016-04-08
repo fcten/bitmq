@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_mq.c
  * Author: fcten
  *
@@ -48,7 +48,7 @@ wbt_module_t wbt_module_mq = {
 };
 
 wbt_status wbt_mq_init() {
-    if( wbt_mq_persist_init() !=WBT_OK ) {
+	if( wbt_mq_persist_init() !=WBT_OK ) {
         return WBT_ERROR;
     }
 
@@ -175,15 +175,15 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                     switch(node->value.l) {
                         case MSG_BROADCAST:
                             msg->qos  = 0;
-                            msg->type = node->value.l;
+                            msg->type = (unsigned int)node->value.l;
                             break;
                         case MSG_LOAD_BALANCE:
                             msg->qos  = 1;
-                            msg->type = node->value.l;
+							msg->type = (unsigned int)node->value.l;
                             break;
                         case MSG_ACK:
                             msg->qos  = 0;
-                            msg->type = node->value.l;
+							msg->type = (unsigned int)node->value.l;
                             break;
                         default:
                             return WBT_ERROR;

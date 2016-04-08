@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_file.h
  * Author: Fcten
  *
@@ -27,7 +27,7 @@ extern "C" {
  */
 typedef struct wbt_file_s {
     /* 文件句柄 */
-    int fd;
+    wbt_fd_t fd;
     /* 文件引用计数 */
     int refer;
     /* 如果文件被读取到内存中，则在 ptr 中保存文件内容的指针

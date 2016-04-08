@@ -1,4 +1,5 @@
-#include "wbt_json.h"
+﻿#include "wbt_json.h"
+#include "../webit.h"
 #include "../common/wbt_memory.h"
 
 enum {
@@ -707,7 +708,7 @@ void json_print_char(char c, char **buf, size_t *buf_len) {
 
 void json_print_string(const char * str, size_t len, char **buf, size_t *buf_len) {
     json_print_char('\"', buf, buf_len);
-    int i;
+	size_t i;
     for(i = 0 ; i < len ; i++) {
         switch(str[i]) {
             case '\\':

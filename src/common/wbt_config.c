@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_config.c
  * Author: Fcten
  *
@@ -313,7 +313,7 @@ wbt_status wbt_conf_reload() {
 
     /* 尝试读取配置文件 */
     wbt_file_t wbt_config_file;
-    wbt_config_file.fd = open(wbt_config_file_name.str, O_RDONLY);
+	wbt_config_file.fd = wbt_open_file(wbt_config_file_name.str);
     
     if( wbt_config_file.fd <= 0 ) {
         /* 找不到配置文件 */
@@ -321,10 +321,12 @@ wbt_status wbt_conf_reload() {
         return WBT_ERROR;
     }
 
+#ifndef WIN32
     int len = wbt_get_file_path_by_fd(wbt_config_file.fd, wbt_config_file_path.str, wbt_config_file_path.len);
     if( len <= 0 ) {
         return WBT_ERROR;
     }
+#endif
     
     struct stat statbuff;  
     if(stat(wbt_config_file_name.str, &statbuff) < 0){
@@ -337,24 +339,26 @@ wbt_status wbt_conf_reload() {
     if( wbt_config_file_content.str == NULL ) {
         return WBT_ERROR;
     }
-    if( read( wbt_config_file.fd, wbt_config_file_content.str, wbt_config_file_content.len) != wbt_config_file_content.len ) {
+    if( wbt_read_file( wbt_config_file.fd, wbt_config_file_content.str, wbt_config_file_content.len, 0) != wbt_config_file_content.len ) {
         wbt_log_add("Read config file failed\n");
         return WBT_ERROR;
     }
     
     /* 关闭配置文件 */
-    close(wbt_config_file.fd);
+	wbt_close_file(wbt_config_file.fd);
 
     /* 解析配置文件 */
     if( wbt_conf_parse(&wbt_config_file_content) == WBT_OK ) {
         //wbt_rbtree_print(wbt_config_rbtree.root);
         wbt_free(wbt_config_file_content.str);
 
+#ifndef WIN32
         char tmp[1024];
         snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.str );
         wbt_set_proc_title(tmp);
+#endif
 
-        return WBT_OK;
+		return WBT_OK;
     } else {
         wbt_free(wbt_config_file_content.str);
         wbt_log_add("Syntax error on config file: line %d, charactor %d\n", wbt_conf_line, wbt_conf_charactor);

@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_os_util.h
  * Author: Fcten
  *
@@ -104,7 +104,9 @@ int wbt_lock_fd(wbt_fd_t fd);
 int wbt_unlock_fd(wbt_fd_t fd);
 wbt_fd_t wbt_lock_create( const char *name );
 
-wbt_fd_t wbt_open_logfile(const char *name)
+wbt_fd_t wbt_open_logfile(const char *name);
+
+ssize_t wbt_read_file(wbt_fd_t fd, void *buf, size_t count, off_t offset);
 
 #ifdef	__cplusplus
 }

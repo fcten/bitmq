@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_gzip.h
  * Author: fcten
  *

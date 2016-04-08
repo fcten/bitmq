@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_memory.h
  * Author: Fcten
  *
@@ -33,7 +33,11 @@ extern "C" {
 
 #else
 #include <malloc.h>
+#ifndef WIN32
 #define wbt_malloc_size(p) malloc_usable_size(p)
+#else
+#define wbt_malloc_size(p) _msize(p)
+#endif
 #endif
 
 void * wbt_malloc(size_t size);

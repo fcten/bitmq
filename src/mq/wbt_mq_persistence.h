@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_mq_persistence.h
  * Author: fcten
  *

@@ -97,3 +97,7 @@ wbt_fd_t wbt_lock_create( const char *name ) {
 wbt_fd_t wbt_open_logfile(const char *name) {
     return open(name, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
 }
+
+ssize_t wbt_read_file(wbt_fd_t fd, void *buf, size_t count, off_t offset) {
+    return pread(fd, buf, count, offset);
+}

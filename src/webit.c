@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   webit.c
  * Author: Fcten
  *
@@ -18,7 +18,10 @@
 
 extern wbt_socket_t wbt_listen_fd;
 
+#ifndef WIN32
 extern char **environ;
+#endif
+
 int wbt_argc;
 char** wbt_argv;
 char** wbt_os_argv;
@@ -241,10 +244,10 @@ void wbt_exit(int exit_code) {
     // 打印内存信息
     wbt_mem_print();
 
-    wbt_log_add("Webit exit (pid: %d)\n", getpid());
-    wbt_log_print("\n\nWebit exit (pid: %d)\n", getpid());
-    
-    exit(exit_code);
+    wbt_log_add("Webit exit (pid: %d)\n", wbt_getpid());
+    wbt_log_print("\n\nWebit exit (pid: %d)\n", wbt_getpid());
+
+	exit(exit_code);
 }
 
 extern wbt_str_t wbt_log_buf;
@@ -341,6 +344,11 @@ int main(int argc, char** argv) {
 
     wbt_conf.daemon = 1;
 
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
+		return 1;
+	}
+
 #endif
 
     /* 初始化所有组件 */
@@ -411,6 +419,8 @@ int main(int argc, char** argv) {
     }
     
 #else
+
+	wbt_log_print("\n\nwebit is now running.\n\n");
 
 	wbt_event_dispatch();
 

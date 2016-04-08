@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_log.c
  * Author: Fcten
  *
@@ -13,7 +13,7 @@ wbt_module_t wbt_module_log = {
     wbt_log_init
 };
 
-int wbt_log_file_fd;
+wbt_fd_t wbt_log_file_fd;
 char * wbt_log_file = "./logs/webit.log";
 wbt_str_t wbt_log_buf;
 
@@ -21,7 +21,8 @@ wbt_status wbt_log_init() {
     /* O_CLOEXEC 需要 Linux 内核版本大于等于 2.6.23 */
     /* TODO 每个 worker 进程需要单独的日志文件，否则并发写会丢失一部分数据 */
 	wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
-    if( wbt_log_file_fd <=0 ) {
+    if( (int)wbt_log_file_fd <=0 ) {
+		wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
         return WBT_ERROR;
     }
     
@@ -41,8 +42,8 @@ wbt_status wbt_log_add(const char *fmt, ...) {
     /* 操作系统本身会对写入操作进行缓存
      * 需要考虑的是是否需要将日志强制刷入磁盘
      */
-    write(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
-    write(wbt_log_file_fd, s.str, s.len);
+	wbt_append_file(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
+	wbt_append_file(wbt_log_file_fd, s.str, s.len);
     
     return WBT_OK;
 }

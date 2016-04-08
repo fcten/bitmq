@@ -1,4 +1,4 @@
- /* 
+﻿ /* 
  * File:   wbt_http.c
  * Author: Fcten
  *
@@ -92,7 +92,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
     /* TODO 发送大文件时，使用 TCP_CORK 关闭 Nagle 算法保证网络利用率 */
     //setsockopt( ev->fd, SOL_TCP, TCP_CORK, &on, sizeof ( on ) );
     /* 测试 keep-alive 性能时，使用 TCP_NODELAY 立即发送小数据，否则会阻塞 40 毫秒 */
-    setsockopt( ev->fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof ( on ) );
+	setsockopt(ev->fd, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
     /* 如果存在 response，发送 response */
     if( http->resp_header.len - http->header_offset > 0 ) {
@@ -120,7 +120,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         if( http->resp_body_gzip.str && http->resp_body_gzip.len > http->body_offset ) {
             n = http->resp_body_gzip.len - http->body_offset;
             nwrite = wbt_send(ev, http->resp_body_gzip.str + http->body_offset, n);
-        } else if( http->resp_body_file && http->resp_body_file->gzip_size > http->body_offset ) {
+        } else if( http->resp_body_file && http->resp_body_file->gzip_size > (size_t)http->body_offset ) {
             n = http->resp_body_file->gzip_size - http->body_offset;
             nwrite = wbt_send(ev, http->resp_body_file->gzip_ptr + http->body_offset, n);
         } else {
@@ -130,7 +130,7 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
         if( http->resp_body_memory.str && http->resp_body_memory.len > http->body_offset ) {
             n = http->resp_body_memory.len - http->body_offset;
             nwrite = wbt_send(ev, http->resp_body_memory.str + http->body_offset, n);
-        } else if( http->resp_body_file && http->resp_body_file->size > http->body_offset ) {
+		} else if (http->resp_body_file && http->resp_body_file->size > (size_t)http->body_offset) {
             n = http->resp_body_file->size - http->body_offset;
             if( http->resp_body_file->ptr != NULL ) {
                 nwrite = wbt_send(ev, http->resp_body_file->ptr + http->body_offset, n);
@@ -722,14 +722,14 @@ wbt_status wbt_http_on_recv( wbt_event_t *ev ) {
         }
 
         wbt_file_t *tmp = wbt_file_open( &full_path );
-        if( tmp->fd < 0 ) {
-            if( tmp->fd  == -1 ) {
+        if( (int)tmp->fd < 0 ) {
+            if( tmp->fd  == (wbt_fd_t)-1 ) {
                 /* 文件不存在 */
                 http->status = STATUS_404;
-            } else if( tmp->fd  == -2 ) {
+			} else if (tmp->fd == (wbt_fd_t)-2) {
                 /* 试图访问目录 */
                 http->status = STATUS_403;
-            } else if( tmp->fd  == -3 ) {
+			} else if (tmp->fd == (wbt_fd_t)-3) {
                 /* 路径过长 */
                 http->status = STATUS_414;
             }

@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * File:   wbt_rbtree.c
  * Author: Fcten
  *
@@ -37,13 +37,13 @@ static int wbt_rbtree_compare(wbt_rb_t *rbt, wbt_rb_key_t *key1, wbt_rb_key_t *k
             if( *key1->str.i > *key2->str.i ) {
                 return *key1->str.i - *key2->str.i;
             } else {
-                return -(*key2->str.i - *key1->str.i);
+                return -(int)(*key2->str.i - *key1->str.i);
             }
         case WBT_RB_KEY_LONGLONG:
             if( *key1->str.l > *key2->str.l ) {
-                return *key1->str.l - *key2->str.l;
+				return (int)(*key1->str.l - *key2->str.l);
             } else {
-                return -(*key2->str.l - *key1->str.l);
+				return -(int)(*key2->str.l - *key1->str.l);
             }
         default:
             return wbt_strcmp((wbt_str_t *)key1, (wbt_str_t *)key2);
