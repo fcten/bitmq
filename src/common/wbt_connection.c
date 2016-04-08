@@ -112,7 +112,6 @@ wbt_status wbt_on_close(wbt_event_t *ev) {
     }
 
 	wbt_close_socket(ev->fd);
-    ev->fd = -1;        /* close 之后 fd 会自动从 epoll 中删除 */
     wbt_event_del(ev);
     
     wbt_connection_count --;

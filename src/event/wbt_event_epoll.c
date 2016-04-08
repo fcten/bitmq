@@ -198,6 +198,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->protocol = 0;
 
     /* 删除epoll事件 */
+    ev->fd = -1;        /* close 之后 fd 会自动从 epoll 中删除 */
     if(ev->fd >= 0) {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev->fd, NULL) == -1) { 
             wbt_log_add("epoll_ctl:del failed\n");
