@@ -201,7 +201,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                     return WBT_OK;
                 }
                 
-                bmtp->payload = ev->buff + bmtp->recv_offset;
+                bmtp->payload = (unsigned char *)ev->buff + bmtp->recv_offset;
                 bmtp->recv_offset += bmtp->payload_length;
 
                 switch(wbt_bmtp_cmd(bmtp->header)) {
@@ -250,7 +250,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                 }
 
                 if( bmtp->recv_offset >= 4096 ) {
-                    wbt_memcpy(ev->buff, ev->buff + bmtp->recv_offset, ev->buff_len - bmtp->recv_offset);
+					wbt_memcpy(ev->buff, (unsigned char *)ev->buff + bmtp->recv_offset, ev->buff_len - bmtp->recv_offset);
                     ev->buff = wbt_realloc(ev->buff, ev->buff_len - bmtp->recv_offset);
                     ev->buff_len -= bmtp->recv_offset;
                     bmtp->recv_offset = 0;

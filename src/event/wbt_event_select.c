@@ -25,7 +25,7 @@ extern int wbt_listen_fd;
 
 extern wbt_atomic_t wbt_wating_to_exit, wbt_connection_count;
 
-int wbt_lock_accept;
+wbt_fd_t wbt_lock_accept;
 
 /* 事件队列 */
 static wbt_event_pool_t wbt_events;
@@ -275,13 +275,13 @@ wbt_status wbt_event_dispatch() {;
         /* 把监听socket加入epoll中 */
         if( !is_accept_add && !wbt_wating_to_exit ) {
             if( wbt_events.max-wbt_events.top == 2 ) { // TODO 判断是否有请求正在处理
-                if( wbt_lock_fd(wbt_lock_accept) == WBT_OK ) {
+                if( wbt_lock_fd(wbt_lock_accept) == 0 ) {
                     is_accept_lock = 1;
                 } else {
                     is_accept_lock = 0;
                 }
             } else {
-                if( wbt_trylock_fd(wbt_lock_accept) == WBT_OK ) {
+                if( wbt_trylock_fd(wbt_lock_accept) == 0 ) {
                     is_accept_lock = 1;
                 } else {
                     is_accept_lock = 0;

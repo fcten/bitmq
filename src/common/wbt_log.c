@@ -20,8 +20,7 @@ wbt_str_t wbt_log_buf;
 wbt_status wbt_log_init() {
     /* O_CLOEXEC 需要 Linux 内核版本大于等于 2.6.23 */
     /* TODO 每个 worker 进程需要单独的日志文件，否则并发写会丢失一部分数据 */
-    wbt_log_file_fd = open(wbt_log_file,
-            O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+	wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
     if( wbt_log_file_fd <=0 ) {
         return WBT_ERROR;
     }

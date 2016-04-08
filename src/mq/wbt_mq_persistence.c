@@ -165,8 +165,7 @@ error:
 
 wbt_status wbt_mq_persist_init() {
     // 无论是否启用持久化，mid 都应当被保存，这样可以避免 msg_id 冲突（或减小其发生概率）
-    wbt_persist_mid_fd = open(wbt_persist_mid.str,
-            O_RDWR | O_CREAT | O_CLOEXEC, 0777);
+	wbt_persist_mid_fd = wbt_open_datafile(wbt_persist_mid.str);
     if( wbt_persist_mid_fd <= 0 ) {
         return WBT_ERROR;
     }
@@ -182,8 +181,7 @@ wbt_status wbt_mq_persist_init() {
         return WBT_OK;
     }
 
-    wbt_persist_aof_fd = open(wbt_persist_aof.str,
-            O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+	wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
     if( wbt_persist_aof_fd <= 0 ) {
         return WBT_ERROR;
     }
@@ -390,8 +388,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 
     if( !rdp_fd ) {
         // 创建临时文件
-        rdp_fd = open(wbt_persist_mdp.str,
-                O_RDWR | O_APPEND | O_CREAT | O_TRUNC | O_CLOEXEC, 0777);
+		rdp_fd = wbt_open_tmpfile(wbt_persist_mdp.str);
         if( rdp_fd <= 0 ) {
             return WBT_ERROR;
         }

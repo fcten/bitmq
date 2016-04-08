@@ -35,6 +35,7 @@ extern "C" {
 
 typedef int wbt_err_t;
 typedef int wbt_socket_t;
+typedef int wbt_fd_t;
 
 #define WBT_EPERM         EPERM
 #define WBT_ENOENT        ENOENT
@@ -97,6 +98,13 @@ int wbt_getopt(int argc,char * const argv[ ],const char * optstring);
 
 int wbt_nonblocking(wbt_socket_t s);
 int wbt_blocking(wbt_socket_t s);
+
+int wbt_trylock_fd(wbt_fd_t fd);
+int wbt_lock_fd(wbt_fd_t fd);
+int wbt_unlock_fd(wbt_fd_t fd);
+wbt_fd_t wbt_lock_create( const char *name );
+
+wbt_fd_t wbt_open_logfile(const char *name)
 
 #ifdef	__cplusplus
 }

@@ -57,11 +57,6 @@ wbt_status wbt_file_compress(wbt_file_t *file);
 
 ssize_t wbt_file_size(wbt_str_t * file_path);
 
-wbt_status wbt_trylock_fd(int fd);
-wbt_status wbt_lock_fd(int fd);
-wbt_status wbt_unlock_fd(int fd);
-int wbt_lock_create(const char *name);
-
 #ifdef	__cplusplus
 }
 #endif

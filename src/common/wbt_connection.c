@@ -185,7 +185,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             ev->buff_len += 4096;
         }
 
-        nread = wbt_recv(ev, ev->buff + ev->buff_len - 4096, 4096);
+		nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len - 4096, 4096);
         if(nread <= 0) {
             wbt_err_t err = wbt_socket_errno;
             if(err == WBT_EAGAIN) {

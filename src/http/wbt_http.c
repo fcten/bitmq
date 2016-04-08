@@ -134,12 +134,14 @@ wbt_status wbt_http_on_send( wbt_event_t *ev ) {
             n = http->resp_body_file->size - http->body_offset;
             if( http->resp_body_file->ptr != NULL ) {
                 nwrite = wbt_send(ev, http->resp_body_file->ptr + http->body_offset, n);
-            } else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
+#ifndef WIN32
+			} else if( http->resp_body_file->fd > 0 && wbt_conf.sendfile ) {
                 nwrite = sendfile( ev->fd, http->resp_body_file->fd, &http->body_offset, n );
                 if( nwrite > 0 ) {
                     http->body_offset -= nwrite;
                 }
-            } else {
+#endif
+			} else {
                 return WBT_ERROR;
             }
         } else {

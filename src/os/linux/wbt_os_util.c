@@ -41,3 +41,59 @@ int wbt_blocking(wbt_socket_t s) {
     int nb = 0;
     return ioctl(s, FIONBIO, &nb);
 }
+
+/* 尝试对指定文件加锁
+ * 如果加锁失败，进程将会睡眠，直到加锁成功
+ */
+int wbt_trylock_fd(wbt_fd_t fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type   = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        return -1;
+    }
+
+    return 0;
+}
+
+/* 尝试对指定文件加锁
+ * 如果加锁失败，立刻出错返回
+ */
+int wbt_lock_fd(wbt_fd_t fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLKW, &fl) == -1) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int wbt_unlock_fd(wbt_fd_t fd) {
+    struct flock  fl;
+
+    memset(&fl, 0, sizeof(struct flock));
+    fl.l_type = F_UNLCK;
+    fl.l_whence = SEEK_SET;
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        return -1;
+    }
+
+    return 0;
+}
+
+wbt_fd_t wbt_lock_create( const char *name ) {
+    return open( name, O_RDWR | O_CREAT | O_CLOEXEC, S_IRWXU );
+}
+
+wbt_fd_t wbt_open_logfile(const char *name) {
+    return open(name, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+}
