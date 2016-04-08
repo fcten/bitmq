@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_setproctitle.h
  * Author: Fcten
  *

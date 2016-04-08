@@ -1,4 +1,4 @@
-﻿#include "wbt_json.h"
+#include "wbt_json.h"
 #include "../webit.h"
 #include "../common/wbt_memory.h"
 

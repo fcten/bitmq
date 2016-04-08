@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_event.h
  * Author: Fcten
  *

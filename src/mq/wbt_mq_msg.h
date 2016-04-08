@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_mq_msg.h
  * Author: fcten
  *

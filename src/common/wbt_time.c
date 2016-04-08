@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_time.c
  * Author: Fcten
  *

@@ -1,4 +1,4 @@
-﻿ /* 
+ /* 
  * File:   wbt_file.c
  * Author: Fcten
  *
@@ -212,7 +212,7 @@ wbt_status wbt_file_close( wbt_file_t * file ) {
 
 ssize_t wbt_file_size(wbt_str_t * file_path) {
 #ifndef WIN32
-	struct stat statbuff;  
+    struct stat statbuff;  
     if(stat(file_path->str, &statbuff) < 0){  
         return -1;
     }else{  
@@ -223,10 +223,10 @@ ssize_t wbt_file_size(wbt_str_t * file_path) {
         }
     }
 #else
-	wbt_fd_t fd = wbt_open_file(file_path->str);
-	ssize_t size = wbt_get_file_size(fd);
-	wbt_close_file(fd);
-	return size;
+    wbt_fd_t fd = wbt_open_file(file_path->str);
+    ssize_t size = wbt_get_file_size(fd);
+    wbt_close_file(fd);
+    return size;
 #endif
 }
 

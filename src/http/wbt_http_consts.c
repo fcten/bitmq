@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_http_consts.c
  * Author: Fcten
  *

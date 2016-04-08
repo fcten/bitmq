@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   libjson.h
  * Author: Fcten
  *

@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_log.h
  * Author: Fcten
  *

@@ -95,9 +95,85 @@ wbt_fd_t wbt_lock_create( const char *name ) {
 }
 
 wbt_fd_t wbt_open_logfile(const char *name) {
-    return open(name, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+    return open(name, O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0777);
+}
+
+wbt_fd_t wbt_open_datafile(const char *name) {
+    return open(name, O_RDWR | O_CREAT | O_CLOEXEC, 0777);
+}
+
+wbt_fd_t wbt_open_tmpfile(const char *name) {
+    return open(name, O_RDWR | O_APPEND | O_CREAT | O_TRUNC | O_CLOEXEC, 0777);
+}
+
+wbt_fd_t wbt_open_file(const char *name) {
+    return open(name, O_RDWR | O_CREAT | O_CLOEXEC, 0777);
+}
+
+int wbt_delete_file(const char *name) {
+    return unlink(name);
 }
 
 ssize_t wbt_read_file(wbt_fd_t fd, void *buf, size_t count, off_t offset) {
     return pread(fd, buf, count, offset);
+}
+
+ssize_t wbt_write_file(wbt_fd_t fd, const void *buf, size_t count, off_t offset) {
+    return pwrite(fd, buf, count, offset);
+}
+
+ssize_t wbt_append_file(wbt_fd_t fd, const void *buf, size_t count) {
+    return write(fd, buf, count);
+}
+
+ssize_t wbt_get_file_size(wbt_fd_t fd) {
+    char file_path[1024];
+    int n = wbt_get_file_path_by_fd(fd, file_path, 1024);
+    if( n == -1 ) {
+        return -1;
+    }
+    file_path[n] = '\0';
+    
+    struct stat statbuff;  
+    if(stat(file_path, &statbuff) < 0){  
+        return -1;
+    }else{  
+        if( S_ISDIR(statbuff.st_mode) ) {
+            return -1;
+        } else {
+            return statbuff.st_size;
+        }
+    }
+}
+
+time_t wbt_get_file_last_write_time(wbt_fd_t fd) {
+    
+}
+
+int wbt_close_file(wbt_fd_t fd) {
+    return close(fd);
+}
+
+int wbt_truncate_file(wbt_fd_t fd, off_t length) {
+    return ftruncate(fd, length);
+}
+
+int wbt_sync_file(wbt_fd_t fd) {
+    return fsync(fd);
+}
+
+int wbt_sync_file_data(wbt_fd_t fd) {
+    return fdatasync(fd);
+}
+
+void wbt_msleep(int ms) {
+    usleep(ms*1000);
+}
+
+int wbt_getpid() {
+    return getpid();
+}
+
+int wbt_close_socket(wbt_socket_t s) {
+    return close(s);
 }

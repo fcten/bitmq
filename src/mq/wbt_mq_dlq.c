@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_mq_dlq.c
  * Author: fcten
  *

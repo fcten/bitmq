@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_mq.c
  * Author: fcten
  *
@@ -48,7 +48,7 @@ wbt_module_t wbt_module_mq = {
 };
 
 wbt_status wbt_mq_init() {
-	if( wbt_mq_persist_init() !=WBT_OK ) {
+    if( wbt_mq_persist_init() !=WBT_OK ) {
         return WBT_ERROR;
     }
 

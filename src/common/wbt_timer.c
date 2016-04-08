@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_timer.c
  * Author: fcten
  *

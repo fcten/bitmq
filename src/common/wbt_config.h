@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_config.h
  * Author: Fcten
  *

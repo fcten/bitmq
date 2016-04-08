@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_config.c
  * Author: Fcten
  *
@@ -326,6 +326,7 @@ wbt_status wbt_conf_reload() {
     if( len <= 0 ) {
         return WBT_ERROR;
     }
+    wbt_config_file_path.str[len] = '\0';
 #endif
     
     struct stat statbuff;  

@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_bmtp.c
  * Author: fcten
  *

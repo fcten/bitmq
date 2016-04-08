@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_connection.h
  * Author: Fcten
  *

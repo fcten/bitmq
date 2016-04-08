@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_http.h
  * Author: Fcten
  *

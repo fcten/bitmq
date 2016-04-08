@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_module.c
  * Author: Fcten
  *

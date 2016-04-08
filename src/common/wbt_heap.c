@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_heap.c
  * Author: Fcten
  *

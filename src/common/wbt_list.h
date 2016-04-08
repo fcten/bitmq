@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_list.h
  * Author: Fcten
  *

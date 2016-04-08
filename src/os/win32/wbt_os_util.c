@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_os_util.c
  * Author: Fcten
  *

@@ -52,7 +52,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/common/wbt_string.o \
 	${OBJECTDIR}/src/common/wbt_time.o \
 	${OBJECTDIR}/src/common/wbt_timer.o \
-	${OBJECTDIR}/src/event/wbt_event.o \
+	${OBJECTDIR}/src/event/wbt_event_epoll.o \
 	${OBJECTDIR}/src/http/wbt_http.o \
 	${OBJECTDIR}/src/http/wbt_http_consts.o \
 	${OBJECTDIR}/src/http/wbt_http_mq.o \
@@ -179,10 +179,10 @@ ${OBJECTDIR}/src/common/wbt_timer.o: src/common/wbt_timer.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/common/wbt_timer.o src/common/wbt_timer.c
 
-${OBJECTDIR}/src/event/wbt_event.o: src/event/wbt_event.c 
+${OBJECTDIR}/src/event/wbt_event_epoll.o: src/event/wbt_event_epoll.c 
 	${MKDIR} -p ${OBJECTDIR}/src/event
 	${RM} "$@.d"
-	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/event/wbt_event.o src/event/wbt_event.c
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/event/wbt_event_epoll.o src/event/wbt_event_epoll.c
 
 ${OBJECTDIR}/src/http/wbt_http.o: src/http/wbt_http.c 
 	${MKDIR} -p ${OBJECTDIR}/src/http

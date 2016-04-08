@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * File:   wbt_http_mq.h
  * Author: fcten
  *
