@@ -233,19 +233,18 @@ wbt_status wbt_mq_persist_init() {
 wbt_status wbt_mq_persist_check(ssize_t nwrite, size_t len) {
     if( nwrite != len ) {
         if (nwrite == -1) {
-            wbt_log_add("Error writing to the AOF file: %s",
-                strerror(errno));
+            wbt_log_add("Error writing to the AOF file: %d\n", wbt_errno);
         } else {
             wbt_log_add("Short write while writing to "
                             "the AOF file: (nwritten=%lld, "
-                            "expected=%lld)",
+                            "expected=%lld)\n",
                             (long long)nwrite,
                             (long long)sizeof(wbt_msg_block_t));
 
             if (wbt_truncate_file(wbt_persist_aof_fd, wbt_persist_aof_size) == -1) {
                 wbt_log_add("Could not remove short write "
                                 "from the append-only file. The file may be corrupted. "
-                                "ftruncate: %s", strerror(errno));
+								"ftruncate: %d\n", wbt_errno);
             }
         }
 
@@ -434,24 +433,24 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
             return WBT_ERROR;
         }
 
+        // 用 mdp 文件覆盖 aof 文件
 #ifdef WIN32
-        wbt_delete_file(wbt_persist_aof.str);
-
-        if (wbt_close_file(rdp_fd) < 0) {
+        if(wbt_close_file(rdp_fd) < 0) {
             return WBT_ERROR;
         }
-#endif
 
-        // 用 mdp 文件覆盖 aof 文件
+        if(MoveFileEx(wbt_persist_mdp.str, wbt_persist_aof.str, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
+#else
         if( rename(wbt_persist_mdp.str, wbt_persist_aof.str) < 0 ) {
+#endif
             wbt_log_add("Could not rename mdp file. "
-                            "rename: %s\n", strerror(errno));
+                "rename: %d\n", wbt_errno);
             return WBT_ERROR;
         }
 
 #ifdef WIN32
         wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
-        if( wbt_persist_aof_fd <= 0 ) {
+        if(wbt_persist_aof_fd <= 0) {
             return WBT_ERROR;
         }
 #else

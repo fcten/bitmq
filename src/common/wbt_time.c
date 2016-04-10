@@ -45,8 +45,8 @@ wbt_status wbt_time_init() {
 
 wbt_status wbt_time_update() {
     struct timeval cur_utime;
-	gettimeofday(&cur_utime, NULL);
-    wbt_cur_mtime = 1000 * cur_utime.tv_sec + cur_utime.tv_usec / 1000;
+    gettimeofday(&cur_utime, NULL);
+    wbt_cur_mtime = 1000 * (time_t)cur_utime.tv_sec + (time_t)cur_utime.tv_usec / 1000;
 
     return WBT_OK;
 }
