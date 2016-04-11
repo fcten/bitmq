@@ -45,39 +45,41 @@ set (WBT_SRCS
 	http/wbt_http_mq.h
 	json/wbt_json.c
 	json/wbt_json.h
-    mq/wbt_mq.c
-    mq/wbt_mq.h
-    mq/wbt_mq_channel.c
-    mq/wbt_mq_channel.h
-    mq/wbt_mq_dlq.c
-    mq/wbt_mq_dlq.h
-    mq/wbt_mq_msg.c
-    mq/wbt_mq_msg.h
-    mq/wbt_mq_persistence.c
-    mq/wbt_mq_persistence.h
-    mq/wbt_mq_subscriber.c
-    mq/wbt_mq_subscriber.h)
+	mq/wbt_mq.c
+	mq/wbt_mq.h
+	mq/wbt_mq_channel.c
+	mq/wbt_mq_channel.h
+	mq/wbt_mq_dlq.c
+	mq/wbt_mq_dlq.h
+	mq/wbt_mq_msg.c
+	mq/wbt_mq_msg.h
+	mq/wbt_mq_persistence.c
+	mq/wbt_mq_persistence.h
+	mq/wbt_mq_subscriber.c
+	mq/wbt_mq_subscriber.h)
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}
 	event/wbt_event_epoll.c
 	event/wbt_event_epoll.h
-    os/linux/wbt_os_util.c
-    os/linux/wbt_os_util.h
-    os/linux/wbt_process.c
-    os/linux/wbt_process.h
-    os/linux/wbt_setproctitle.c
-    os/linux/wbt_setproctitle.h
-    os/linux/wbt_terminal.c
-    os/linux/wbt_terminal.h)
+	os/linux/wbt_os_util.c
+	os/linux/wbt_os_util.h
+	os/linux/wbt_process.c
+	os/linux/wbt_process.h
+	os/linux/wbt_setproctitle.c
+	os/linux/wbt_setproctitle.h
+	os/linux/wbt_terminal.c
+	os/linux/wbt_terminal.h)
 endif (UNIX)
 
 if (WIN32 OR CYGWIN)
 	set (WBT_SRCS ${WBT_SRCS}
 	event/wbt_event_select.c
 	event/wbt_event_select.h
-    os/win32/wbt_os_util.c
-    os/win32/wbt_os_util.h)
+	os/win32/wbt_os_util.c
+	os/win32/wbt_os_util.h
+	os/win32/wbt_service.c
+	os/win32/wbt_service.h)
 endif (WIN32 OR CYGWIN)
 
 add_executable(webit ${WBT_SRCS})

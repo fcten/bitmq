@@ -282,7 +282,11 @@ static wbt_status wbt_save_argv(int argc, char** argv) {
     return WBT_OK;
 }
 
+#ifndef WIN32
 int main(int argc, char** argv) {
+#else
+int wbt_main( int argc, char** argv ) {
+#endif
     /* 保存传入参数 */
     if( wbt_save_argv(argc, argv) != WBT_OK ) {
         return 1;

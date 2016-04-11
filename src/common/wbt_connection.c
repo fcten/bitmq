@@ -278,8 +278,10 @@ wbt_status wbt_on_close(wbt_event_t *ev) {
 ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
     int ret;
     wbt_err_t err;
+#ifdef WBT_DEBUG
     char ebuf[256];
     unsigned long e;
+#endif
 
     wbt_set_errno(0);
 
@@ -295,11 +297,13 @@ ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
                 //ev->want_write = true;
                 wbt_set_errno(WBT_EAGAIN);
             } else {
+#ifdef WBT_DEBUG
                 e = ERR_get_error();
                 while(e){
                     wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
                     e = ERR_get_error();
                 }
+#endif
                 wbt_set_errno(WBT_ENOPROTOOPT);
             }
         }
@@ -313,8 +317,10 @@ ssize_t wbt_recv(wbt_event_t *ev, void *buf, size_t len) {
 ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len) {
     int ret;
     wbt_err_t err;
+#ifdef WBT_DEBUG
     char ebuf[256];
     unsigned long e;
+#endif
 
     wbt_set_errno(0);
 
@@ -331,11 +337,13 @@ ssize_t wbt_send(wbt_event_t *ev, void *buf, size_t len) {
                 //mosq->want_write = true;
                 wbt_set_errno(WBT_EAGAIN);
             }else{
+#ifdef WBT_DEBUG
                 e = ERR_get_error();
                 while(e){
                     wbt_log_debug("OpenSSL Error: %s\n", ERR_error_string(e, ebuf));
                     e = ERR_get_error();
                 }
+#endif
                 wbt_set_errno(WBT_ENOPROTOOPT);
             }
         }

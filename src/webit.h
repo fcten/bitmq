@@ -16,12 +16,21 @@ extern "C" {
 #include <stdint.h>
 
 #ifndef WIN32
-#include "os/linux/wbt_os_util.h"
-#else
-#include "os/win32/wbt_os_util.h"
-#endif
 
 #define WBT_DEBUG
+#include "os/linux/wbt_os_util.h"
+
+#else /* WIN32 */
+
+#ifdef _DEBUG
+#define WBT_DEBUG
+#endif
+
+#include "os/win32/wbt_os_util.h"
+
+int wbt_main( int argc, char** argv );
+
+#endif /* WIN32 */
 
 #define WBT_VERSION         "0.5.0"
 
