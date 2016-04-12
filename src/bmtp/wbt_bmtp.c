@@ -644,8 +644,7 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
 wbt_status wbt_bmtp_is_ready(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     
-    if( wbt_list_empty(&bmtp->send_queue.head) &&
-        wbt_list_empty(&bmtp->ack_queue.head) ) {
+    if( wbt_list_empty(&bmtp->wait_queue.head) ) {
         return WBT_OK;
     } else {
         return WBT_ERROR;

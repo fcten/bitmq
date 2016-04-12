@@ -2,7 +2,7 @@
 
 Webit 是一款使用 ANSI C 语言编写的高性能 HTTP 服务端程序。
 
-Webit 目前只支持 GNU/Linux 平台，并且可能无法在 Linux 2.6 以及更老的内核上运行。
+Webit 目前支持在 GNU/Linux 以及 Windows 上运行。
 
 ## 编译 Webit
 

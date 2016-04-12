@@ -78,9 +78,11 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
     
     // 从消息所对应的频道中删除该消息
     // TODO 这里没有必要再做一次 wbt_mq_channel_get 查询
-    wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
-    if( channel ) {
-        wbt_mq_channel_del_msg(channel, msg);
+    if( msg->type != MSG_ACK ) {
+        wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
+        if( channel ) {
+            wbt_mq_channel_del_msg(channel, msg);
+        }
     }
     
     wbt_timer_del(&msg->timer);
