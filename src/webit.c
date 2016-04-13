@@ -343,6 +343,9 @@ int wbt_main( int argc, char** argv ) {
     }
 
     wbt_init_proc_title();
+    
+    /* 屏蔽 umask */
+    umask(0);
 
 #else
 
@@ -378,9 +381,6 @@ int wbt_main( int argc, char** argv ) {
     }
     rlim.rlim_max = RLIM_INFINITY;
     setrlimit(RLIMIT_CORE, &rlim);
-    
-    /* 屏蔽 umask */
-    umask(0);
 
     /* 接下来的 chroot 会导致程序无法访问 /etc/timezone
      * TODO 读取 /etc/timezone 的内容并保存
