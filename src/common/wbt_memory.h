@@ -51,6 +51,7 @@ void * wbt_strdup(const void *ptr, size_t size);
 
 int wbt_is_oom();
 void wbt_mem_print();
+size_t wbt_mem_usage();
 
 #ifdef	__cplusplus
 }

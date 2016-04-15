@@ -315,6 +315,7 @@ wbt_status wbt_http_mq_status_general(wbt_event_t *ev) {
     long long int channel_active = wbt_mq_channel_status_active();
     long long int subscriber_active = wbt_mq_subscriber_status_active();
     long long int system_uptime = wbt_mq_uptime();
+    long long int system_memory = wbt_mem_usage();
     
     json_object_t * obj        = json_create_object();
     json_object_t * message    = json_create_object();
@@ -337,6 +338,7 @@ wbt_status wbt_http_mq_status_general(wbt_event_t *ev) {
     json_append(subscriber, wbt_mq_str_active.str, wbt_mq_str_active.len, JSON_LONGLONG, &subscriber_active, 0);
     
     json_append(system, wbt_mq_str_uptime.str, wbt_mq_str_uptime.len, JSON_LONGLONG, &system_uptime, 0);
+    json_append(system, wbt_mq_str_memory.str, wbt_mq_str_memory.len, JSON_LONGLONG, &system_memory, 0);
 
     char *ptr = http->resp_body_memory.str;
     size_t len = http->resp_body_memory.len;

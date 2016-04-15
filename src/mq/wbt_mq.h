@@ -169,6 +169,7 @@ extern wbt_str_t wbt_mq_str_delayed;
 extern wbt_str_t wbt_mq_str_waiting_ack;
 extern wbt_str_t wbt_mq_str_system;
 extern wbt_str_t wbt_mq_str_uptime;
+extern wbt_str_t wbt_mq_str_memory;
 extern wbt_str_t wbt_mq_str_list;
 extern wbt_str_t wbt_mq_str_msg_id;
 extern wbt_str_t wbt_mq_str_channel_id;

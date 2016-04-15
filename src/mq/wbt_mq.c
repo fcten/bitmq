@@ -23,6 +23,7 @@ wbt_str_t wbt_mq_str_waiting_ack   = wbt_string("waiting_ack");
 
 wbt_str_t wbt_mq_str_system        = wbt_string("system");
 wbt_str_t wbt_mq_str_uptime        = wbt_string("uptime");
+wbt_str_t wbt_mq_str_memory        = wbt_string("memory");
 
 wbt_str_t wbt_mq_str_list          = wbt_string("list");
 

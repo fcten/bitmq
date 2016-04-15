@@ -44,6 +44,10 @@ void wbt_mem_print() {
     }
 }
 
+size_t wbt_mem_usage() {
+    return wbt_memory_usage;
+}
+
 void * wbt_malloc(size_t size) {
     void * ptr = malloc(size);
 

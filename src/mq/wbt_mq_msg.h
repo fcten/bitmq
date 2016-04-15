@@ -16,7 +16,7 @@ extern "C" {
 #include "../json/wbt_json.h"
 
 wbt_status wbt_mq_msg_init();
-wbt_msg_t * wbt_mq_msg_create();
+wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id);
 wbt_msg_t * wbt_mq_msg_get(wbt_mq_id msg_id);
 void wbt_mq_msg_destory(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg);

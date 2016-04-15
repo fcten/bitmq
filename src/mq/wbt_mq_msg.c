@@ -28,7 +28,7 @@ void wbt_mq_msg_update_create_count(wbt_mq_id msg_id) {
     }
 }
 
-wbt_msg_t * wbt_mq_msg_create(int msg_id) {
+wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id) {
     wbt_msg_t * msg = wbt_calloc(sizeof(wbt_msg_t));
     
     if( msg ) {
@@ -47,6 +47,7 @@ wbt_msg_t * wbt_mq_msg_create(int msg_id) {
         wbt_variable_to_str(msg->msg_id, msg_key);
         wbt_rb_node_t * msg_node = wbt_rb_insert(&wbt_mq_messages, &msg_key);
         if( msg_node == NULL ) {
+            wbt_log_debug("msg_id conflict: %llu\n", msg_id);
             wbt_free(msg);
             return NULL;
         }
