@@ -98,7 +98,9 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
     wbt_list_for_each_entry(msg_node, wbt_msg_list_t, &subscriber->delivered_list.head, head) {
         msg = wbt_mq_msg_get(msg_node->msg_id);
         if( msg ) {
-            wbt_mq_msg_delivery(msg);
+            if( wbt_mq_msg_delivery(msg) != WBT_OK ) {
+                wbt_mq_msg_destory(msg);
+            }
         }
     }
 
@@ -331,7 +333,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr) {
         return WBT_ERROR;
     }
     
-    wbt_log_debug("subscriber %lld pull fron conn %d\n", subscriber->subscriber_id, ev->fd);
+    //wbt_log_debug("subscriber %lld pull fron conn %d\n", subscriber->subscriber_id, ev->fd);
 
     // 遍历所订阅的频道，获取可投递消息
     wbt_channel_list_t *channel_node;

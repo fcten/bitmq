@@ -52,7 +52,7 @@ wbt_msg_t * wbt_mq_msg_create(int msg_id) {
         }
         msg_node->value.str = (char *)msg;
         
-        wbt_log_debug("msg %lld create\n", msg->msg_id);
+        //wbt_log_debug("msg %lld create\n", msg->msg_id);
     }
     
     return msg;
@@ -74,7 +74,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
         return;
     }
     
-    wbt_log_debug("msg %lld deleted\n", msg->msg_id);
+    //wbt_log_debug("msg %lld deleted\n", msg->msg_id);
     
     // 从消息所对应的频道中删除该消息
     // TODO 这里没有必要再做一次 wbt_mq_channel_get 查询
@@ -130,7 +130,7 @@ wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     if( msg->expire <= wbt_cur_mtime ) {
         // 投递的消息已经过期
         
-        return WBT_OK;
+        return WBT_ERROR;
     } else if( msg->effect > wbt_cur_mtime ) {
         // 未生效消息
         msg->timer.on_timeout = wbt_mq_msg_delivery_delayed;

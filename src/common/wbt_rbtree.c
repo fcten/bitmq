@@ -191,6 +191,8 @@ wbt_rb_node_t * wbt_rb_insert(wbt_rb_t *rbt, wbt_str_t *key) {
             ret = wbt_rbtree_compare(rbt, (wbt_rb_key_t *)key, &tail_node->key);
             if( ret == 0 ) {
                 /* 键值已经存在 */
+                wbt_free(tmp_node->key.str.s);
+                wbt_free(tmp_node);
                 return NULL;
             } else if( ret > 0 ) {
                 if( tail_node->right ) {
@@ -449,11 +451,11 @@ wbt_rb_node_t * wbt_rb_get_greater(wbt_rb_t *rbt, wbt_str_t *key) {
     
     while(node) {
         if(wbt_rbtree_compare(rbt, &node->key, (wbt_rb_key_t *)key) > 0) {
-            wbt_log_debug("%lld > %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
+            //wbt_log_debug("%lld > %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
             ret = node;
             node = node->left;
         } else {
-            wbt_log_debug("%lld <= %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
+            //wbt_log_debug("%lld <= %lld\n", *node->key.str.l, (*(unsigned long long int *)key->str));
             node = node->right;
         }
     }
