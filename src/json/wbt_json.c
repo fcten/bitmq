@@ -295,6 +295,10 @@ int json_parse_array( json_task_t *task, json_object_t *parent ) {
 
                     node.value.s = task->str + task->count;
                     if( json_parse_value( task, &node ) != 0 ) {
+                        if( node.value_type == JSON_OBJECT ||
+                            node.value_type == JSON_ARRAY ) {
+                            json_delete_object(node.value.p);
+                        }
                         return -1;
                     }
                     // WARNING: value_len 可能发生溢出
@@ -420,6 +424,10 @@ int json_parse_object( json_task_t *task, json_object_t *parent ) {
                 
                 node.value.s = task->str + task->count;
                 if( json_parse_value( task, &node ) != 0 ) {
+                    if( node.value_type == JSON_OBJECT ||
+                        node.value_type == JSON_ARRAY ) {
+                        json_delete_object(node.value.p);
+                    }
                     return -1;
                 }
                 // WARNING: value_len 可能发生溢出

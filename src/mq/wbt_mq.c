@@ -182,11 +182,11 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
                             break;
                         case MSG_LOAD_BALANCE:
                             msg->qos  = 1;
-							msg->type = (unsigned int)node->value.l;
+                            msg->type = (unsigned int)node->value.l;
                             break;
                         case MSG_ACK:
                             msg->qos  = 0;
-							msg->type = (unsigned int)node->value.l;
+                            msg->type = (unsigned int)node->value.l;
                             break;
                         default:
                             return WBT_ERROR;
