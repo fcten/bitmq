@@ -53,7 +53,7 @@ wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id) {
         }
         msg_node->value.str = (char *)msg;
         
-        //wbt_log_debug("msg %lld create\n", msg->msg_id);
+        wbt_log_debug("msg %lld create\n", msg->msg_id);
     }
     
     return msg;
@@ -75,7 +75,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
         return;
     }
     
-    //wbt_log_debug("msg %lld deleted\n", msg->msg_id);
+    wbt_log_debug("msg %lld deleted\n", msg->msg_id);
     
     // 从消息所对应的频道中删除该消息
     // TODO 这里没有必要再做一次 wbt_mq_channel_get 查询

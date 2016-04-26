@@ -30,6 +30,8 @@ int wbt_mq_persist_aof_lock() {
     return wbt_persist_aof_lock;
 }
 
+static size_t wbt_mq_persist_recovery_offset = 0;
+
 wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
     wbt_persist_aof_lock = 1;
     
@@ -44,7 +46,6 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         goto error;
     }
 
-    static size_t offset = 0;
     int wait_time = 50;
     
     int n = 1000;
@@ -56,20 +57,20 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             break;
         }
 
-        nread = wbt_read_file(wbt_persist_aof_fd, block, sizeof(wbt_msg_block_t), offset);
+        nread = wbt_read_file(wbt_persist_aof_fd, block, sizeof(wbt_msg_block_t), wbt_mq_persist_recovery_offset);
         if( nread == 0 ) {
             break;
         } else if( nread != sizeof(wbt_msg_block_t) ) {
             goto error;
         } else {
-            offset += sizeof(wbt_msg_block_t);
+            wbt_mq_persist_recovery_offset += sizeof(wbt_msg_block_t);
         }
 
         if( wbt_conf.aof_crc ) {
-            if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t)) {
+            if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), wbt_mq_persist_recovery_offset) != sizeof(uint32_t)) {
                 goto error;
             } else {
-                offset += sizeof(uint32_t);
+                wbt_mq_persist_recovery_offset += sizeof(uint32_t);
             }
             
             if( crc32 != wbt_crc32( (char *)block, sizeof(wbt_msg_block_t) ) ) {
@@ -82,17 +83,17 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         if(!data) {
             goto error;
         }
-        if (wbt_read_file(wbt_persist_aof_fd, data, block->data_len, offset) != block->data_len) {
+        if (wbt_read_file(wbt_persist_aof_fd, data, block->data_len, wbt_mq_persist_recovery_offset) != block->data_len) {
             goto error;
         } else {
-            offset += block->data_len;
+            wbt_mq_persist_recovery_offset += block->data_len;
         }
 
         if( wbt_conf.aof_crc ) {
-            if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), offset) != sizeof(uint32_t)) {
+            if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), wbt_mq_persist_recovery_offset) != sizeof(uint32_t)) {
                 goto error;
             } else {
-                offset += sizeof(uint32_t);
+                wbt_mq_persist_recovery_offset += sizeof(uint32_t);
             }
             
             if( crc32 != wbt_crc32( data, block->data_len ) ) {
@@ -319,7 +320,10 @@ wbt_status wbt_mq_persist_append_to_file(wbt_fd_t fd, wbt_msg_t *msg) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_persist_append(wbt_msg_t *msg) {
+// 参数 rf 用于指明是否需要修改数据恢复进度
+// 如果该消息已经在内存中生效，则需要
+// 如果该消息由于内存不足而延迟生效，则不需要
+wbt_status wbt_mq_persist_append(wbt_msg_t *msg, int rf) {
     if( wbt_mq_persist_append_to_file(wbt_persist_aof_fd, msg) != WBT_OK ) {
         return WBT_ERROR;
     }
@@ -337,6 +341,9 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg) {
     }
     
     wbt_persist_aof_size += sizeof(wbt_msg_block_t) + msg->data_len;
+    if( rf ) {
+        wbt_mq_persist_recovery_offset += sizeof(wbt_msg_block_t) + msg->data_len;
+    }
     
     return WBT_OK;
 }
@@ -457,6 +464,9 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         wbt_persist_aof_fd = rdp_fd;
 #endif
         rdp_fd = 0;
+        
+        // 重写完成时，必然所有消息都在内存中生效，所以直接将 offset 设定为文件末尾
+        wbt_mq_persist_recovery_offset = wbt_get_file_size(wbt_persist_aof_fd);
 
         // 重写完成后，下一次重写将在设定的时间间隔之后运行
         if(!wbt_wating_to_exit) {

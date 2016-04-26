@@ -272,9 +272,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     }
 
     // 投递消息
-    if( msg->type == MSG_ACK || // ACK 消息总是立刻被处理
-        ( wbt_mq_persist_aof_lock() == 0 && !wbt_is_oom() ) ) {
+    if( wbt_mq_persist_aof_lock() == 0 && !wbt_is_oom() ) {
         if( msg->type == MSG_ACK ) {
+            // ACK 消息总是立刻被处理
             wbt_subscriber_t *subscriber = ev->ctx;
             if( subscriber == NULL || wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id) != WBT_OK ) {
                 wbt_mq_msg_destory( msg );
@@ -282,43 +282,60 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
             }
 
             if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg);
+                wbt_mq_persist_append(msg, 1);
             }
 
             wbt_mq_msg_destory( msg );
-        } else if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
-            if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg);
-            }
-
-            wbt_mq_msg_destory( msg );
-            return WBT_ERROR;
         } else {
-            if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg);
+            if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
+                if( wbt_conf.aof ) {
+                    wbt_mq_persist_append(msg, 1);
+                }
+
+                wbt_mq_msg_destory( msg );
+                return WBT_ERROR;
+            } else {
+                if( wbt_conf.aof ) {
+                    wbt_mq_persist_append(msg, 1);
+                }
             }
         }
     } else {
-        // 如果当前正在恢复数据，或者内存占用过高，则不进行投递
-        // 立刻删除该消息，等待数据恢复到该消息时再进行投递
-        if( !wbt_conf.aof || 0/* TODO 使用直接拒绝消息策略 */ ) {
-            // 如果内存占用过高且没有开启持久化
+        if( msg->type == MSG_ACK ) {
+            // ACK 消息总是立刻被处理
+            wbt_subscriber_t *subscriber = ev->ctx;
+            if( subscriber == NULL || wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id) != WBT_OK ) {
+                wbt_mq_msg_destory( msg );
+                return WBT_ERROR;
+            }
+
+            if( wbt_conf.aof ) {
+                wbt_mq_persist_append(msg, 0);
+            }
+
+            wbt_mq_msg_destory( msg );
+        } else {
+            // 如果当前正在恢复数据，或者内存占用过高，则不进行投递
+            // 立刻删除该消息，等待数据恢复到该消息时再进行投递
+            if( !wbt_conf.aof || 0/* TODO 使用直接拒绝消息策略 */ ) {
+                // 如果内存占用过高且没有开启持久化
+                wbt_mq_msg_destory( msg );
+
+                return WBT_ERROR;
+            }
+            wbt_mq_persist_append(msg, 0);
             wbt_mq_msg_destory( msg );
 
-            return WBT_ERROR;
-        }
-        wbt_mq_persist_append(msg);
-        wbt_mq_msg_destory( msg );
-        
-        // 如果数据恢复并没有在进行，则启动之
-        if(wbt_mq_persist_aof_lock() == 0) {
-            wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
-            timer->on_timeout = wbt_mq_persist_recovery;
-            timer->timeout = wbt_cur_mtime;
-            timer->heap_idx = 0;
+            // 如果数据恢复并没有在进行，则启动之
+            if(wbt_mq_persist_aof_lock() == 0) {
+                wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
+                timer->on_timeout = wbt_mq_persist_recovery;
+                timer->timeout = wbt_cur_mtime;
+                timer->heap_idx = 0;
 
-            if( wbt_timer_add(timer) != WBT_OK ) {
-                return WBT_ERROR;
+                if( wbt_timer_add(timer) != WBT_OK ) {
+                    return WBT_ERROR;
+                }
             }
         }
     }
