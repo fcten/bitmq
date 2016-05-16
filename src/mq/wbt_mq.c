@@ -144,6 +144,12 @@ wbt_status wbt_mq_subscribe(wbt_event_t *ev, wbt_mq_id channel_id) {
         // TODO 服务器繁忙
         return WBT_ERROR;
     }
+    
+    // 检查是否已经订阅过
+    if( wbt_mq_subscriber_has_channel( subscriber, channel ) ) {
+        // TODO 重复订阅
+        return WBT_ERROR;
+    }
 
     // 在该订阅者中添加一个频道 & 在该频道中添加一个订阅者
     if( wbt_mq_subscriber_add_channel(subscriber, channel) != WBT_OK ||

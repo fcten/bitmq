@@ -20,6 +20,7 @@ wbt_subscriber_t * wbt_mq_subscriber_create();
 wbt_subscriber_t * wbt_mq_subscriber_get(wbt_mq_id subscriber_id);
 void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber);
 
+int wbt_mq_subscriber_has_channel(wbt_subscriber_t *subscriber, wbt_channel_t *channel);
 wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_channel_t *channel);
 wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber);
 

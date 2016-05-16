@@ -83,6 +83,18 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
     }
 }
 
+// TODO 如果不严格限制订阅数量则需要优化
+int wbt_mq_subscriber_has_channel(wbt_subscriber_t *subscriber, wbt_channel_t *channel) {
+    wbt_channel_list_t *channel_node;
+    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list.head, head) {
+        if( channel == channel_node->channel ) {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
 wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_channel_t *channel) {
     wbt_channel_list_t *channel_node = wbt_calloc(sizeof(wbt_channel_list_t));
     if( channel_node == NULL ) {
