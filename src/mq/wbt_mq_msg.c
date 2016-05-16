@@ -240,8 +240,11 @@ long long int wbt_mq_msg_status_waiting_ack() {
 json_object_t* wbt_mq_msg_print(wbt_msg_t *msg) {
     json_object_t * obj = json_create_object();
     
-    json_append(obj, wbt_mq_str_msg_id.str, wbt_mq_str_msg_id.len, JSON_LONGLONG,       &msg->msg_id, 0);
-    json_append(obj, wbt_mq_str_create.str, wbt_mq_str_create.len, JSON_LONGLONG,       &msg->create, 0);
+    json_append(obj, wbt_mq_str_msg_id.str,       wbt_mq_str_msg_id.len,       JSON_LONGLONG, &msg->msg_id,      0);
+    if( msg->producer_id ) {
+        json_append(obj, wbt_mq_str_producer_id.str, wbt_mq_str_producer_id.len, JSON_LONGLONG, &msg->producer_id, 0);
+    }
+    json_append(obj, wbt_mq_str_create.str,       wbt_mq_str_create.len,       JSON_LONGLONG, &msg->create,      0);
 
     json_task_t t;
     t.str = msg->data;

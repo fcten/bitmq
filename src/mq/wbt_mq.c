@@ -30,6 +30,7 @@ wbt_str_t wbt_mq_str_list          = wbt_string("list");
 wbt_str_t wbt_mq_str_msg_id        = wbt_string("msg_id");
 wbt_str_t wbt_mq_str_channel_id    = wbt_string("channel_id");
 wbt_str_t wbt_mq_str_subscriber_id = wbt_string("subscriber_id");
+wbt_str_t wbt_mq_str_producer_id   = wbt_string("producer_id");
 wbt_str_t wbt_mq_str_consumer_id   = wbt_string("consumer_id");
 wbt_str_t wbt_mq_str_create        = wbt_string("create");
 wbt_str_t wbt_mq_str_effect        = wbt_string("effect");
@@ -164,8 +165,10 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
         key.len = node->key_len;
         switch( node->value_type ) {
             case JSON_LONGLONG:
-                if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0 ) {
+                if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0  ) {
                     msg->consumer_id = node->value.l;
+                } else if ( wbt_strcmp(&key, &wbt_mq_str_producer_id) == 0 ) {
+                    msg->producer_id = node->value.l;
                 } else if ( wbt_strcmp(&key, &wbt_mq_str_effect) == 0 ) {
                     if( node->value.l >= 0 && node->value.l <= 2592000 ) {
                         msg->effect = (unsigned int)node->value.l;

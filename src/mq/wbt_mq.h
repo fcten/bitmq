@@ -174,6 +174,7 @@ extern wbt_str_t wbt_mq_str_list;
 extern wbt_str_t wbt_mq_str_msg_id;
 extern wbt_str_t wbt_mq_str_channel_id;
 extern wbt_str_t wbt_mq_str_subscriber_id;
+extern wbt_str_t wbt_mq_str_producer_id;
 extern wbt_str_t wbt_mq_str_consumer_id;
 extern wbt_str_t wbt_mq_str_create;
 extern wbt_str_t wbt_mq_str_effect;
