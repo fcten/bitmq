@@ -131,7 +131,7 @@ wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
         json_object_t *obj = wbt_mq_msg_print(msg);
 
         wbt_str_t resp;
-        resp.len = 10240;
+        resp.len = 1024 * 64;
         resp.str = wbt_malloc( resp.len );
         if( resp.str == NULL ) {
             return WBT_ERROR;

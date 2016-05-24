@@ -203,7 +203,7 @@ wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
     } else {
         json_object_t *obj = wbt_mq_msg_print(msg);
 
-        http->resp_body_memory.len = 10240;
+        http->resp_body_memory.len = 1024 * 64;
         http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
         if( http->resp_body_memory.str == NULL ) {
             http->status = STATUS_503;

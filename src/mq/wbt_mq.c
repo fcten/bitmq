@@ -214,7 +214,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
             case JSON_ARRAY:
             case JSON_OBJECT:
                 if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    msg->data_len = 10240;
+                    msg->data_len = 1024 * 64;
                     msg->data = wbt_malloc( msg->data_len );
                     if( msg->data == NULL ) {
                         return WBT_ERROR;
