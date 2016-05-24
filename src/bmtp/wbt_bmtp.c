@@ -328,20 +328,28 @@ wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     
     // TODO 如果不保存会话，则释放队列
-    // TODO 在这里调用 wbt_mq_on_close
-    /*
-    while(!wbt_list_empty(bmtp->wait_queue.head)) {
-        
+    wbt_bmtp_msg_t *msg_node;
+    
+    while(!wbt_list_empty(&bmtp->wait_queue.head)) {
+        msg_node = wbt_list_first_entry(&bmtp->wait_queue.head, wbt_bmtp_msg_t, head);
+        wbt_list_del(&msg_node->head);
+        wbt_free( msg_node->msg );
+        wbt_free( msg_node );
     }
 
-    while(!wbt_list_empty(bmtp->send_queue.head)) {
-        
+    while(!wbt_list_empty(&bmtp->send_queue.head)) {
+        msg_node = wbt_list_first_entry(&bmtp->send_queue.head, wbt_bmtp_msg_t, head);
+        wbt_list_del(&msg_node->head);
+        wbt_free( msg_node->msg );
+        wbt_free( msg_node );
     }
 
-    while(!wbt_list_empty(bmtp->ack_queue.head)) {
-        
+    while(!wbt_list_empty(&bmtp->ack_queue.head)) {
+        msg_node = wbt_list_first_entry(&bmtp->ack_queue.head, wbt_bmtp_msg_t, head);
+        wbt_list_del(&msg_node->head);
+        wbt_free( msg_node->msg );
+        wbt_free( msg_node );
     }
-    */
     
     return WBT_OK;
 }
