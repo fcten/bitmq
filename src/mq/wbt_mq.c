@@ -108,6 +108,8 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
 
     // 删除该订阅者
     wbt_mq_subscriber_destory(subscriber);
+
+    ev->ctx == NULL;
     
     return WBT_OK;
 }
