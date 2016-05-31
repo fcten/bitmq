@@ -109,7 +109,7 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
     // 删除该订阅者
     wbt_mq_subscriber_destory(subscriber);
 
-    ev->ctx == NULL;
+    ev->ctx = NULL;
     
     return WBT_OK;
 }
@@ -273,9 +273,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     json_delete_object(t.root);
     
     // 如果使用释放 TTL 最小的消息的策略
-    // 如果不使用该策略，并并开启了持久化，那么该消息会暂时存储到文件中
+    // 如果不使用该策略，并且开启了持久化，那么该消息会暂时存储到文件中
     // 注意：消息的超时时间并不会改变，如果后续消息长时间得不到处理，可能会直接过期
-    // 如果既不使用该策略，有没有开启持久化，则该条消息会被立刻删除并返回投递失败
+    // 如果既不使用该策略，又没有开启持久化，则该条消息会被立刻删除并返回投递失败
     if( 0 ) {
         while( wbt_is_oom() ) {
             // TODO 从超时队列中找到超时时间最小的消息，并删除
@@ -283,7 +283,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     }
 
     // 投递消息
-    if( wbt_mq_persist_aof_lock() == 0 && !wbt_is_oom() ) {
+    if( wbt_mq_persist_aof_is_lock() == 0 && !wbt_is_oom() ) {
         if( msg->type == MSG_ACK ) {
             // ACK 消息总是立刻被处理
             wbt_subscriber_t *subscriber = ev->ctx;
@@ -338,7 +338,10 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
             wbt_mq_msg_destory( msg );
 
             // 如果数据恢复并没有在进行，则启动之
-            if(wbt_mq_persist_aof_lock() == 0) {
+            if(wbt_mq_persist_aof_is_lock() == 0) {
+                // Bugfix: 必须立刻将数据恢复标记为已启动，否则连续收到的后续消息可能无法正确处理
+                wbt_mq_persist_aof_lock();
+
                 wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
                 timer->on_timeout = wbt_mq_persist_recovery;
                 timer->timeout = wbt_cur_mtime;

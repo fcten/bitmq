@@ -48,7 +48,9 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg, int rf);
 
 wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer);
 
-int wbt_mq_persist_aof_lock();
+void wbt_mq_persist_aof_lock();
+void wbt_mq_persist_aof_unlock();
+int wbt_mq_persist_aof_is_lock();
 
 #ifdef	__cplusplus
 }

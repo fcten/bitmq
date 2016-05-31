@@ -26,14 +26,22 @@ extern wbt_atomic_t wbt_wating_to_exit;
 static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer);
 static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer);
 
-int wbt_mq_persist_aof_lock() {
+void wbt_mq_persist_aof_lock() {
+    wbt_persist_aof_lock = 1;
+}
+
+void wbt_mq_persist_aof_unlock() {
+    wbt_persist_aof_lock = 0;
+}
+
+int wbt_mq_persist_aof_is_lock() {
     return wbt_persist_aof_lock;
 }
 
 static size_t wbt_mq_persist_recovery_offset = 0;
 
 wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
-    wbt_persist_aof_lock = 1;
+    wbt_mq_persist_aof_lock();
     
     wbt_msg_block_t *block;
     wbt_msg_t *msg;
@@ -84,6 +92,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             goto error;
         }
         if (wbt_read_file(wbt_persist_aof_fd, data, block->data_len, wbt_mq_persist_recovery_offset) != block->data_len) {
+            wbt_free( data );
             goto error;
         } else {
             wbt_mq_persist_recovery_offset += block->data_len;
@@ -91,6 +100,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
 
         if( wbt_conf.aof_crc ) {
             if (wbt_read_file(wbt_persist_aof_fd, &crc32, sizeof(uint32_t), wbt_mq_persist_recovery_offset) != sizeof(uint32_t)) {
+                wbt_free( data );
                 goto error;
             } else {
                 wbt_mq_persist_recovery_offset += sizeof(uint32_t);
@@ -98,9 +108,12 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             
             if( crc32 != wbt_crc32( data, block->data_len ) ) {
                 // 校验失败
+                wbt_free( data );
                 goto error;
             }
         }
+
+        wbt_log_debug( "msg %lld recovered\n", block->msg_id );
 
         // 由于内存和文件中保存的结构并不一致，这里我们不得不进行内存拷贝
         // TODO 修改消息相关的内存操作，尝试直接使用读入的内存
@@ -147,7 +160,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         }
     } else {
         wbt_free(timer);
-        wbt_persist_aof_lock = 0;
+        wbt_mq_persist_aof_unlock();
     }
     
     wbt_free(block);
@@ -156,10 +169,10 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
     
 error:
 
-    wbt_free(block);
-    wbt_free(timer);
+    wbt_free( block );
+    wbt_free( timer );
 
-    wbt_persist_aof_lock = 0;
+    wbt_mq_persist_aof_unlock();
 
     return WBT_ERROR;
 }
@@ -359,7 +372,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
     // 记录当前的最大消息 ID max
     static wbt_mq_id processed_msg_id = 0;
 
-    if( wbt_persist_aof_lock == 1 ) {
+    if( wbt_mq_persist_aof_is_lock() == 1 ) {
         // 如果目前正在从 aof 文件中恢复数据，则 dump 操作必须被推迟
         // 这是为了保证 dump 完成的时刻，所有未过期消息都在内存中
         if(timer && !wbt_wating_to_exit) {
