@@ -30,6 +30,9 @@ wbt_fd_t wbt_lock_accept;
 /* 事件队列 */
 static wbt_event_pool_t wbt_events;
 
+static wbt_event_t **event_index;
+static unsigned int nevents;
+
 static fd_set read_fd_set;
 static fd_set write_fd_set;
 
@@ -49,6 +52,12 @@ wbt_status wbt_event_init() {
          return WBT_ERROR;
     }
 
+    event_index = wbt_malloc( FD_SETSIZE * sizeof( wbt_event_t * ) );
+    if( event_index == NULL ) {
+        return WBT_ERROR;
+    }
+    nevents = 0;
+
     wbt_events.max = WBT_EVENT_LIST_SIZE;
     wbt_events.top = WBT_EVENT_LIST_SIZE - 1;
     
@@ -58,21 +67,21 @@ wbt_status wbt_event_init() {
         wbt_events.available[i] = wbt_events.node.pool + i;
     }
 
-	/* 根据端口号创建锁文件 */
-	wbt_str_t lock_file;
-	lock_file.len = sizeof("/tmp/.wbt_accept_lock_00000");
-	lock_file.str = wbt_malloc(lock_file.len);
-	if (lock_file.str == NULL) {
-		return WBT_ERROR;
-	}
-	snprintf(lock_file.str, lock_file.len, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
+    /* 根据端口号创建锁文件 */
+    wbt_str_t lock_file;
+    lock_file.len = sizeof("/tmp/.wbt_accept_lock_00000");
+    lock_file.str = wbt_malloc(lock_file.len);
+    if (lock_file.str == NULL) {
+        return WBT_ERROR;
+    }
+    snprintf(lock_file.str, lock_file.len, "/tmp/.wbt_accept_lock_%d", wbt_conf.listen_port);
 
-	if ((wbt_lock_accept = wbt_lock_create(lock_file.str)) <= 0) {
-		wbt_log_add("create lock file failed\n");
-		wbt_free(lock_file.str);
-		return WBT_ERROR;
-	}
-	wbt_free(lock_file.str);
+    if ((wbt_lock_accept = wbt_lock_create(lock_file.str)) <= 0) {
+        wbt_log_add("create lock file failed\n");
+        wbt_free(lock_file.str);
+        return WBT_ERROR;
+    }
+    wbt_free(lock_file.str);
 
     return WBT_OK;
 }
@@ -82,6 +91,26 @@ wbt_status wbt_event_exit() {
     
     return WBT_OK;
 }
+
+/*
+void wbt_event_print() {
+    printf( "events: " );
+    for( unsigned int i = 0; i < nevents; ++i ) {
+        printf( "[%d] ", event_index[i]->fd );
+    }
+    printf( "\n" );
+    printf( "read_fd_set: " );
+    for( unsigned int i = 0; i < read_fd_set.fd_count; i++ ) {
+        printf( "[%d] ", read_fd_set.fd_array[i] );
+    }
+    printf( "\n" );
+    printf( "write_fd_set: " );
+    for( unsigned int i = 0; i < write_fd_set.fd_count; i++ ) {
+        printf( "[%d] ", write_fd_set.fd_array[i] );
+    }
+    printf( "\n" );
+}
+*/
 
 wbt_status wbt_event_resize() {
     wbt_event_pool_node_t *new_node = wbt_calloc(sizeof(wbt_event_pool_node_t));
@@ -130,8 +159,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
         }
     }
     
-    //wbt_log_debug("event add, fd %d, addr %p, %u events.\n", ev->fd ,ev, wbt_events.max-wbt_events.top);
-    
+    //wbt_log_debug( "event add, fd %d, type %d, %u events.\n", ev->fd, ev->events, wbt_events.max - wbt_events.top );
+
     /* 添加到事件池内 */
     wbt_event_t *t = *(wbt_events.available + wbt_events.top);
     wbt_events.top --;
@@ -154,18 +183,21 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     t->ssl = NULL;
 
     /* 注册select事件 */
-	if (((t->events & WBT_EV_READ) && read_fd_set.fd_count >= FD_SETSIZE) ||
-		((t->events & WBT_EV_WRITE) && write_fd_set.fd_count >= FD_SETSIZE)) {
-		wbt_log_debug("maximum number of descriptors supported by select() is %d", FD_SETSIZE);
-		return NULL;
-	}
+    if (((t->events & WBT_EV_READ) && read_fd_set.fd_count >= FD_SETSIZE) ||
+        ((t->events & WBT_EV_WRITE) && write_fd_set.fd_count >= FD_SETSIZE)) {
+        wbt_log_debug("maximum number of descriptors supported by select() is %d", FD_SETSIZE);
+        return NULL;
+    }
 
-	if (t->events & WBT_EV_READ) {
-		FD_SET(t->fd, &read_fd_set);
-	}
-	if (t->events & WBT_EV_WRITE) {
-		FD_SET(t->fd, &write_fd_set);
-	}
+    if (t->events & WBT_EV_READ) {
+        FD_SET(t->fd, &read_fd_set);
+    }
+    if (t->events & WBT_EV_WRITE) {
+        FD_SET(t->fd, &write_fd_set);
+    }
+
+    event_index[nevents] = t;
+    nevents++;
     
     /* 如果存在超时事件，添加到超时队列中 */
     if(wbt_timer_add(&t->timer) != WBT_OK) {
@@ -184,7 +216,7 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
-    //wbt_log_debug("event del, fd %d, addr %p, %u events\n", ev->fd, ev, wbt_events.max-wbt_events.top-2);
+    //wbt_log_debug( "event del, fd %d, type %d, %u events\n", ev->fd, ev->events, wbt_events.max - wbt_events.top - 2 );
 
     /* 从事件池中移除 */
     wbt_events.top ++;
@@ -204,37 +236,47 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->protocol = 0;
 
     /* 删除select事件 */
-	if (ev->events & WBT_EV_READ) {
-		FD_CLR(ev->fd, &read_fd_set);
+    if (ev->events & WBT_EV_READ) {
+        FD_CLR(ev->fd, &read_fd_set);
 
-	}
-	if (ev->events & WBT_EV_WRITE) {
-		FD_CLR(ev->fd, &write_fd_set);
-	}
+    }
+    if (ev->events & WBT_EV_WRITE) {
+        FD_CLR(ev->fd, &write_fd_set);
+    }
+
+    // TODO 可以在 wbt_ebent 中增加 idx，并将 event_index 放置到 wbt_events 中
+    for( unsigned int i = 0 ; i < nevents; ++i ) {
+        if( event_index[i] == ev ) {
+            event_index[i] = event_index[--nevents];
+            break;
+        }
+    }
+
+    ev->fd = -1;
     
     return WBT_OK;
 }
 
 /* 修改事件 */
 wbt_status wbt_event_mod(wbt_event_t *ev) {
-    //wbt_log_debug("event mod, fd %d, addr %p\n",ev->fd, ev);
+    //wbt_log_debug( "event mod, fd %d, type %d\n", ev->fd, ev->events );
 
     /* 修改select事件 */
-	FD_CLR(ev->fd, &read_fd_set);
-	FD_CLR(ev->fd, &write_fd_set);
+    FD_CLR(ev->fd, &read_fd_set);
+    FD_CLR(ev->fd, &write_fd_set);
 
-	if (((ev->events & WBT_EV_READ) && read_fd_set.fd_count >= FD_SETSIZE) ||
-		((ev->events & WBT_EV_WRITE) && write_fd_set.fd_count >= FD_SETSIZE)) {
-		wbt_log_debug("maximum number of descriptors supported by select() is %d", FD_SETSIZE);
-		return WBT_ERROR;
-	}
+    if (((ev->events & WBT_EV_READ) && read_fd_set.fd_count >= FD_SETSIZE) ||
+        ((ev->events & WBT_EV_WRITE) && write_fd_set.fd_count >= FD_SETSIZE)) {
+        wbt_log_debug("maximum number of descriptors supported by select() is %d", FD_SETSIZE);
+        return WBT_ERROR;
+    }
 
-	if (ev->events & WBT_EV_READ) {
-		FD_SET(ev->fd, &read_fd_set);
-	}
-	if (ev->events & WBT_EV_WRITE) {
-		FD_SET(ev->fd, &write_fd_set);
-	}
+    if (ev->events & WBT_EV_READ) {
+        FD_SET(ev->fd, &read_fd_set);
+    }
+    if (ev->events & WBT_EV_WRITE) {
+        FD_SET(ev->fd, &write_fd_set);
+    }
 
     /* 重新添加到超时队列中 */
     if(wbt_timer_mod(&ev->timer) != WBT_OK) {
@@ -248,13 +290,13 @@ wbt_status wbt_event_cleanup();
 
 /* 事件循环 */
 wbt_status wbt_event_dispatch() {
-	time_t timeout = 0;
-	unsigned int i = 0;
+    time_t timeout = 0;
+    unsigned int i = 0;
     wbt_atomic_t is_accept_lock = 0, is_accept_add = 0;
     wbt_event_t *ev;
 
-	fd_set work_read_fd_set;
-	fd_set work_write_fd_set;
+    fd_set work_read_fd_set;
+    fd_set work_write_fd_set;
 
     wbt_event_t listen_ev;
     wbt_memset(&listen_ev, 0, sizeof(wbt_event_t));
@@ -308,142 +350,145 @@ wbt_status wbt_event_dispatch() {
             wbt_conn_close_listen();
         }
 
-		int nfds;
-		struct timeval tv;
-		tv.tv_sec = (long)(timeout / 1000);
-		tv.tv_usec = (long)((timeout % 1000) * 1000);
+        int nfds;
+        struct timeval tv;
+        tv.tv_sec = (long)(timeout / 1000);
+        tv.tv_usec = (long)((timeout % 1000) * 1000);
 
-		if (read_fd_set.fd_count || write_fd_set.fd_count) {
-			FD_ZERO(&work_read_fd_set);
-			FD_ZERO(&work_write_fd_set);
+        if (read_fd_set.fd_count || write_fd_set.fd_count) {
+            FD_ZERO(&work_read_fd_set);
+            FD_ZERO(&work_write_fd_set);
 
-			for (i = 0; i < read_fd_set.fd_count; i++) {
-				FD_SET(read_fd_set.fd_array[i], &work_read_fd_set);
-			}
+            for (i = 0; i < read_fd_set.fd_count; i++) {
+                FD_SET(read_fd_set.fd_array[i], &work_read_fd_set);
+            }
 
-			for (i = 0; i < write_fd_set.fd_count; i++) {
-				FD_SET(write_fd_set.fd_array[i], &work_write_fd_set);
-			}
+            for (i = 0; i < write_fd_set.fd_count; i++) {
+                FD_SET(write_fd_set.fd_array[i], &work_write_fd_set);
+            }
 
-			nfds = select(0, &work_read_fd_set, &work_write_fd_set, NULL, &tv);
+            //wbt_log_debug( "work_read_fd_set: %d, work_write_fd_set: %d\n", work_read_fd_set.fd_count, work_write_fd_set.fd_count );
+            nfds = select(0, &work_read_fd_set, &work_write_fd_set, NULL, &tv);
+            //wbt_log_debug( "nfds: %d\n", nfds );
 
-		} else {
-			/*
-			* Winsock select() requires that at least one descriptor set must be
-			* be non-null, and any non-null descriptor set must contain at least
-			* one handle to a socket.  Otherwise select() returns WSAEINVAL.
-			*/
+        } else {
+            /*
+            * Winsock select() requires that at least one descriptor set must be
+            * be non-null, and any non-null descriptor set must contain at least
+            * one handle to a socket.  Otherwise select() returns WSAEINVAL.
+            */
 
-			wbt_msleep((int)timeout);
+            wbt_msleep((int)timeout);
 
-			nfds = 0;
-		}
-
-		wbt_err_t err = (nfds == -1) ? wbt_socket_errno : 0;
-
-		/* 更新当前时间 */
-		wbt_time_update();
-		wbt_time_str_update();
-        
-		if (err) {
-			if (err == WSAENOTSOCK) {
-				wbt_event_repair_fd_sets();
-			}
+            nfds = 0;
         }
 
-		//wbt_log_debug("%d event happened.\n",nfds);
+        wbt_err_t err = (nfds == -1) ? wbt_socket_errno : 0;
 
-		if (nfds > 0) {
+        /* 更新当前时间 */
+        wbt_time_update();
+        wbt_time_str_update();
+        
+        if (err) {
+            if (err == WSAENOTSOCK) {
+                wbt_event_repair_fd_sets();
+            }
+        }
 
-			if (is_accept_add) {
-				for (i = wbt_events.top + 1; i < wbt_events.max; ++i) {
-					ev = wbt_events.available[i];
+        //wbt_log_debug("%d event happened.\n",nfds);
 
-					/* 优先处理 accept */
-					if (ev->fd == wbt_listen_fd && FD_ISSET(ev->fd, &work_read_fd_set)) {
-						//wbt_log_add("new conn get by %d\n", pid);
+        if (nfds > 0) {
 
-						if (ev->on_recv(ev) != WBT_OK) {
-							wbt_log_add("call %p failed\n", ev->on_recv);
-							return WBT_ERROR;
-						}
+            if (is_accept_add) {
+                for( i = 0; i < nevents; ++i ) {
+                    ev = event_index[i];
 
-						if (is_accept_lock || wbt_wating_to_exit) {
-							//wbt_log_debug("del listen event\n");
-							if (wbt_event_del(ev) != WBT_OK) {
-								return WBT_ERROR;
-							}
-							is_accept_add = 0;
-							wbt_unlock_fd(wbt_lock_accept);
-							is_accept_lock = 0;
-						}
-						break;
-					}
-				}
-			}
+                    /* 优先处理 accept */
+                    if (ev->fd == wbt_listen_fd && FD_ISSET(ev->fd, &work_read_fd_set)) {
+                        //wbt_log_add("new conn get by %d\n", pid);
 
-			for (i = wbt_events.top + 1; i < wbt_events.max; ++i) {
-				ev = wbt_events.available[i];
+                        if (ev->on_recv(ev) != WBT_OK) {
+                            wbt_log_add("call %p failed\n", ev->on_recv);
+                            return WBT_ERROR;
+                        }
 
-				/* 尝试调用该事件的回调函数 */
-				if (ev->fd == wbt_listen_fd) {
-					continue;
-				}
-				if ((ev->events & WBT_EV_READ) && ev->on_recv && FD_ISSET(ev->fd, &work_read_fd_set)) {
-					if (ev->on_recv(ev) != WBT_OK) {
-						wbt_log_add("call %p failed\n", ev->on_recv);
-						return WBT_ERROR;
-					}
-				}
-				if ((ev->events & WBT_EV_WRITE) && ev->on_send && FD_ISSET(ev->fd, &work_write_fd_set)) {
-					if (ev->on_send(ev) != WBT_OK) {
-						wbt_log_add("call %p failed\n", ev->on_send);
-						return WBT_ERROR;
-					}
-				}
-			}
+                        if (is_accept_lock || wbt_wating_to_exit) {
+                            //wbt_log_debug("del listen event\n");
+                            if (wbt_event_del(ev) != WBT_OK) {
+                                return WBT_ERROR;
+                            }
+                            is_accept_add = 0;
+                            wbt_unlock_fd(wbt_lock_accept);
+                            is_accept_lock = 0;
+                        }
+                        break;
+                    }
+                }
+            }
 
-		}
+            for( i = 0; i < nevents; ++i ) {
+                ev = event_index[i];
+
+                /* 尝试调用该事件的回调函数 */
+                if (ev->fd == wbt_listen_fd) {
+                    continue;
+                }
+                if ((ev->events & WBT_EV_READ) && ev->on_recv && FD_ISSET(ev->fd, &work_read_fd_set)) {
+                    if (ev->on_recv(ev) != WBT_OK) {
+                        wbt_log_add("call %p failed\n", ev->on_recv);
+                        return WBT_ERROR;
+                    }
+                }
+                if ((ev->events & WBT_EV_WRITE) && ev->on_send && FD_ISSET(ev->fd, &work_write_fd_set)) {
+                    if (ev->on_send(ev) != WBT_OK) {
+                        wbt_log_add("call %p failed\n", ev->on_send);
+                        return WBT_ERROR;
+                    }
+                }
+            }
+
+        }
 
         /* 检查并执行超时事件 */
         timeout = wbt_timer_process();
+        //wbt_log_debug( "time_out: %ld\n", timeout );
     }
 
     return WBT_OK;
 }
 
 static void wbt_event_repair_fd_sets() {
-	int           n;
-	u_int         i;
-	int           len;
-	wbt_err_t     err;
-	wbt_socket_t  s;
+    int           n;
+    u_int         i;
+    int           len;
+    wbt_err_t     err;
+    wbt_socket_t  s;
 
-	for (i = 0; i < read_fd_set.fd_count; i++) {
+    for (i = 0; i < read_fd_set.fd_count; i++) {
 
-		s = read_fd_set.fd_array[i];
-		len = sizeof(int);
+        s = read_fd_set.fd_array[i];
+        len = sizeof(int);
 
-		if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
-			err = wbt_socket_errno;
+        if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
+            err = wbt_socket_errno;
 
-			wbt_log_debug("invalid descriptor #%d in read fd_set", s);
+            wbt_log_debug("invalid descriptor #%d in read fd_set\n", s);
 
-			FD_CLR(s, &read_fd_set);
-		}
-	}
+            FD_CLR(s, &read_fd_set);
+        }
+    }
 
-	for (i = 0; i < write_fd_set.fd_count; i++) {
+    for (i = 0; i < write_fd_set.fd_count; i++) {
 
-		s = write_fd_set.fd_array[i];
-		len = sizeof(int);
+        s = write_fd_set.fd_array[i];
+        len = sizeof(int);
 
-		if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
-			err = wbt_socket_errno;
+        if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&n, &len) == -1) {
+            err = wbt_socket_errno;
 
-			wbt_log_debug("invalid descriptor #%d in write fd_set", s);
+            wbt_log_debug("invalid descriptor #%d in write fd_set\n", s);
 
-			FD_CLR(s, &write_fd_set);
-		}
-	}
+            FD_CLR(s, &write_fd_set);
+        }
+    }
 }
