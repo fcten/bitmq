@@ -48,7 +48,7 @@ wbt_subscriber_t * wbt_mq_subscriber_get(wbt_mq_id subscriber_id) {
     wbt_rb_node_t * subscriber_node = wbt_rb_get(&wbt_mq_subscribers, &subscriber_key);
 
     if( subscriber_node == NULL ) {
-        subscriber = wbt_mq_subscriber_create(subscriber_id);
+        return NULL;
     } else {
         subscriber = (wbt_subscriber_t *)subscriber_node->value.str;
     }
@@ -196,4 +196,58 @@ wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg
 
 long long int wbt_mq_subscriber_status_active() {
     return wbt_mq_subscribers.size;
+}
+
+void wbt_mq_subscriber_print_all(json_object_t * obj) {
+    int max = 100;
+    wbt_rb_node_t *node;
+    wbt_subscriber_t *subscriber;
+      
+    for (node = wbt_rb_first(&wbt_mq_subscribers); node; node = wbt_rb_next(node)) {
+        subscriber = (wbt_subscriber_t *)node->value.str;
+        json_append(obj, NULL, 0, JSON_OBJECT, wbt_mq_subscriber_print(subscriber), 0);
+        if( --max <= 0 ) {
+            break;
+        }
+    }
+}
+
+json_object_t * wbt_mq_subscriber_print(wbt_subscriber_t *subscriber) {
+    json_object_t * obj = json_create_object();
+
+    json_append(obj, wbt_mq_str_subscriber_id.str, wbt_mq_str_subscriber_id.len, JSON_LONGLONG, &subscriber->subscriber_id, 0);
+    json_append(obj, wbt_mq_str_create.str,        wbt_mq_str_create.len,        JSON_LONGLONG, &subscriber->create       , 0);
+
+    return obj;
+}
+
+void wbt_mq_subscriber_msg_print(wbt_subscriber_t *subscriber, json_object_t * obj) {
+    int max = 100;
+    if( !wbt_list_empty(&subscriber->delivered_list.head) ) {
+        wbt_msg_list_t * msg_node;
+        wbt_list_for_each_entry( msg_node, wbt_msg_list_t, &subscriber->delivered_list.head, head ) {
+            json_append(obj, NULL, 0, JSON_LONGLONG, &msg_node->msg_id, 0);
+
+            if( --max <= 0 ) {
+                break;
+            }
+        }
+    }
+}
+
+void wbt_mq_subscriber_channel_print(wbt_subscriber_t *subscriber, json_object_t * obj) {
+    int max = 100;
+    if( !wbt_list_empty(&subscriber->channel_list.head) ) {
+        wbt_channel_t * channel;
+        wbt_channel_list_t * channel_node;
+        wbt_list_for_each_entry( channel_node, wbt_channel_list_t, &subscriber->channel_list.head, head ) {
+            channel = channel_node->channel;
+
+            json_append(obj, NULL, 0, JSON_LONGLONG, &channel->channel_id, 0);
+
+            if( --max <= 0 ) {
+                break;
+            }
+        }
+    }
 }

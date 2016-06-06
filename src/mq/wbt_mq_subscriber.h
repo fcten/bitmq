@@ -28,6 +28,11 @@ wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg
 
 long long int wbt_mq_subscriber_status_active();
 
+json_object_t * wbt_mq_subscriber_print(wbt_subscriber_t *subscriber);
+void wbt_mq_subscriber_print_all(json_object_t * obj);
+void wbt_mq_subscriber_msg_print(wbt_subscriber_t *subscriber, json_object_t * obj);
+void wbt_mq_subscriber_channel_print(wbt_subscriber_t *subscriber, json_object_t * obj);
+
 #ifdef	__cplusplus
 }
 #endif

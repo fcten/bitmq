@@ -108,23 +108,19 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
     return WBT_OK;
 }
 
-void wbt_mq_channel_print_r(wbt_rb_node_t *node, json_object_t * obj, int *max) {
-    if( node && *max ) {
-        wbt_mq_channel_print_r(node->left, obj, max);
-        
-        wbt_channel_t *channel = (wbt_channel_t *)node->value.str;
-
-        json_append(obj, NULL, 0, JSON_OBJECT, wbt_mq_channel_print(channel), 0);
-        (*max) --;
-        
-        wbt_mq_channel_print_r(node->right, obj, max);
-    }
-}
-
 /* 输出所有频道（默认最多输出 100 条） */
 void wbt_mq_channel_print_all(json_object_t * obj) {
     int max = 100;
-    wbt_mq_channel_print_r(wbt_mq_channels.root, obj, &max);
+    wbt_rb_node_t *node;
+    wbt_channel_t *channel;
+      
+    for (node = wbt_rb_first(&wbt_mq_channels); node; node = wbt_rb_next(node)) {
+        channel = (wbt_channel_t *)node->value.str;
+        json_append(obj, NULL, 0, JSON_OBJECT, wbt_mq_channel_print(channel), 0);
+        if( --max <= 0 ) {
+            break;
+        }
+    }
 }
 
 json_object_t * wbt_mq_channel_print(wbt_channel_t *channel) {
