@@ -539,8 +539,8 @@ wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev) {
     wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
     wbt_str_t subscriber_id_str;
-    subscriber_id_str.str = http_uri.str + 19;
-    subscriber_id_str.len = http_uri.len - 19;
+    subscriber_id_str.str = http_uri.str + 22;
+    subscriber_id_str.len = http_uri.len - 22;
     wbt_mq_id subscriber_id = wbt_str_to_ull(&subscriber_id_str, 10);
 
     wbt_subscriber_t *subscriber = wbt_mq_subscriber_get(subscriber_id);
