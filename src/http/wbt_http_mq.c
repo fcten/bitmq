@@ -560,8 +560,8 @@ wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev) {
     json_object_t * message_list = json_create_array();
     json_object_t * channel_list = json_create_array();
     
-    json_append(obj, wbt_mq_str_message.str, wbt_mq_str_message.len, JSON_OBJECT, message_list, 0);
-    json_append(obj, wbt_mq_str_channel.str, wbt_mq_str_channel.len, JSON_OBJECT, channel_list, 0);
+    json_append(obj, wbt_mq_str_message.str, wbt_mq_str_message.len, JSON_ARRAY, message_list, 0);
+    json_append(obj, wbt_mq_str_channel.str, wbt_mq_str_channel.len, JSON_ARRAY, channel_list, 0);
     
     wbt_mq_subscriber_msg_print(subscriber, message_list);
     wbt_mq_subscriber_channel_print(subscriber, channel_list);
