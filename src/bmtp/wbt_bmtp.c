@@ -431,6 +431,7 @@ wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
     
     // BMTP 协议允许一次性推送 255 条消息
     // 但是为了控制内存消耗，这里还限制了消息总长度
+    // TODO qos=0 的离线消息数量过多时无法推送完整
     wbt_msg_t *msg;
     int total = 0;
     while( wbt_mq_pull(ev, &msg) == WBT_OK && msg) {
