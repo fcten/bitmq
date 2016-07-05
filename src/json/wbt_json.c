@@ -794,15 +794,17 @@ void json_print_null(char **buf, size_t *buf_len) {
 
 void json_print_object(json_object_t * obj, char **buf, size_t *buf_len) {
     json_print_char('{', buf, buf_len);
-    while(obj) {
-        json_print_string(obj->key, obj->key_len, buf, buf_len);
-        json_print_char(':', buf, buf_len);
-        json_print_value(obj, buf, buf_len);
+    if( !obj->key_len ) {
+        while(obj) {
+            json_print_string(obj->key, obj->key_len, buf, buf_len);
+            json_print_char(':', buf, buf_len);
+            json_print_value(obj, buf, buf_len);
         
-        obj = obj->next;
+            obj = obj->next;
         
-        if(obj) {
-            json_print_char(',', buf, buf_len);
+            if(obj) {
+                json_print_char(',', buf, buf_len);
+            }
         }
     }
     json_print_char('}', buf, buf_len);
