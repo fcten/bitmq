@@ -52,7 +52,7 @@ void * wbt_malloc(size_t size) {
     void * ptr = malloc(size);
 
     if(!ptr) {
-        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+        wbt_log_add( "Out of memory trying to allocate " JL_SIZE_T_SPECIFIER " bytes\n", size );
     } else {
         wbt_memory_usage += wbt_malloc_size(ptr);
     }
@@ -64,7 +64,7 @@ void * wbt_calloc(size_t size) {
     void * ptr = calloc(1, size);
 
     if(!ptr) {
-        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+        wbt_log_add( "Out of memory trying to allocate " JL_SIZE_T_SPECIFIER " bytes\n", size );
     } else {
         wbt_memory_usage += wbt_malloc_size(ptr);
     }
@@ -87,7 +87,7 @@ void * wbt_realloc(void *ptr, size_t size) {
     void * newptr = realloc(ptr, size);
     
     if( !newptr ) {
-        wbt_log_add("Out of memory trying to allocate %zu bytes\n", size);
+        wbt_log_add( "Out of memory trying to allocate " JL_SIZE_T_SPECIFIER " bytes\n", size );
     } else {
         wbt_memory_usage -= oldsize;
         wbt_memory_usage += wbt_malloc_size(newptr);

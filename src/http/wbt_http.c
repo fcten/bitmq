@@ -899,7 +899,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         if( http->resp_body_gzip.str ) {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", http->resp_body_gzip.len);
         } else if( http->resp_body_file ) {
-            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->resp_body_file->gzip_size);
+            send_buf.len = snprintf( wbt_send_buf.str, wbt_send_buf.len, JL_SIZE_T_SPECIFIER, http->resp_body_file->gzip_size );
         } else {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
         }
@@ -911,7 +911,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         if( http->resp_body_memory.str ) {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", http->resp_body_memory.len);
         } else if( http->resp_body_file ) {
-            send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%zu", http->resp_body_file->size);
+            send_buf.len = snprintf( wbt_send_buf.str, wbt_send_buf.len, JL_SIZE_T_SPECIFIER, http->resp_body_file->size );
         } else {
             send_buf.len = snprintf(wbt_send_buf.str, wbt_send_buf.len, "%d", 0);
         }

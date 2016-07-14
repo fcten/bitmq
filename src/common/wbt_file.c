@@ -144,7 +144,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         tmp_file->size = tmp.size;
                         tmp_file->last_modified = tmp.last_modified;
 
-                        wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+                        wbt_log_debug("open file: %d " JL_SIZE_T_SPECIFIER "\n", tmp_file->fd, tmp_file->size);
                         return tmp_file;
                     }
                 } else {
@@ -178,7 +178,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
 				tmp_file->size = wbt_get_file_size(tmp.fd);
 				tmp_file->last_modified = wbt_get_file_last_write_time(tmp.fd);
 
-				wbt_log_debug("open file: %d %zd\n", tmp_file->fd, tmp_file->size);
+                wbt_log_debug( "open file: %d " JL_SIZE_T_SPECIFIER "\n", tmp_file->fd, tmp_file->size );
 				return tmp_file;
 			}
 		}

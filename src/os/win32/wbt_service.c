@@ -115,4 +115,8 @@ void main() {
 	};
 
 	StartServiceCtrlDispatcher(ste);
+
+    //char *argv[1];
+    //argv[0] = "webit";
+    //wbt_main( 1, argv );
 }

@@ -53,6 +53,18 @@ typedef enum {
 
 typedef int wbt_atomic_t;
 
+#if defined(_MSC_VER)
+#define JL_SIZE_T_SPECIFIER "%Iu"
+#define JL_SSIZE_T_SPECIFIER "%Id"
+#define JL_PTRDIFF_T_SPECIFIER "%Id"
+#elif defined(__GNUC__)
+#define JL_SIZE_T_SPECIFIER "%zu"
+#define JL_SSIZE_T_SPECIFIER "%zd"
+#define JL_PTRDIFF_T_SPECIFIER "%zd"
+#else
+// TODO figure out which to use.
+#endif
+
 void wbt_exit(int exit_code);
 
 #ifdef	__cplusplus
