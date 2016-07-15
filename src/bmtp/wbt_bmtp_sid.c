@@ -10,16 +10,21 @@
 
 int wbt_bmtp_sid_alloc(wbt_bmtp_t *bmtp) {
     if (!bmtp->usable_sids) {
+
+        wbt_log_debug( "no sid left\n" );
+
         return 0;
     }
 
-    unsigned char offset = bmtp->last_sid + 1;
+    unsigned char offset = bmtp->last_sid;
 
     unsigned int *addr = bmtp->page;
     unsigned int *p;
     unsigned int mask;
 
     while (1) {
+        while( !++offset );
+
         p = addr + (offset >> 5);
         mask = 1U << (offset & 31);
 
@@ -28,13 +33,13 @@ int wbt_bmtp_sid_alloc(wbt_bmtp_t *bmtp) {
             bmtp->usable_sids --;
             bmtp->last_sid = offset;
 
-            //wbt_log_debug("alloc sid %d\n", offset);
+            wbt_log_debug( "alloc sid %u, %u left\n", offset, bmtp->usable_sids );
 
             return offset;
         }
-
-        while (!++offset);
     }
+
+    wbt_log_debug( "no sid left\n" );
 
     return 0;
 }
@@ -50,5 +55,5 @@ void wbt_bmtp_sid_free(wbt_bmtp_t *bmtp, unsigned int sid) {
     
     bmtp->usable_sids ++;
     
-    //wbt_log_debug("free sid %d\n", sid);
+    wbt_log_debug("free sid %d\n", sid);
 }

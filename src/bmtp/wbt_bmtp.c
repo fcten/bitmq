@@ -635,9 +635,11 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
         wbt_bmtp_qos(buf[0]) > 0 &&
         buf[1] == 0) {
         wbt_list_add_tail(&msg_node->head, &bmtp->wait_queue.head);
+        wbt_log_debug( "add to wait queue\n" );
     }
     else {
         wbt_list_add_tail(&msg_node->head, &bmtp->send_queue.head);
+        wbt_log_debug( "add to send queue\n" );
 
         ev->events |= WBT_EV_WRITE;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
