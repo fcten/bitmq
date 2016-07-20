@@ -594,7 +594,7 @@ wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status) {
 wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status) {
     wbt_bmtp_t *bmtp = ev->data;
     
-	char buf[] = { BMTP_SUBACK + status, (char)(bmtp->cid << 24), (char)(bmtp->cid << 16), (char)(bmtp->cid << 8), (char)bmtp->cid };
+	char buf[] = { BMTP_SUBACK + status, (char)(bmtp->cid >> 24), (char)(bmtp->cid >> 16), (char)(bmtp->cid >> 8), (char)bmtp->cid };
     
     return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
