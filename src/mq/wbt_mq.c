@@ -38,6 +38,8 @@ wbt_str_t wbt_mq_str_expire        = wbt_string("expire");
 wbt_str_t wbt_mq_str_delivery_mode = wbt_string("delivery_mode");
 wbt_str_t wbt_mq_str_data          = wbt_string("data");
 
+wbt_str_t wbt_mq_str_ip            = wbt_string( "ip" );
+
 wbt_module_t wbt_module_mq = {
     wbt_string("mq"),
     wbt_mq_init, // init

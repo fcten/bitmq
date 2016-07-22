@@ -181,6 +181,7 @@ extern wbt_str_t wbt_mq_str_effect;
 extern wbt_str_t wbt_mq_str_expire;
 extern wbt_str_t wbt_mq_str_delivery_mode;
 extern wbt_str_t wbt_mq_str_data;
+extern wbt_str_t wbt_mq_str_ip;
 
 #ifdef	__cplusplus
 }

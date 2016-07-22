@@ -566,6 +566,15 @@ wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev) {
     wbt_mq_subscriber_msg_print(subscriber, message_list);
     wbt_mq_subscriber_channel_print(subscriber, channel_list);
 
+    struct sockaddr_in sa;
+    int sa_len = sizeof( sa );
+    if( !getpeername( subscriber->ev->fd, ( struct sockaddr * )&sa, &sa_len ) ) {
+        wbt_str_t ip;
+        ip.str = inet_ntoa( sa.sin_addr );
+        ip.len = strlen( ip.str );
+        json_append( obj, wbt_mq_str_ip.str, wbt_mq_str_ip.len, JSON_STRING, ip.str, ip.len );
+    }
+
     char *ptr = http->resp_body_memory.str;
     size_t len = http->resp_body_memory.len;
     json_print(obj, &ptr, &len);
