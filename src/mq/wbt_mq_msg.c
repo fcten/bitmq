@@ -244,7 +244,8 @@ json_object_t* wbt_mq_msg_print(wbt_msg_t *msg) {
     if( msg->producer_id ) {
         json_append(obj, wbt_mq_str_producer_id.str, wbt_mq_str_producer_id.len, JSON_LONGLONG, &msg->producer_id, 0);
     }
-    json_append(obj, wbt_mq_str_create.str,       wbt_mq_str_create.len,       JSON_LONGLONG, &msg->create,      0);
+    json_append(obj, wbt_mq_str_consumer_id.str,  wbt_mq_str_consumer_id.len, JSON_LONGLONG, &msg->consumer_id, 0 );
+    json_append(obj, wbt_mq_str_create.str,       wbt_mq_str_create.len,      JSON_LONGLONG, &msg->create,      0);
 
     json_task_t t;
     t.str = msg->data;
