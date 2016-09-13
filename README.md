@@ -77,6 +77,7 @@ Webit 使用 CMake (>=2.8) 进行构建。您可以在源码目录下使用以�
 ### V0.5.0
 
  * Feature: 添加 BMTP 协议支持
+ * Feature: 添加对 Windows 的支持
 
 ### V0.4.0
 
