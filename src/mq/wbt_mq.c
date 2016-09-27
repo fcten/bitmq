@@ -252,6 +252,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     t.callback = NULL;
 
     if( json_parser(&t) != 0 ) {
+		wbt_log_add("Message format error: %.*s\n", len<200 ? len : 200, data);
+
         json_delete_object(t.root);
         
         return WBT_ERROR;
@@ -266,11 +268,15 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
     }
     
     if( wbt_mq_parser(&t, msg) != WBT_OK ) {
+		wbt_log_add("Message attribute error: %.*s\n", len<200 ? len : 200, data);
+
         json_delete_object(t.root);
         wbt_mq_msg_destory( msg );
 
         return WBT_ERROR;
     }
+
+	wbt_log_add("Message received: %.*s\n", len<200 ? len : 200, data);
     
     json_delete_object(t.root);
     

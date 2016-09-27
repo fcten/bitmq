@@ -109,14 +109,16 @@ void service_uninstall() {
 }
 
 void main() {
+#ifdef WBT_DEBUG
+	char *argv[1];
+	argv[0] = "webit";
+	wbt_main(1, argv);
+#else
 	SERVICE_TABLE_ENTRY ste[] = {
 		{ "webit", service_main },
 		{ NULL, NULL }
 	};
 
 	StartServiceCtrlDispatcher(ste);
-
-    //char *argv[1];
-    //argv[0] = "webit";
-    //wbt_main( 1, argv );
+#endif
 }

@@ -95,6 +95,8 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
     wbt_list_init(&bmtp->ack_queue.head);
 
     bmtp->state = STATE_CONNECTED;
+
+	wbt_log_add("BMTP connect: %d\n", ev->fd);
     
     return WBT_OK;
 }
@@ -350,6 +352,8 @@ wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
         wbt_free( msg_node->msg );
         wbt_free( msg_node );
     }
+
+	wbt_log_add("BMTP close: %d\n", ev->fd);
     
     return WBT_OK;
 }

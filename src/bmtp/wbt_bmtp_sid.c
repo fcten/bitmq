@@ -51,9 +51,10 @@ void wbt_bmtp_sid_free(wbt_bmtp_t *bmtp, unsigned int sid) {
     unsigned int *p = addr + (offset >> 5);
     unsigned int mask = 1U << (offset & 31);
 
-    *p &= ~mask;
-    
-    bmtp->usable_sids ++;
-    
-    wbt_log_debug("free sid %d\n", sid);
+	if (*p & mask) {
+		*p &= ~mask;
+		bmtp->usable_sids++;
+
+		wbt_log_debug("free sid %d\n", sid);
+	}
 }
