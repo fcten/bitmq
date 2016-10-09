@@ -37,8 +37,10 @@ typedef enum {
 
 /* 64 位系统下占用 32 字节，32 位系统下占用 20 字节 */
 typedef struct json_object_s {
-    json_type_t object_type:4; /* 该属性只能是 JSON_OBJECT 或者 JSON_ARRAY */
-    json_type_t value_type:4;
+    /* Bugfix: gcc 中 enum 变量为无符号，但 vs 中 enum 变量为有符号，*/
+    /* 所以我们不能使用 json_type_t，必须将其声明为无符号类型         */
+    size_t object_type : 4; /* 该属性只能是 JSON_OBJECT 或者 JSON_ARRAY */
+    size_t value_type : 4;
     
 #if (defined __x86_64__) || (defined _WIN64)
     /* 64 */
