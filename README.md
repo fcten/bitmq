@@ -4,7 +4,7 @@ Webit 是一款使用 ANSI C 语言编写的高性能 HTTP 服务端程序。
 
 Webit 支持在 GNU/Linux 以及 Windows 上运行。Webit 目前在 Windows 下使用 select 模型，不建议用于高负载环境。
 
-## 编译 Webit
+## 编译 Webit [![Build Status](https://travis-ci.org/fcten/webit.svg?branch=master)](https://travis-ci.org/fcten/webit)
 
 编译 Webit 需要安装 openssl (>=1.0.2，用以支持 HTTPS)，zlib (>=1.2.0.4，用以支持 GZIP)。您可以使用包管理工具安装或者下载源代码编译安装
 
