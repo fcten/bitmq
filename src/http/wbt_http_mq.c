@@ -308,7 +308,7 @@ wbt_status wbt_http_mq_status(wbt_event_t *ev) {
 wbt_status wbt_http_mq_status_general(wbt_event_t *ev) {
     wbt_http_t * http = ev->data;
     
-    http->resp_body_memory.len = 1024;
+    http->resp_body_memory.len = 10240;
     http->resp_body_memory.str = wbt_malloc( http->resp_body_memory.len );
     if( http->resp_body_memory.str == NULL ) {
         http->status = STATUS_503;
