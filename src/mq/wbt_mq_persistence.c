@@ -452,6 +452,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         if( wbt_close_file(wbt_persist_aof_fd) < 0 ) {
             return WBT_ERROR;
         }
+        wbt_persist_aof_fd = 0;
 
         // 用 mdp 文件覆盖 aof 文件
 #ifdef WIN32
@@ -465,6 +466,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 #endif
             wbt_log_add("Could not rename mdp file. "
                 "rename: %d\n", wbt_errno);
+            // TODO 需要重新创建 aof 文件
             return WBT_ERROR;
         }
 

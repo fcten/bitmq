@@ -96,7 +96,7 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
 
     bmtp->state = STATE_CONNECTED;
 
-	wbt_log_add("BMTP connect: %d\n", ev->fd);
+    wbt_log_add("BMTP connect: %d\n", ev->fd);
     
     return WBT_OK;
 }
