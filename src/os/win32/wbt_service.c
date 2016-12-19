@@ -33,7 +33,7 @@ void __stdcall service_handler(DWORD fdwControl)
 void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv) {
     char *argv[1];
     char conf_path[MAX_PATH + 20];
-    int rc;
+    int conf_length;
 
     service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
     service_status.dwCurrentState = SERVICE_START_PENDING;
@@ -48,8 +48,15 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv) {
         return;
     }
 
-    rc = GetEnvironmentVariable( "WEBIT_DIR", conf_path, MAX_PATH );
-    if( !rc || rc == MAX_PATH || !SetCurrentDirectory( conf_path ) ) {
+    conf_length = GetModuleFileName( NULL, conf_path, MAX_PATH );
+    if( !conf_length ) {
+        service_status.dwCurrentState = SERVICE_STOPPED;
+        SetServiceStatus( service_handle, &service_status );
+        return;
+    }
+    
+    conf_path[conf_length - 9] = '\0'; // ½Ø¶Ï webit.exe ÎÄ¼þÃû
+    if( !SetCurrentDirectory( conf_path ) ) {
         service_status.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus( service_handle, &service_status );
         return;
