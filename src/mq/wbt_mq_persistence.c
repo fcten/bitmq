@@ -113,7 +113,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             }
         }
 
-        wbt_log_add( "msg %lld recovered\n", block->msg_id );
+        wbt_log_debug( "msg %lld recovered\n", block->msg_id );
 
         // 由于内存和文件中保存的结构并不一致，这里我们不得不进行内存拷贝
         // TODO 修改消息相关的内存操作，尝试直接使用读入的内存
@@ -149,6 +149,8 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
         
         n --;
     }
+    
+    wbt_log_add( "%d msg recovered\n", 1000-n );
 
 //success:
     if(timer && ( n == 0 ) && !wbt_wating_to_exit) {
@@ -285,8 +287,8 @@ static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
         } else {
             if (wbt_sync_file_data(wbt_persist_mid_fd) != 0) {
                 // 如果该操作失败，可能是磁盘故障
-            } else {
-                wbt_log_add("msg_id %lld synced\n", wbt_mq_persist_count);
+            //} else {
+            //    wbt_log_add("msg_id %lld synced\n", wbt_mq_persist_count);
             }
         }
     }
@@ -464,6 +466,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         if(wbt_close_file(rdp_fd) < 0) {
             return WBT_ERROR;
         }
+        rdp_fd = 0;
 
         if(MoveFileEx(wbt_persist_mdp.str, wbt_persist_aof.str, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
 #else
@@ -471,19 +474,28 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 #endif
             wbt_log_add("Could not rename mdp file. "
                 "rename: %d\n", wbt_errno);
-            // TODO 需要重新创建 aof 文件
+            
+            // 尝试重新打开 aof 文件
+            wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
+            if( (int)wbt_persist_aof_fd < 0 ) {
+                wbt_persist_aof_fd = 0;
+                wbt_log_add("Could not open AOF file: %d\n", wbt_errno);
+            }
+            
             return WBT_ERROR;
         }
 
 #ifdef WIN32
         wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
-        if(wbt_persist_aof_fd <= 0) {
+        if( (int)wbt_persist_aof_fd <= 0 ) {
+            wbt_persist_aof_fd = 0;
+            wbt_log_add("Could not open AOF file: %d\n", wbt_errno);
             return WBT_ERROR;
         }
 #else
         wbt_persist_aof_fd = rdp_fd;
-#endif
         rdp_fd = 0;
+#endif
         
         // 重写完成时，必然所有消息都在内存中生效，所以直接将 offset 设定为文件末尾
         wbt_mq_persist_recovery_offset = wbt_get_file_size(wbt_persist_aof_fd);

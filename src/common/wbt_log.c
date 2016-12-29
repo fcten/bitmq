@@ -14,6 +14,7 @@ wbt_module_t wbt_module_log = {
 };
 
 wbt_fd_t wbt_log_file_fd;
+ssize_t wbt_log_file_size;
 char * wbt_log_file = "./logs/webit.log";
 wbt_str_t wbt_log_buf;
 
@@ -25,6 +26,57 @@ wbt_status wbt_log_init() {
 		wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
         return WBT_ERROR;
     }
+    
+    // 获取日志文件大小
+    wbt_log_file_size = wbt_get_file_size( wbt_log_file_fd );
+    if( wbt_log_file_size < 0 ) {
+		wbt_log_debug("can't get log file size, errno: %d\n", wbt_errno);
+        return WBT_ERROR;
+    }
+    
+    return WBT_OK;
+}
+
+// 自动分割日志文件
+wbt_status wbt_log_rotate() {
+    // 重命名旧的日志文件
+    char new_log_file[64];
+    snprintf( new_log_file, sizeof(new_log_file), "./logs/webit_%ld.log", wbt_cur_mtime );
+
+#ifdef WIN32
+    if(wbt_close_file(wbt_log_file_fd) < 0) {
+        return WBT_ERROR;
+    }
+    wbt_log_file_fd = 0;
+
+    if(MoveFileEx(wbt_log_file, new_log_file, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
+        // 尝试重新打开日志文件
+	    wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
+        if( (int)wbt_log_file_fd <=0 ) {
+            wbt_log_file_fd = 0;
+		    wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
+        }
+
+        return WBT_ERROR;
+    }
+#else
+    if( rename(wbt_log_file, new_log_file) < 0 ) {
+        wbt_log_add("Could not rename log file. "
+            "rename: %d\n", wbt_errno);
+
+        return WBT_ERROR;
+    }
+#endif
+
+    // 创建新的日志文件
+	wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
+    if( (int)wbt_log_file_fd <=0 ) {
+        wbt_log_file_fd = 0;
+		wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
+        return WBT_ERROR;
+    }
+    
+    // 可选：压缩旧的日志文件
     
     return WBT_OK;
 }
@@ -44,6 +96,15 @@ wbt_status wbt_log_add(const char *fmt, ...) {
      */
 	wbt_append_file(wbt_log_file_fd, wbt_time_str_log.str, wbt_time_str_log.len);
 	wbt_append_file(wbt_log_file_fd, s.str, s.len);
+	
+	// 当日志过大时，分割日志文件
+	wbt_log_file_size += ( wbt_time_str_log.len + s.len );
+    // TODO 可配置日志文件大小
+	if( wbt_log_file_size >= 128 * 1024 * 1024 ) {
+	    if( wbt_log_rotate() == WBT_OK ) {
+	        wbt_log_file_size = 0;
+	    }
+	}
     
     return WBT_OK;
 }
