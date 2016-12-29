@@ -9,6 +9,8 @@
 #include "wbt_mq_channel.h"
 #include "wbt_mq_subscriber.h"
 
+extern wbt_atomic_t wbt_wating_to_exit;
+
 // 存储所有已接收到的消息
 static wbt_rb_t wbt_mq_messages;
 
@@ -101,6 +103,12 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
 }
 
 wbt_status wbt_mq_msg_destory_expired(wbt_timer_t *timer) {
+    // Bugfix: webit 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
+    // 序退出时执行。
+    if( wbt_wating_to_exit ) {
+        return WBT_OK;
+    }
+
     wbt_msg_t *msg = wbt_timer_entry(timer, wbt_msg_t, timer);
 
     wbt_mq_msg_destory(msg);
@@ -109,6 +117,12 @@ wbt_status wbt_mq_msg_destory_expired(wbt_timer_t *timer) {
 }
 
 wbt_status wbt_mq_msg_delivery_delayed(wbt_timer_t *timer) {
+    // Bugfix: webit 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
+    // 序退出时执行。
+    if( wbt_wating_to_exit ) {
+        return WBT_OK;
+    }
+
     wbt_msg_t *msg = wbt_timer_entry(timer, wbt_msg_t, timer);
     
     wbt_timer_del(&msg->timer);

@@ -229,7 +229,7 @@ void wbt_master_process() {
     while( ( child = wbt_proc_pop() ) != 0 ) {
         kill( child, SIGTERM );
     }
-    
+
     wbt_exit(0);
 }
 
@@ -416,7 +416,10 @@ int wbt_main( int argc, char** argv ) {
         wbt_log_add("Root path: %s\n", wwwroot);
     }*/
 
-    if( wbt_conf.daemon ) {
+    // Bugfix: 
+    // master - worker 架构会对 bmq 运行造成不必要的麻烦，所以当 webit 以单进程模
+    // 式运行时，将不再产生守护进程，也不再支持平滑重启功能。
+    if( wbt_conf.daemon && wbt_conf.process > 1 ) {
         wbt_master_process();
     } else {
         wbt_worker_process();
@@ -424,9 +427,14 @@ int wbt_main( int argc, char** argv ) {
     
 #else
 
+    // TODO 在 Windows 下 webit 暂时没有捕获程序退出的信号，也就是说每一次退出都相
+    // 当于异常退出
+    
 	wbt_log_print("\n\nwebit is now running.\n\n");
 
 	wbt_event_dispatch();
+
+    wbt_exit(0);
 
 #endif
     

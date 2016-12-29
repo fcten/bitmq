@@ -113,7 +113,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             }
         }
 
-        wbt_log_debug( "msg %lld recovered\n", block->msg_id );
+        wbt_log_add( "msg %lld recovered\n", block->msg_id );
 
         // 由于内存和文件中保存的结构并不一致，这里我们不得不进行内存拷贝
         // TODO 修改消息相关的内存操作，尝试直接使用读入的内存
@@ -183,9 +183,11 @@ wbt_status wbt_mq_persist_init() {
     if ((int)wbt_persist_mid_fd <= 0) {
         return WBT_ERROR;
     }
+    // TODO 记录 wbt_persist_mid_fd 的值
     
     // 读取 mid
     if (wbt_read_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0) == sizeof(wbt_mq_persist_count)) {
+        wbt_log_add("msg_id %lld recovered\n", wbt_mq_persist_count);
         wbt_mq_msg_update_create_count(wbt_mq_persist_count);
     } else {
         wbt_mq_persist_count = 0;
@@ -279,10 +281,12 @@ static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
     if( wbt_persist_mid_fd ) {
         ssize_t nwrite = wbt_write_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0);
         if( nwrite < 0 ) {
-            // TODO 记录该失败
+            wbt_log_add("Error writing to the MID file: %d\n", wbt_errno);
         } else {
             if (wbt_sync_file_data(wbt_persist_mid_fd) != 0) {
                 // 如果该操作失败，可能是磁盘故障
+            } else {
+                wbt_log_add("msg_id %lld synced\n", wbt_mq_persist_count);
             }
         }
     }
@@ -410,6 +414,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         rdp_fd = wbt_open_tmpfile(wbt_persist_mdp.str);
         if( (int)rdp_fd <= 0 ) {
             wbt_log_add("Could not open mdp file: %d\n", wbt_errno);
+            // TODO data目录存在权限问题时会导致错误
             return WBT_ERROR;
         }
         processed_msg_id = 0;
