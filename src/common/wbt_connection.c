@@ -173,7 +173,9 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     int nread;
     int bReadOk = 0;
 
-    while( ev->buff_len <= 4 * 1024 * 1024 ) { /* 限制数据包长度 */
+    // Bugfix: bmtp 允许同时发送最大 256 × 64K = 16M 的数据，所以暂且将一次性接收
+    // 的数据缓冲区长度提升至 20M
+    while( ev->buff_len <= 20 * 1024 * 1024 ) { /* 限制数据包长度 */
         /* TODO realloc 意味着潜在的内存拷贝行为，目前的代码在接收大请求时效率很低 */
         void * p = wbt_realloc(ev->buff, ev->buff_len + 4096);
         if( p == NULL ) {

@@ -78,6 +78,8 @@ wbt_status wbt_log_rotate() {
     
     // 可选：压缩旧的日志文件
     
+    // 可选：清理旧的日志文件
+    
     return WBT_OK;
 }
 
