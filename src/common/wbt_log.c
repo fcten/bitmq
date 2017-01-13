@@ -41,7 +41,7 @@ wbt_status wbt_log_init() {
 wbt_status wbt_log_rotate() {
     // 重命名旧的日志文件
     char new_log_file[64];
-    snprintf( new_log_file, sizeof(new_log_file), "./logs/webit_%lld.log", wbt_cur_mtime );
+    snprintf( new_log_file, sizeof(new_log_file), "./logs/webit_%lu.log", wbt_cur_mtime );
 
 #ifdef WIN32
     if(wbt_close_file(wbt_log_file_fd) < 0) {

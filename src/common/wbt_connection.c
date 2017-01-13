@@ -216,6 +216,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
 
     if( !bReadOk ) {
         /* 读取出错，或者客户端主动断开了连接 */
+        wbt_log_add("connection close: %d\n", __LINE__);
         wbt_on_close(ev);
         return WBT_OK;
     }
@@ -236,11 +237,13 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         } else if(1) {
             ev->protocol = WBT_PROTOCOL_HTTP;
         } else {
+            wbt_log_add("connection close: %d\n", __LINE__);
             wbt_on_close(ev);
             return WBT_OK;
         }
 
         if( wbt_module_on_conn(ev) != WBT_OK ) {
+            wbt_log_add("connection close: %d\n", __LINE__);
             wbt_on_close(ev);
             return WBT_OK;
         }
@@ -250,6 +253,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     if( wbt_module_on_recv(ev) != WBT_OK ) {
         /* 严重的错误，直接断开连接 */
         /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。 */
+        wbt_log_add("connection close: %d\n", __LINE__);
         wbt_on_close(ev);
         return WBT_OK;
     }
@@ -262,6 +266,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     //wbt_log_debug("send data to connection %d.", ev->fd);
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
+        wbt_log_add("connection close: %d\n", __LINE__);
         wbt_on_close(ev);
         return WBT_OK;
     }

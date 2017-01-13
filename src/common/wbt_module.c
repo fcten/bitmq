@@ -92,6 +92,7 @@ wbt_status wbt_module_on_conn(wbt_event_t *ev) {
     for( i = 0 ; i < size ; i++ ) {
         if( wbt_modules[i]->on_conn && wbt_modules[i]->on_conn(ev) != WBT_OK ) {
             /* fatal */
+            wbt_log_add("wbt_module_on_conn failed: %.*s\n", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
             return WBT_ERROR;
         }
     }
@@ -104,6 +105,7 @@ wbt_status wbt_module_on_recv(wbt_event_t *ev) {
     for( i = 0 ; i < size ; i++ ) {
         if( wbt_modules[i]->on_recv && wbt_modules[i]->on_recv(ev) != WBT_OK ) {
             /* fatal */
+            wbt_log_add("wbt_module_on_recv failed: %.*s\n", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
             return WBT_ERROR;
         }
     }
@@ -116,6 +118,7 @@ wbt_status wbt_module_on_send(wbt_event_t *ev) {
     for( i = 0 ; i < size ; i++ ) {
         if( wbt_modules[i]->on_send && wbt_modules[i]->on_send(ev) != WBT_OK ) {
             /* fatal */
+            wbt_log_add("wbt_module_on_send failed: %.*s\n", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
             return WBT_ERROR;
         }
     }
@@ -128,6 +131,7 @@ wbt_status wbt_module_on_close(wbt_event_t *ev) {
     for( i = size - 1 ; i >= 0 ; i-- ) {
         if( wbt_modules[i]->on_close && wbt_modules[i]->on_close(ev) != WBT_OK ) {
             /* fatal */
+            wbt_log_add("wbt_module_on_close failed: %.*s\n", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
             return WBT_ERROR;
         }
     }
