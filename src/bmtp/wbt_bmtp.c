@@ -354,7 +354,7 @@ wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
         wbt_free( msg_node );
     }
 
-	wbt_log_add("BMTP close: %d\n", ev->fd);
+    wbt_log_add("BMTP close: %d\n", ev->fd);
     
     return WBT_OK;
 }

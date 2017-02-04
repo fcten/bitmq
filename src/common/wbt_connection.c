@@ -172,21 +172,23 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     
     int nread;
     int bReadOk = 0;
+    int block_size = 2 * 1024;
 
     // Bugfix: bmtp 允许同时发送最大 256 × 64K = 16M 的数据，所以暂且将一次性接收
-    // 的数据缓冲区长度提升至 20M
-    while( ev->buff_len <= 20 * 1024 * 1024 ) { /* 限制数据包长度 */
-        /* TODO realloc 意味着潜在的内存拷贝行为，目前的代码在接收大请求时效率很低 */
-        void * p = wbt_realloc(ev->buff, ev->buff_len + 4096);
+    // 的数据缓冲区长度提升至 32M
+    while( ev->buff_len <= 32 * 1024 * 1024 ) { /* 限制数据包长度 */
+        block_size *= 2;
+        
+        void * p = wbt_realloc(ev->buff, ev->buff_len + block_size);
         if( p == NULL ) {
             /* 内存不足 */
             break;
         } else {
             ev->buff = p;
-            ev->buff_len += 4096;
+            ev->buff_len += block_size;
         }
 
-        nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len - 4096, 4096);
+        nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len - block_size, block_size);
         if(nread <= 0) {
             wbt_err_t err = wbt_socket_errno;
             if(err == WBT_EAGAIN) {
@@ -194,8 +196,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
                 bReadOk = 1;
                 
                 /* 去除多余的缓冲区 */
-                ev->buff = wbt_realloc(ev->buff, ev->buff_len - 4096);
-                ev->buff_len -= 4096;
+                ev->buff = wbt_realloc(ev->buff, ev->buff_len - block_size);
+                ev->buff_len -= block_size;
                 
                 break;
             } else if (err == WBT_ECONNRESET) {
@@ -207,8 +209,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             }
         } else {
             /* 去除多余的缓冲区 */
-            ev->buff = wbt_realloc(ev->buff, ev->buff_len - 4096 + nread);
-            ev->buff_len = ev->buff_len - 4096 + nread;
+            ev->buff = wbt_realloc(ev->buff, ev->buff_len - block_size + nread);
+            ev->buff_len = ev->buff_len - block_size + nread;
             
            continue;   // 需要再次读取
        }
