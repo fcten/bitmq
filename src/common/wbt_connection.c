@@ -172,13 +172,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     
     int nread;
     int bReadOk = 0;
-    int block_size = 2 * 1024;
+    int block_size = 4 * 1024;
 
     // Bugfix: bmtp 允许同时发送最大 256 × 64K = 16M 的数据，所以暂且将一次性接收
     // 的数据缓冲区长度提升至 32M
     while( ev->buff_len <= 32 * 1024 * 1024 ) { /* 限制数据包长度 */
-        block_size *= 2;
-        
         void * p = wbt_realloc(ev->buff, ev->buff_len + block_size);
         if( p == NULL ) {
             /* 内存不足 */
@@ -212,7 +210,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             ev->buff = wbt_realloc(ev->buff, ev->buff_len - block_size + nread);
             ev->buff_len = ev->buff_len - block_size + nread;
             
-           continue;   // 需要再次读取
+            if( nread >= block_size ) {
+                block_size *= 2;
+            }
+            
+            continue;   // 需要再次读取
        }
     }
 
