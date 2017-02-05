@@ -171,63 +171,49 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     //wbt_log_debug("recv data of connection %d.", fd);
     
     int nread;
-    int bReadOk = 0;
-    int block_size = 4 * 1024;
 
-    // Bugfix: bmtp 允许同时发送最大 256 × 64K = 16M 的数据，所以暂且将一次性接收
-    // 的数据缓冲区长度提升至 32M
-    while( ev->buff_len <= 32 * 1024 * 1024 ) { /* 限制数据包长度 */
-        void * p = wbt_realloc(ev->buff, ev->buff_len + block_size);
-        if( p == NULL ) {
+    /* 无论采用何种协议， Webit 统一限定单个请求的上限为 WBT_MAX_PROTO_BUF_LEN（64K）。
+     * 如果单个请求大小超过 64K，Webit 将会立即关闭该连接。
+     * 
+     * Webit 统一为每个连接分配 64K 固定长度的缓冲区。如果请求尚未接收完整，Webit 会保
+     * 留完整的缓冲区，并在 ev->buff_len 中保存已接收的长度。否则，Webit 会释放整个缓冲
+     * 区，确保在维持大量空闲连接时尽量节省内存。
+     */
+    if( ev->buff == NULL ) {
+        ev->buff = wbt_malloc(WBT_MAX_PROTO_BUF_LEN);
+        ev->buff_len = 0;
+        
+        if( ev->buff == NULL ) {
             /* 内存不足 */
             wbt_on_close(ev);
             return WBT_OK;
-        } else {
-            ev->buff = p;
-            ev->buff_len += block_size;
         }
-
-        nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len - block_size, block_size);
-        if(nread <= 0) {
-            wbt_err_t err = wbt_socket_errno;
-            if(err == WBT_EAGAIN) {
-                // 当前缓冲区已无数据可读
-                bReadOk = 1;
-                
-                /* 去除多余的缓冲区 */
-                ev->buff = wbt_realloc(ev->buff, ev->buff_len - block_size);
-                ev->buff_len -= block_size;
-                
-                break;
-            } else if (err == WBT_ECONNRESET) {
-                // 对方发送了RST
-                wbt_log_add("connection close: connection reset by peer\n");
-                wbt_on_close(ev);
-                return WBT_OK;
-            } else {
-                // 其他不可弥补的错误
-                wbt_log_add("connection close: %d\n", err);
-                wbt_on_close(ev);
-                return WBT_OK;
-            }
-        } else {
-            /* 去除多余的缓冲区 */
-            ev->buff = wbt_realloc(ev->buff, ev->buff_len - block_size + nread);
-            ev->buff_len = ev->buff_len - block_size + nread;
-            
-            if( nread >= block_size ) {
-                block_size *= 2;
-            }
-            
-            continue;   // 需要再次读取
-       }
     }
 
-    if( !bReadOk ) {
-        /* 数据过多 */
-        wbt_log_add("connection close: data size limit\n");
+    nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len,
+        WBT_MAX_PROTO_BUF_LEN - ev->buff_len);
+
+    if(nread < 0) {
+        wbt_err_t err = wbt_socket_errno;
+        if(err == WBT_EAGAIN) {
+            // 当前缓冲区已无数据可读
+        } else if (err == WBT_ECONNRESET) {
+            // 对方发送了RST
+            wbt_log_add("connection close: connection reset by peer\n");
+            wbt_on_close(ev);
+            return WBT_OK;
+        } else {
+            // 其他不可弥补的错误
+            wbt_log_add("connection close: %d\n", err);
+            wbt_on_close(ev);
+            return WBT_OK;
+        }
+    } else if(nread == 0) {
+        wbt_log_add("connection close: connection closed by peer\n");
         wbt_on_close(ev);
         return WBT_OK;
+    } else {
+        ev->buff_len += nread;
     }
     
     if( ev->protocol == WBT_PROTOCOL_UNKNOWN ) {
@@ -244,6 +230,7 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             buff[4] == 'P' ) {
             ev->protocol = WBT_PROTOCOL_BMTP;
         } else if(1) {
+            /* TODO 判断 HTTP 协议 */
             ev->protocol = WBT_PROTOCOL_HTTP;
         } else {
             wbt_log_add("connection close: unknown protocol\n");
@@ -251,6 +238,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             return WBT_OK;
         }
 
+        /* 根据协议初始化该连接的相关数据
+         */
         if( wbt_module_on_conn(ev) != WBT_OK ) {
             wbt_log_add("connection close: on_conn failed\n");
             wbt_on_close(ev);
@@ -258,11 +247,10 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         }
     }
 
-    /* 自定义的处理回调函数，根据 URI 返回自定义响应结果 */
     if( wbt_module_on_recv(ev) != WBT_OK ) {
-        /* 严重的错误，直接断开连接 */
-        /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。 */
-        wbt_log_add("connection close: %d\n", __LINE__);
+        /* 注意：一旦某一模块返回 WBT_ERROR，则后续模块将不会再执行。
+         */
+        wbt_log_add("connection close: on_recv failed\n");
         wbt_on_close(ev);
         return WBT_OK;
     }

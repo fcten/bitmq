@@ -112,6 +112,8 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
     
+    int msg_offset = 0;
+    
     while(!bmtp->is_exit) {
         switch(bmtp->state) {
             case STATE_CONNECTED:
@@ -121,6 +123,10 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                 bmtp->state = STATE_RECV_HEADER;
                 break;
             case STATE_RECV_HEADER:
+                /* 记录消息包的起始偏移量
+                 */
+                msg_offset = bmtp->recv_offset;
+
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
                     goto waiting;
                 }
@@ -129,6 +135,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
 
                 if( (!bmtp->is_conn && wbt_bmtp_cmd(bmtp->header) != BMTP_CONN)
                         || (bmtp->is_conn && wbt_bmtp_cmd(bmtp->header) == BMTP_CONN)) {
+                    wbt_log_add("BMTP error: unexpected conn\n");
                     return WBT_ERROR;
                 } else {
                     switch(wbt_bmtp_cmd(bmtp->header)) {
@@ -156,13 +163,14 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                             bmtp->state = STATE_RECV_CID;
                             break;
                         default:
+                            wbt_log_add("BMTP error: unexpected header\n");
                             return WBT_ERROR;
                     }
                 }
                 break;
             case STATE_RECV_CID:
                 if( bmtp->recv_offset + 4 > ev->buff_len ) {
-                    return WBT_OK;
+                    goto waiting;
                 }
                 
                 bmtp->cid  = ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 24;
@@ -173,7 +181,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                 break;
             case STATE_RECV_SID:
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
-                    return WBT_OK;
+                    goto waiting;
                 }
                 
                 bmtp->sid = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
@@ -186,12 +194,13 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         bmtp->state = STATE_RECV_PAYLOAD;
                         break;
                     default:
+                        wbt_log_add("BMTP error: unexpected header\n");
                         return WBT_ERROR;
                 }
                 break;
             case STATE_RECV_PAYLOAD_LENGTH:
                 if( bmtp->recv_offset + 2 > ev->buff_len ) {
-                    return WBT_OK;
+                    goto waiting;
                 }
 
                 bmtp->payload_length = ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 8;
@@ -200,7 +209,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                 break;
             case STATE_RECV_PAYLOAD:
                 if( bmtp->recv_offset + bmtp->payload_length > ev->buff_len ) {
-                    return WBT_OK;
+                    goto waiting;
                 }
                 
                 bmtp->payload = (unsigned char *)ev->buff + bmtp->recv_offset;
@@ -248,25 +257,45 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         }
                         break;
                     default:
+                        wbt_log_add("BMTP error: unexpected header\n");
                         return WBT_ERROR;
-                }
-
-                if( bmtp->recv_offset >= 4096 ) {
-                    wbt_memcpy(ev->buff, (unsigned char *)ev->buff + bmtp->recv_offset, ev->buff_len - bmtp->recv_offset);
-                    ev->buff = wbt_realloc(ev->buff, ev->buff_len - bmtp->recv_offset);
-                    ev->buff_len -= bmtp->recv_offset;
-                    bmtp->recv_offset = 0;
                 }
                 
                 bmtp->state = STATE_CONNECTED;
                 break;
             default:
                 // 无法识别的状态
+                wbt_log_add("BMTP error: unexpected state\n");
                 return WBT_ERROR;
         }
     }
     
 waiting:
+
+    if( msg_offset > 0 ) {
+        /* 删除已经处理完毕的消息
+         */
+        if( ev->buff_len == msg_offset ) {
+            wbt_free(ev->buff);
+            ev->buff = NULL;
+            ev->buff_len = 0;
+            bmtp->recv_offset = 0;
+        } else if( ev->buff_len > msg_offset ) {
+            wbt_memcpy(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
+            ev->buff_len -= msg_offset;
+            bmtp->recv_offset -= msg_offset;
+        } else {
+            wbt_log_add("BMTP error: unexpected error\n");
+            return WBT_ERROR;
+        }
+    } else if( msg_offset == 0 &&
+            bmtp->recv_offset + bmtp->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
+        /* 消息长度超过限制
+         */
+        wbt_log_add("BMTP error: message length exceeds limit\n");
+        return WBT_ERROR;
+    }
+
     ev->events |= WBT_EV_READ;
     ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
     if(wbt_event_mod(ev) != WBT_OK) {

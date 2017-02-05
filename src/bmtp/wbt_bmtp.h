@@ -193,6 +193,7 @@ typedef struct {
     unsigned long long int cid;
     unsigned int  payload_length;
     unsigned char *payload;
+    
     unsigned int  recv_offset;
     
     unsigned int  is_conn:1;

@@ -64,6 +64,8 @@ typedef struct wbt_conf_s {
 #define AOF_FSYNC_ALWAYS   1
 #define AOF_FSYNC_EVERYSEC 2
 
+#define WBT_MAX_PROTO_BUF_LEN 64*1024
+
 extern wbt_conf_t wbt_conf;
 
 wbt_status wbt_conf_set_file( const char * file );
