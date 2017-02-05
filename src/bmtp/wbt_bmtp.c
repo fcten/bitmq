@@ -309,7 +309,6 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
     }
     
     if( bmtp->is_exit ) {
-        wbt_log_add("connection close: %d\n", __LINE__);
         wbt_on_close(ev);
     } else {
         ev->events &= ~WBT_EV_WRITE;
@@ -370,7 +369,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             bmtp->payload[2] != 'T' ||
             bmtp->payload[3] != 'P') {
         bmtp->is_exit = 1;
-        wbt_log_add("connection close: %d\n", __LINE__);
+        wbt_log_add("BMTP error: invalid conn\n");
         return wbt_bmtp_send_connack(ev, 0x1);
     }
 
@@ -428,7 +427,6 @@ wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
     resp.str = wbt_malloc( resp.len );
     if( resp.str == NULL ) {
         bmtp->is_exit = 1;
-        wbt_log_add("connection close: %d\n", __LINE__);
         return wbt_bmtp_send_suback(ev, 0x2);
     }
     
@@ -546,7 +544,7 @@ wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev) {
 
     bmtp->is_exit = 1;
     
-    wbt_log_add("connection close: %d\n", __LINE__);
+    wbt_log_add("BMTP recvived disconn\n");
     
     return WBT_OK;
 }
@@ -624,7 +622,7 @@ wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     bmtp->is_exit = 1;
     
-    wbt_log_add("connection close: %d\n", __LINE__);
+    wbt_log_add("BMTP send disconn\n");
 
     char buf[] = {BMTP_DISCONN};
     

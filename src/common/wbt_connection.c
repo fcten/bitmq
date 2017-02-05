@@ -180,7 +180,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         void * p = wbt_realloc(ev->buff, ev->buff_len + block_size);
         if( p == NULL ) {
             /* 内存不足 */
-            break;
+            wbt_on_close(ev);
+            return WBT_OK;
         } else {
             ev->buff = p;
             ev->buff_len += block_size;
@@ -200,10 +201,14 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
                 break;
             } else if (err == WBT_ECONNRESET) {
                 // 对方发送了RST
-                break;
+                wbt_log_add("connection close: connection reset by peer\n");
+                wbt_on_close(ev);
+                return WBT_OK;
             } else {
                 // 其他不可弥补的错误
-                break;
+                wbt_log_add("connection close: %d\n", err);
+                wbt_on_close(ev);
+                return WBT_OK;
             }
         } else {
             /* 去除多余的缓冲区 */
@@ -219,8 +224,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     }
 
     if( !bReadOk ) {
-        /* 读取出错，或者客户端主动断开了连接 */
-        wbt_log_add("connection close: %d\n", __LINE__);
+        /* 数据过多 */
+        wbt_log_add("connection close: data size limit\n");
         wbt_on_close(ev);
         return WBT_OK;
     }
@@ -241,13 +246,13 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         } else if(1) {
             ev->protocol = WBT_PROTOCOL_HTTP;
         } else {
-            wbt_log_add("connection close: %d\n", __LINE__);
+            wbt_log_add("connection close: unknown protocol\n");
             wbt_on_close(ev);
             return WBT_OK;
         }
 
         if( wbt_module_on_conn(ev) != WBT_OK ) {
-            wbt_log_add("connection close: %d\n", __LINE__);
+            wbt_log_add("connection close: on_conn failed\n");
             wbt_on_close(ev);
             return WBT_OK;
         }
@@ -270,7 +275,7 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     //wbt_log_debug("send data to connection %d.", ev->fd);
     
     if( wbt_module_on_send(ev) != WBT_OK ) {
-        wbt_log_add("connection close: %d\n", __LINE__);
+        wbt_log_add("connection close: on_send failed\n");
         wbt_on_close(ev);
         return WBT_OK;
     }
