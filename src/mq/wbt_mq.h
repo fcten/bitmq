@@ -113,6 +113,55 @@ typedef struct wbt_channel_list_s {
     wbt_mq_id seq_id;
 } wbt_channel_list_t;
 
+/* 同一份授权可以由多个连接的多个订阅者共同使用。
+ * 所有使用同一份授权的订阅者将共享限额。
+ * 
+ * 授权一旦生成，将会始终保存在内存中直至授权过期或主动撤销。
+ * 这样可以确保即使订阅者发生断线重连也不会重置限额。
+ */
+typedef struct wbt_auth_s {
+    // 允许 pub 的 channel 列表
+    wbt_channel_list_t pub_channels;
+    // 允许 sub 的 channel 列表
+    wbt_channel_list_t sub_channels;
+    // 订阅者限额
+    unsigned int max_subscriber_count;
+    // 已连接的订阅者数量
+    unsigned int subscriber_count;
+    // 最大消息长度（上限 64K）
+    unsigned int max_msg_len;
+    // 最长消息延迟时间
+    unsigned int max_effect;
+    // 最长消息有效时间
+    unsigned int max_expire;
+    // 每秒发布消息限额
+    unsigned int max_pub_per_second;
+    // 已使用的每秒限额
+    unsigned int pub_per_second;
+    // 上次用完每秒限额的时间
+    time_t last_pps_use_up;
+    // 每分钟发布消息限额
+    unsigned int max_pub_per_minute;
+    // 已使用的每分钟限额
+    unsigned int pub_per_minute;
+    // 上次用完每分钟限额的时间
+    time_t last_ppm_use_up;
+    // 每小时发布消息限额
+    unsigned int max_pub_per_hour;
+    // 已使用的每小时限额
+    unsigned int pub_per_hour;
+    // 上次用完每小时限额的时间
+    time_t last_pph_use_up;
+    // 每天发布消息限额
+    unsigned int max_pub_per_day;
+    // 已使用的每天限额
+    unsigned int pub_per_day;
+    // 上次用完每天限额的时间
+    time_t last_ppd_use_up;
+    // 授权过期事件
+    wbt_timer_t timer;
+} wbt_auth_t;
+
 typedef struct wbt_subscriber_s {
     // 订阅者 ID
     wbt_mq_id subscriber_id;
@@ -125,6 +174,8 @@ typedef struct wbt_subscriber_s {
     // 已投递消息队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
     struct wbt_msg_list_s delivered_list;
+    // 权限信息
+    struct wbt_auth_s * auth;
     // 消息投递回调函数
     // 设置该方法是为了同时支持多种协议
     wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int);
