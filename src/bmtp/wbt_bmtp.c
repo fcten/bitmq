@@ -319,6 +319,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
             if( wbt_socket_errno == WBT_EAGAIN ) {
                 return WBT_OK;
             } else {
+                wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
                 return WBT_ERROR;
             }
         } else {
