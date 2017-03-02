@@ -28,6 +28,10 @@ wbt_str_t wbt_conf_option_off = wbt_string("off");
 wbt_str_t wbt_conf_option_always = wbt_string("always");
 wbt_str_t wbt_conf_option_everysec = wbt_string("everysec");
 
+wbt_str_t wbt_conf_option_none = wbt_string("none");
+wbt_str_t wbt_conf_option_basic = wbt_string("basic");
+wbt_str_t wbt_conf_option_standard = wbt_string("standard");
+
 /* 供 setproctitle 显示使用，如果路径过长则会被截断 */
 wbt_str_t wbt_config_file_path;
 wbt_str_t wbt_config_file_content;
@@ -147,6 +151,38 @@ wbt_status wbt_conf_init() {
     if( ( m_value = wbt_conf_get_v("aof_fast_boot") ) != NULL ) {
         if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_off ) == 0 ) {
             wbt_conf.aof_fast_boot = 0;
+        }
+    }
+
+    wbt_conf.auth = 0;
+    if( ( m_value = wbt_conf_get_v("auth") ) != NULL ) {
+        if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_none ) == 0 ) {
+            wbt_conf.auth = 0;
+        } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_basic ) == 0 ) {
+            wbt_conf.auth = 1;
+        } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_standard ) == 0 ) {
+            wbt_conf.auth = 2;
+        } else {
+            wbt_log_add("option auth is illegal ( expect none / baisc / standard )\n");
+            return WBT_ERROR;
+        }
+    }
+    
+    if( wbt_conf.auth == 1 ) {
+        wbt_str_set_null(wbt_conf.auth_password);
+        if( ( m_value = wbt_conf_get_v("auth_password") ) != NULL ) {
+            wbt_conf.auth_key = *m_value;
+        } else {
+            wbt_log_add("option auth_password is required\n");
+            return WBT_ERROR;
+        }
+    } else if( wbt_conf.auth == 2 ) {
+        wbt_str_set_null(wbt_conf.auth_key);
+        if( ( m_value = wbt_conf_get_v("auth_key") ) != NULL ) {
+            wbt_conf.auth_key = *m_value;
+        } else {
+            wbt_log_add("option auth_key is required\n");
+            return WBT_ERROR;
         }
     }
 

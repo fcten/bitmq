@@ -8,6 +8,10 @@
 #include "wbt_string.h"
 #include "wbt_memory.h"
 
+/*
+ * 将一个 wbt_str_t 结构体转化为一个标准 C 字符串
+ * 由于使用了静态局部变量，该函数返回的标准字符串将在下一次调用该方法时失效。
+ */
 const char * wbt_stdstr(wbt_str_t * str) {
     static wbt_str_t wbt_stdstr_tmp = wbt_null_string;
 

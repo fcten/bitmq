@@ -36,6 +36,8 @@ typedef struct wbt_conf_s {
     int aof_fsync;
     // 是否使用快速启动
     int aof_fast_boot;
+    // 授权认证模式
+    int auth;
     // 长连接超时时间 毫秒
     int keep_alive_timeout;
     // 事件超时时间 毫秒
@@ -58,6 +60,10 @@ typedef struct wbt_conf_s {
     wbt_str_t secure_key;
     // 证书文件路径
     wbt_str_t secure_crt;
+    // 授权认证密码
+    wbt_str_t auth_password;
+    // 授权认证公钥文件路径
+    wbt_str_t auth_key;
 } wbt_conf_t;
 
 #define AOF_FSYNC_NO       0

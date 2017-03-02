@@ -37,6 +37,10 @@ set (WBT_SRCS
 	common/wbt_time.h
 	common/wbt_timer.c
 	common/wbt_timer.h
+	common/wbt_base64.c
+	common/wbt_base64.h
+	common/wbt_auth.c
+	common/wbt_auth.h
 	event/wbt_event.h
 	http/wbt_http.c
 	http/wbt_http.h
@@ -47,6 +51,8 @@ set (WBT_SRCS
 	json/wbt_json.h
 	mq/wbt_mq.c
 	mq/wbt_mq.h
+	mq/wbt_mq_auth.c
+	mq/wbt_mq_auth.h
 	mq/wbt_mq_channel.c
 	mq/wbt_mq_channel.h
 	mq/wbt_mq_dlq.c

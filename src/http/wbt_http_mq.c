@@ -7,6 +7,8 @@
 
 #include "../common/wbt_string.h"
 #include "../common/wbt_log.h"
+#include "../common/wbt_auth.h"
+#include "../common/wbt_base64.h"
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_channel.h"
 #include "../mq/wbt_mq_msg.h"
@@ -33,6 +35,9 @@ wbt_status wbt_http_mq_status_message(wbt_event_t *ev);
 wbt_status wbt_http_mq_status_channel(wbt_event_t *ev);
 wbt_status wbt_http_mq_status_system(wbt_event_t *ev);
 wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev);
+
+wbt_status wbt_http_mq_sign(wbt_event_t *ev);
+wbt_status wbt_http_mq_verify(wbt_event_t *ev);
 
 wbt_status wbt_http_mq_on_recv(wbt_event_t *ev);
 
@@ -62,6 +67,8 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
     wbt_str_t login  = wbt_string("/mq/login/");
     wbt_str_t pull   = wbt_string("/mq/pull/");
     wbt_str_t push   = wbt_string("/mq/push/");
+    //wbt_str_t sign   = wbt_string("/mq/auth/sign/");
+    wbt_str_t verify = wbt_string("/mq/auth/verify/");
     wbt_str_t status = wbt_string("/mq/status/");
     
     wbt_str_t http_uri;
@@ -73,9 +80,14 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
         return wbt_http_mq_pull(ev);
     } else if( wbt_strcmp( &http_uri, &push ) == 0 ) {
         return wbt_http_mq_push(ev);
+    //} else if( wbt_strcmp( &http_uri, &sign ) == 0 ) {
+    //    return wbt_http_mq_sign(ev);
+    } else if( wbt_strcmp( &http_uri, &verify ) == 0 ) {
+        return wbt_http_mq_verify(ev);
     } else if( wbt_strncmp( &http_uri, &status, status.len ) == 0 ) {
         return wbt_http_mq_status(ev);
     }
+
     return WBT_OK;
 }
 
@@ -584,6 +596,85 @@ wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev) {
     json_delete_object(obj);
 
     http->status = STATUS_200;
+
+    return WBT_OK;
+}
+/*
+wbt_status wbt_http_mq_sign(wbt_event_t *ev) {
+    // 解析请求
+    wbt_http_t * http = ev->data;
+
+    // 必须是 POST 请求
+    if( http->method != METHOD_POST ) {
+        http->status = STATUS_405;
+        return WBT_OK;
+    }
+    
+    // 处理 body
+    if( http->body.len <= 0 ) {
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
+    
+    wbt_str_t token, sign;
+    wbt_offset_to_str(http->body, token, ev->buff);
+    
+    //wbt_str_t tmp = wbt_string("ewogICAgImNtZCI6IlNIT1dfQUxFUk1fSU5GTyIsCiAgICAicGFyYW0iOnsKICAgICAgICAidGV4dCI6IjEyMyIKICAgIH0KfQo=");
+    wbt_str_t tmp = wbt_string("0");
+    ///tmp.len = token.len * 2;
+    //tmp.str = wbt_malloc(tmp.len);
+    //wbt_base64_encode(&tmp, &token);
+    //wbt_log_debug("%.*s\n", tmp.len, tmp.str);
+
+    char buf[512];
+    sign.len = sizeof(buf);
+    sign.str = buf;
+    
+    wbt_auth_sign(&tmp, &sign);
+    
+    wbt_log_debug("%.*s.%.*s\n", tmp.len, tmp.str, sign.len, sign.str);
+    
+    //wbt_free(tmp.str);
+
+    http->status = STATUS_200;
+
+    return WBT_OK;
+}
+*/
+wbt_status wbt_http_mq_verify(wbt_event_t *ev) {
+    // 解析请求
+    wbt_http_t * http = ev->data;
+
+    // 必须是 POST 请求
+    if( http->method != METHOD_POST ) {
+        http->status = STATUS_405;
+        return WBT_OK;
+    }
+    
+    // 处理 body
+    if( http->body.len <= 0 ) {
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
+    
+    wbt_str_t token, sign, split = wbt_string(".");
+    wbt_offset_to_str(http->body, token, ev->buff);
+    
+    int pos = wbt_strpos(&token, &split);
+    if(pos==-1) {
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
+    sign.str = token.str+pos+1;
+    sign.len = token.len-pos-1;
+    
+    token.len = pos;
+    
+    if(wbt_auth_verify(&token, &sign) == WBT_OK) {
+        http->status = STATUS_200;
+    } else {
+        http->status = STATUS_403;
+    }
 
     return WBT_OK;
 }
