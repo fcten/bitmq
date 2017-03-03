@@ -145,10 +145,6 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         case BMTP_DISCONN:
                             bmtp->state = STATE_RECV_PAYLOAD;
                             break;
-                        case BMTP_CONN:
-                            bmtp->payload_length = 4;
-                            bmtp->state = STATE_RECV_PAYLOAD;
-                            break;
                         case BMTP_PUB:
                             if( wbt_bmtp_qos(bmtp->header) == 0 ) {
                                 bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
@@ -159,6 +155,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         case BMTP_PUBACK:
                             bmtp->state = STATE_RECV_SID;
                             break;
+                        case BMTP_CONN:
                         case BMTP_SUB:
                             bmtp->state = STATE_RECV_CID;
                             break;
@@ -177,7 +174,18 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                 bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 16;
                 bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++] << 8;
                 bmtp->cid += ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
-                bmtp->state = STATE_RECV_PAYLOAD;
+                
+                switch(wbt_bmtp_cmd(bmtp->header)) {
+                    case BMTP_SUB:
+                        bmtp->state = STATE_RECV_PAYLOAD;
+                        break;
+                    case BMTP_CONN:
+                        bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
+                        break;
+                    default:
+                        wbt_log_add("BMTP error: unexpected header\n");
+                        return WBT_ERROR;
+                }
                 break;
             case STATE_RECV_SID:
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
@@ -394,10 +402,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
     if( wbt_bmtp_version(bmtp->header) != BMTP_VERSION ||
-            bmtp->payload[0] != 'B' ||
-            bmtp->payload[1] != 'M' ||
-            bmtp->payload[2] != 'T' ||
-            bmtp->payload[3] != 'P') {
+            bmtp->cid != 0x424D5450 ) { /* "BMTP" */
         bmtp->is_exit = 1;
         wbt_log_add("BMTP error: invalid conn\n");
         return wbt_bmtp_send_connack(ev, 0x1);
