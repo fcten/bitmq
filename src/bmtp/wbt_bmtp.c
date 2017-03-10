@@ -11,6 +11,7 @@
 #include "../common/wbt_connection.h"
 #include "../common/wbt_config.h"
 #include "../common/wbt_log.h"
+#include "../common/wbt_auth.h"
 #include "../json/wbt_json.h"
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_msg.h"
@@ -406,6 +407,42 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
         bmtp->is_exit = 1;
         wbt_log_add("BMTP error: invalid conn\n");
         return wbt_bmtp_send_connack(ev, 0x1);
+    }
+    
+    // 授权验证
+    if( wbt_conf.auth == 1 ) {
+        // TODO basic 验证
+    } else if( wbt_conf.auth == 2 ) {
+        // standard 验证
+        if( bmtp->payload_length > 0 ) {
+            wbt_str_t token, sign, split = wbt_string(".");
+            token.str = bmtp->payload;
+            token.len = bmtp->payload_length;
+
+            int pos = wbt_strpos(&token, &split);
+            if(pos == -1) {
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
+            sign.str = token.str+pos+1;
+            sign.len = token.len-pos-1;
+
+            token.len = pos;
+
+            if(wbt_auth_verify(&token, &sign) != WBT_OK) {
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
+            
+            // 读取授权信息
+            
+        } else {
+            bmtp->is_exit = 1;
+            wbt_log_add("BMTP error: authorize failed\n");
+            return wbt_bmtp_send_connack(ev, 0x3);
+        }
     }
 
     if( wbt_mq_login(ev) != WBT_OK ) {

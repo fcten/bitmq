@@ -14,6 +14,11 @@ extern "C" {
 
 #include "wbt_mq.h"
 
+wbt_status wbt_mq_auth_init();
+wbt_auth_t * wbt_mq_auth_create();
+wbt_auth_t * wbt_mq_auth_get();
+void wbt_mq_auth_destory();
+
 #ifdef __cplusplus
 }
 #endif
