@@ -143,14 +143,18 @@ wbt_status wbt_ssl_on_conn( wbt_event_t * ev ) {
         ev->ssl = NULL;
         return WBT_OK;
     }
+    
+    if( ev->ssl ) {
+        return WBT_OK;
+    }
 
-    ev->ssl = SSL_new (ctx);
-    if(!ev->ssl) {
+    ev->ssl = SSL_new(ctx);
+    if( !ev->ssl ) {
         wbt_log_add("SSL_new failed\n");
         return WBT_ERROR;
     }
 
-    if( SSL_set_fd (ev->ssl, ev->fd) == 0 ) {
+    if( SSL_set_fd(ev->ssl, ev->fd) == 0 ) {
         wbt_log_add("SSL_set_fd failed\n");
         return WBT_ERROR;
     }

@@ -145,6 +145,12 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         }
         
         wbt_connection_count ++;
+
+        // TODO 待优化，事实上目前这里只用于调用 SSL 模块
+        if( wbt_module_on_conn(p_ev) != WBT_OK ) {
+            wbt_on_close(p_ev);
+            continue;
+        }
     }
 
     if (conn_sock == -1) {
