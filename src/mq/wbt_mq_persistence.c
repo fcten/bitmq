@@ -15,11 +15,11 @@ static wbt_fd_t wbt_persist_mid_fd = 0;
 static wbt_fd_t wbt_persist_aof_fd = 0;
 static ssize_t wbt_persist_aof_size = 0;
 
-static wbt_str_t wbt_persist_mid = wbt_string("./data/webit.mid");
-static wbt_str_t wbt_persist_aof = wbt_string("./data/webit.aof");
+static wbt_str_t wbt_persist_mid = wbt_string("./data/bmq.mid");
+static wbt_str_t wbt_persist_aof = wbt_string("./data/bmq.aof");
 
 static wbt_atomic_t wbt_persist_aof_lock = 0;
-static wbt_str_t wbt_persist_mdp = wbt_string("./data/webit.mdp");
+static wbt_str_t wbt_persist_mdp = wbt_string("./data/bmq.mdp");
 
 extern wbt_atomic_t wbt_wating_to_exit;
 

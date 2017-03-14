@@ -81,7 +81,7 @@ void wbt_signal(int signo, siginfo_t *info, void *context) {
 void wbt_worker_process() {
     /* 设置进程标题 */
     if( wbt_conf.daemon ) {
-        wbt_set_proc_title("webit: worker process");
+        wbt_set_proc_title("bmq: worker process");
     }
 
     /* 设置需要监听的信号(后台模式) */
@@ -105,7 +105,7 @@ void wbt_worker_process() {
     sigaction(SIGTERM, &act, NULL); /* 退出信号 */
     sigaction(SIGPIPE, &act, NULL); /* 忽略 */
     
-    wbt_log_add("Webit startup (pid: %d)\n", getpid());
+    wbt_log_add("BitMQ startup (pid: %d)\n", getpid());
 
     /* 降低 worker 进程的权限 */
     const char * user = wbt_conf_get("user");
@@ -162,7 +162,7 @@ void wbt_master_process() {
     sigemptyset(&set);
     
     sigaction(SIGCHLD, &act, NULL); /* 子进程退出 */
-    sigaction(SIGTERM, &act, NULL); /* 命令 Webit 退出 */
+    sigaction(SIGTERM, &act, NULL); /* 命令 BitMQ 退出 */
     sigaction(SIGPIPE, &act, NULL); /* 忽略 */
     sigaction(SIGUSR2, &act, NULL); /* 更新二进制文件 */
     /* TODO: 自定义的 reload 信号 */
@@ -244,8 +244,8 @@ void wbt_exit(int exit_code) {
     // 打印内存信息
     wbt_mem_print();
 
-    wbt_log_add("Webit exit (pid: %d)\n", wbt_getpid());
-    wbt_log_print("\n\nWebit exit (pid: %d)\n", wbt_getpid());
+    wbt_log_add("bitmq exit (pid: %d)\n", wbt_getpid());
+    wbt_log_print("\n\nbitmq exit (pid: %d)\n", wbt_getpid());
 
 	exit(exit_code);
 }
@@ -310,7 +310,7 @@ int wbt_main( int argc, char** argv ) {
     while( ( ch = wbt_getopt(argc,argv,"c:hs:tvd") ) != -1 ) {
         switch(ch) {
             case 'v':
-                wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
+                wbt_log_print( "bitmq version: bitmq/" WBT_VERSION "\n" );
                 return 0;
             case 'h':
                   wbt_log_print(
@@ -359,7 +359,7 @@ int wbt_main( int argc, char** argv ) {
 #endif
 
     /* 初始化所有组件 */
-    wbt_log_print( "webit version: webit/" WBT_VERSION "\n" );
+    wbt_log_print( "bitmq version: bitmq/" WBT_VERSION "\n" );
     if( wbt_module_init() != WBT_OK ) {
         wbt_log_print( "\n\n" );
         return 1;
@@ -392,7 +392,7 @@ int wbt_main( int argc, char** argv ) {
     tzset();
 
     if( wbt_conf.daemon ) {
-        wbt_log_print( "\n\nwebit is now running in the background.\n\n" );
+        wbt_log_print( "\n\nbitmq is now running in the background.\n\n" );
 
         /* 转入后台运行 */
         if( daemon(1,0) < 0 ) {
@@ -400,12 +400,12 @@ int wbt_main( int argc, char** argv ) {
             return 1;
         }
     } else {
-        wbt_log_print( "\n\nwebit is now running.\n\n" );
+        wbt_log_print( "\n\nbitmq is now running.\n\n" );
     }
 
     /* 限制可以访问的目录
      * 这个操作会导致 daemon() 不能正常运行
-     * 只有 root 用户才能执行该操作，为了使非 root 用户也能运行 webit，必须放弃使用 chroot
+     * 只有 root 用户才能执行该操作，为了使非 root 用户也能运行 BitMQ，必须放弃使用 chroot
      */
     //const char * wwwroot = wbt_stdstr(&wbt_conf.root);
     /*
@@ -417,7 +417,7 @@ int wbt_main( int argc, char** argv ) {
     }*/
 
     // Bugfix: 
-    // master - worker 架构会对 bmq 运行造成不必要的麻烦，所以当 webit 以单进程模
+    // master - worker 架构会对 bmq 运行造成不必要的麻烦，所以当 BitMQ 以单进程模
     // 式运行时，将不再产生守护进程，也不再支持平滑重启功能。
     if( wbt_conf.daemon && wbt_conf.process > 1 ) {
         wbt_master_process();
@@ -427,10 +427,10 @@ int wbt_main( int argc, char** argv ) {
     
 #else
 
-    // TODO 在 Windows 下 webit 暂时没有捕获程序退出的信号，也就是说每一次退出都相
+    // TODO 在 Windows 下 BitMQ 暂时没有捕获程序退出的信号，也就是说每一次退出都相
     // 当于异常退出
     
-	wbt_log_print("\n\nwebit is now running.\n\n");
+	wbt_log_print("\n\nbitmq is now running.\n\n");
 
 	wbt_event_dispatch();
 

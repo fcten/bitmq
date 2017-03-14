@@ -20,7 +20,7 @@ wbt_module_t wbt_module_conf = {
 };
 
 /* 默认的配置文件位置 */
-wbt_str_t wbt_config_file_name = wbt_string("./webit.conf");
+wbt_str_t wbt_config_file_name = wbt_string("./bmq.conf");
 
 wbt_str_t wbt_conf_option_on = wbt_string("on");
 wbt_str_t wbt_conf_option_off = wbt_string("off");
@@ -391,7 +391,7 @@ wbt_status wbt_conf_reload() {
 
 #ifndef WIN32
         char tmp[1024];
-        snprintf(tmp, sizeof(tmp), "webit: master process (%.*s)", len, wbt_config_file_path.str );
+        snprintf(tmp, sizeof(tmp), "bmq: master process (%.*s)", len, wbt_config_file_path.str );
         wbt_set_proc_title(tmp);
 #endif
 

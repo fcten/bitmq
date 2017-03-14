@@ -178,11 +178,11 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
     
     int nread;
 
-    /* 无论采用何种协议， Webit 统一限定单个请求的上限为 WBT_MAX_PROTO_BUF_LEN（64K）。
-     * 如果单个请求大小超过 64K，Webit 将会立即关闭该连接。
+    /* 无论采用何种协议， BitMQ 统一限定单个请求的上限为 WBT_MAX_PROTO_BUF_LEN（64K）。
+     * 如果单个请求大小超过 64K，BitMQ 将会立即关闭该连接。
      * 
-     * Webit 统一为每个连接分配 64K 固定长度的缓冲区。如果请求尚未接收完整，Webit 会保
-     * 留完整的缓冲区，并在 ev->buff_len 中保存已接收的长度。否则，Webit 会释放整个缓冲
+     * BitMQ 统一为每个连接分配 64K 固定长度的缓冲区。如果请求尚未接收完整，BitMQ 会保
+     * 留完整的缓冲区，并在 ev->buff_len 中保存已接收的长度。否则，BitMQ 会释放整个缓冲
      * 区，确保在维持大量空闲连接时尽量节省内存。
      */
     if( ev->buff == NULL ) {

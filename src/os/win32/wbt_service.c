@@ -41,7 +41,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv) {
     service_status.dwWin32ExitCode = NO_ERROR;
     service_status.dwCheckPoint = 0;
 
-    service_handle = RegisterServiceCtrlHandler("webit", service_handler);
+    service_handle = RegisterServiceCtrlHandler("BitMQ", service_handler);
 	if(!service_handle){
         service_status.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus( service_handle, &service_status );
@@ -55,7 +55,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv) {
         return;
     }
     
-    conf_path[conf_length - 9] = '\0'; // ½Ø¶Ï webit.exe ÎÄ¼þÃû
+    conf_path[conf_length - 9] = '\0'; // ï¿½Ø¶ï¿½ bmq.exe ï¿½Ä¼ï¿½ï¿½ï¿½
     if( !SetCurrentDirectory( conf_path ) ) {
         service_status.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus( service_handle, &service_status );
@@ -65,7 +65,7 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv) {
     service_status.dwCurrentState = SERVICE_RUNNING;
     SetServiceStatus( service_handle, &service_status );
 
-    argv[0] = "webit";
+    argv[0] = "bmq";
     wbt_main( 1, argv );
 
 	service_status.dwCurrentState = SERVICE_STOPPED;
@@ -82,7 +82,7 @@ void service_install() {
 
 	sc_manager = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
 	if(sc_manager){
-		svc_handle = CreateService(sc_manager, "webit", "Webit", 
+		svc_handle = CreateService(sc_manager, "BitMQ", "BitMQ", 
 				SERVICE_START | SERVICE_STOP | SERVICE_CHANGE_CONFIG,
 				SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, SERVICE_ERROR_NORMAL,
 				exe_path, NULL, NULL, NULL, NULL, NULL);
@@ -102,7 +102,7 @@ void service_uninstall() {
 
 	sc_manager = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 	if(sc_manager){
-		svc_handle = OpenService(sc_manager, "webit", SERVICE_QUERY_STATUS | DELETE);
+		svc_handle = OpenService(sc_manager, "BitMQ", SERVICE_QUERY_STATUS | DELETE);
 		if(svc_handle){
 			if(QueryServiceStatus(svc_handle, &status)){
 				if(status.dwCurrentState == SERVICE_STOPPED){
@@ -118,11 +118,11 @@ void service_uninstall() {
 void main() {
 #ifdef WBT_DEBUG
 	char *argv[1];
-	argv[0] = "webit";
+	argv[0] = "bmq";
 	wbt_main(1, argv);
 #else
 	SERVICE_TABLE_ENTRY ste[] = {
-		{ "webit", service_main },
+		{ "BitMQ", service_main },
 		{ NULL, NULL }
 	};
 

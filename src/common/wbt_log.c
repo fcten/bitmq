@@ -15,7 +15,7 @@ wbt_module_t wbt_module_log = {
 
 wbt_fd_t wbt_log_file_fd;
 ssize_t wbt_log_file_size;
-char * wbt_log_file = "./logs/webit.log";
+char * wbt_log_file = "./logs/bmq.log";
 wbt_str_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
@@ -41,7 +41,7 @@ wbt_status wbt_log_init() {
 wbt_status wbt_log_rotate() {
     // 重命名旧的日志文件
     char new_log_file[64];
-    snprintf( new_log_file, sizeof(new_log_file), "./logs/webit_%lu.log", wbt_cur_mtime );
+    snprintf( new_log_file, sizeof(new_log_file), "./logs/bmq_%lu.log", wbt_cur_mtime );
 
 #ifdef WIN32
     if(wbt_close_file(wbt_log_file_fd) < 0) {

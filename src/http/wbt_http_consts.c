@@ -11,7 +11,7 @@
 wbt_str_t http_ver_1_0 = wbt_string("HTTP/1.0");
 wbt_str_t http_ver_1_1 = wbt_string("HTTP/1.1");
 
-wbt_str_t header_server = wbt_string("Webit");
+wbt_str_t header_server = wbt_string("BitMQ");
 wbt_str_t header_connection_keep_alive = wbt_string("keep-alive");
 wbt_str_t header_connection_close = wbt_string("close");
 wbt_str_t header_cache_control = wbt_string("max-age=3600");
@@ -170,7 +170,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>400 Bad Request</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>400 Bad Request</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
     ),wbt_string("401 Unauthorized"),
@@ -180,7 +180,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>403 Forbidden</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>403 Forbidden</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
     ),wbt_string(  /* STATUS 404 */
@@ -188,7 +188,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>404 Not Found</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>404 Not Found</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
     ),
@@ -205,7 +205,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>413 Request Entity Too Large</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>413 Request Entity Too Large</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"),
     wbt_string(  /* STATUS 414 */
@@ -213,7 +213,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>414 Request-URI Too Large</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>414 Request-URI Too Large</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"),
     wbt_string("415 Unsupported Media Type"),
@@ -228,7 +228,7 @@ wbt_str_t wbt_http_error_page[] = {
     "<head><title>500 Internal Server Error</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
     "<center><h1>500 Internal Server Error</h1></center>" CRLF
-    "<!-- Webit -->" CRLF
+    "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
     ),
