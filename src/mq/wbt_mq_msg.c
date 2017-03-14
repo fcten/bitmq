@@ -103,7 +103,7 @@ void wbt_mq_msg_destory(wbt_msg_t *msg) {
 }
 
 wbt_status wbt_mq_msg_destory_expired(wbt_timer_t *timer) {
-    // Bugfix: webit 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
+    // Bugfix: BitMQ 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
     // 序退出时执行。
     if( wbt_wating_to_exit ) {
         return WBT_OK;
@@ -117,7 +117,7 @@ wbt_status wbt_mq_msg_destory_expired(wbt_timer_t *timer) {
 }
 
 wbt_status wbt_mq_msg_delivery_delayed(wbt_timer_t *timer) {
-    // Bugfix: webit 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
+    // Bugfix: BitMQ 在退出时会执行并删除所有尚未超时的定时事件，本定时事件不能在程
     // 序退出时执行。
     if( wbt_wating_to_exit ) {
         return WBT_OK;

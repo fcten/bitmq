@@ -103,11 +103,11 @@ wbt_status wbt_module_helloworld_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    /* 将 state 置为 STATE_BLOCKING 会使 webit 继续等待数据 */
+    /* 将 state 置为 STATE_BLOCKING 会使 BitMQ 继续等待数据 */
     http->state = STATE_BLOCKING;
 
     /* 修改超时时间为 30 秒
-     * 这个时候如果继续有数据到来，webit 会立刻关闭这个连接
+     * 这个时候如果继续有数据到来，BitMQ 会立刻关闭这个连接
      */
     ev->timeout = wbt_cur_mtime + 30000;
     ev->on_timeout = wbt_module_helloworld_callback;
