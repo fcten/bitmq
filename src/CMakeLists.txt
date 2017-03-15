@@ -91,11 +91,9 @@ endif (WIN32 OR CYGWIN)
 add_executable(bmq ${WBT_SRCS})
 
 set (WBT_SIGN_SRCS
-        webit_sign.c
-	common/wbt_auth.c
-	common/wbt_auth.h
-        common/wbt_base64.c
-        common/wbt_base64.h)
+	webit_sign.c
+	common/wbt_base64.c
+	common/wbt_base64.h)
 
 add_executable(bmq_sign ${WBT_SIGN_SRCS})
 
@@ -112,7 +110,7 @@ endif (WIN32)
 target_link_libraries(bmq ${WBT_LIBS})
 target_link_libraries(bmq_sign ${WBT_LIBS})
 
-install(TARGETS bmq RUNTIME DESTINATION ${SBINDIR} LIBRARY DESTINATION ${LIBDIR})
+install(TARGETS bmq RUNTIME DESTINATION ${BINDIR} LIBRARY DESTINATION ${LIBDIR})
 install(FILES DESTINATION ${INCLUDEDIR})
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})

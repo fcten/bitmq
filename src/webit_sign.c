@@ -12,7 +12,6 @@
 
 #include "webit.h"
 #include "common/wbt_base64.h"
-#include "common/wbt_auth.h"
 
 static EVP_PKEY* key;
 

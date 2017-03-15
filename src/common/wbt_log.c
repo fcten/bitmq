@@ -7,6 +7,7 @@
 
 #include "wbt_log.h"
 #include "wbt_module.h"
+#include "wbt_config.h"
 
 wbt_module_t wbt_module_log = {
     wbt_string("log"),
@@ -15,22 +16,24 @@ wbt_module_t wbt_module_log = {
 
 wbt_fd_t wbt_log_file_fd;
 ssize_t wbt_log_file_size;
-char * wbt_log_file = "./logs/bmq.log";
 wbt_str_t wbt_log_buf;
 
 wbt_status wbt_log_init() {
+    char log_file[256];
+    snprintf( log_file, sizeof(log_file), "%.*s/bmq.log", wbt_conf.logs.len, wbt_conf.logs.str );
+    
     /* O_CLOEXEC 需要 Linux 内核版本大于等于 2.6.23 */
     /* TODO 每个 worker 进程需要单独的日志文件，否则并发写会丢失一部分数据 */
-	wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
+    wbt_log_file_fd = wbt_open_logfile(log_file);
     if( (int)wbt_log_file_fd <=0 ) {
-		wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
+        wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);
         return WBT_ERROR;
     }
     
     // 获取日志文件大小
     wbt_log_file_size = wbt_get_file_size( wbt_log_file_fd );
     if( wbt_log_file_size < 0 ) {
-		wbt_log_debug("can't get log file size, errno: %d\n", wbt_errno);
+        wbt_log_debug("can't get log file size, errno: %d\n", wbt_errno);
         return WBT_ERROR;
     }
     
@@ -40,8 +43,11 @@ wbt_status wbt_log_init() {
 // 自动分割日志文件
 wbt_status wbt_log_rotate() {
     // 重命名旧的日志文件
-    char new_log_file[64];
-    snprintf( new_log_file, sizeof(new_log_file), "./logs/bmq_%lu.log", wbt_cur_mtime );
+    char log_file[256];
+    snprintf( log_file, sizeof(log_file), "%.*s/bmq.log", wbt_conf.logs.len, wbt_conf.logs.str );
+  
+    char new_log_file[256];
+    snprintf( new_log_file, sizeof(new_log_file), "%.*s/bmq_%lu.log", wbt_conf.logs.len, wbt_conf.logs.str, wbt_cur_mtime );
 
 #ifdef WIN32
     if(wbt_close_file(wbt_log_file_fd) < 0) {
@@ -60,7 +66,7 @@ wbt_status wbt_log_rotate() {
         return WBT_ERROR;
     }
 #else
-    if( rename(wbt_log_file, new_log_file) < 0 ) {
+    if( rename(log_file, new_log_file) < 0 ) {
         wbt_log_add("Could not rename log file. "
             "rename: %d\n", wbt_errno);
 
@@ -69,7 +75,7 @@ wbt_status wbt_log_rotate() {
 #endif
 
     // 创建新的日志文件
-	wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
+    wbt_log_file_fd = wbt_open_logfile(log_file);
     if( (int)wbt_log_file_fd <=0 ) {
         wbt_log_file_fd = 0;
 		wbt_log_debug("can't open log file, errno: %d\n", wbt_errno);

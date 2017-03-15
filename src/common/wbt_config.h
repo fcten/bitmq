@@ -64,6 +64,10 @@ typedef struct wbt_conf_s {
     wbt_str_t auth_password;
     // 授权认证公钥文件路径
     wbt_str_t auth_key;
+    // 持久化文件保存目录
+    wbt_str_t data;
+    // 日志文件保存目录
+    wbt_str_t logs;
 } wbt_conf_t;
 
 #define AOF_FSYNC_NO       0

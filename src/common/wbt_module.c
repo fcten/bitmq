@@ -25,8 +25,8 @@ extern wbt_module_t wbt_module_bmtp;
 
 wbt_module_t * wbt_modules[] = {
     &wbt_module_time,
-    &wbt_module_log,
     &wbt_module_conf,
+    &wbt_module_log,
     &wbt_module_timer,
     &wbt_module_event,
     &wbt_module_file,
@@ -45,7 +45,7 @@ wbt_status wbt_module_init() {
     /* 初始化模块 */
     int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
     for( i = 0 ; i < size ; i++ ) {
-        wbt_log_print( "\nInitialize module %-15.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        //wbt_log_print( "\nInitialize module %-15.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
             /* fatal */
 #ifndef WIN32
@@ -56,9 +56,9 @@ wbt_status wbt_module_init() {
 			return WBT_ERROR;
         } else {
 #ifndef WIN32
-			wbt_log_print( "\rInitialize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+			//wbt_log_print( "\rInitialize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			wbt_log_print("\rInitialize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+			//wbt_log_print("\rInitialize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
 		}
     }
@@ -69,7 +69,7 @@ wbt_status wbt_module_exit() {
     /* 卸载所有模块 */
     int i, size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
     for( i = size - 1 ; i >= 0 ; i-- ) {
-        wbt_log_print( "\nFinalize module %-15.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+        //wbt_log_print( "\nFinalize module %-15.*s [        ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
         if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
             /* fatal */
 #ifndef WIN32
@@ -79,9 +79,9 @@ wbt_status wbt_module_exit() {
 #endif
 		} else {
 #ifndef WIN32
-			wbt_log_print( "\rFinalize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+			//wbt_log_print( "\rFinalize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			wbt_log_print("\rFinalize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+			//wbt_log_print("\rFinalize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
 		}
     }

@@ -64,7 +64,7 @@ wbt_status wbt_conf_init() {
     if( ( value = wbt_conf_get("listen") ) != NULL ) {
         wbt_conf.listen_port = atoi(value);
         if( wbt_conf.listen_port < 0 || wbt_conf.listen_port > 65535  ) {
-            wbt_log_add("listen port out of range ( expect 0 - 65535 )\n");
+            wbt_log_print("listen port out of range ( expect 0 - 65535 )\n");
             return WBT_ERROR;
         }
     }
@@ -73,7 +73,7 @@ wbt_status wbt_conf_init() {
     if( ( value = wbt_conf_get("process") ) != NULL ) {
         wbt_conf.process = atoi(value);
         if( wbt_conf.process < 1 || wbt_conf.process > 128 ) {
-            wbt_log_add("worker process number out of range ( expect 1 - 128 )\n");
+            wbt_log_print("worker process number out of range ( expect 1 - 128 )\n");
             return WBT_ERROR;
         }
     }
@@ -91,14 +91,14 @@ wbt_status wbt_conf_init() {
         if( ( m_value = wbt_conf_get_v("secure_key") ) != NULL ) {
             wbt_conf.secure_key = *m_value;
         } else {
-            wbt_log_add("option secure_key is required\n");
+            wbt_log_print("option secure_key is required\n");
             return WBT_ERROR;
         }
         
         if( ( m_value = wbt_conf_get_v("secure_crt") ) != NULL ) {
             wbt_conf.secure_crt = *m_value;
         } else {
-            wbt_log_add("option secure_crt is required\n");
+            wbt_log_print("option secure_crt is required\n");
             return WBT_ERROR;
         }
     }
@@ -142,7 +142,7 @@ wbt_status wbt_conf_init() {
         } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_everysec ) == 0 ) {
             wbt_conf.aof_fsync = AOF_FSYNC_EVERYSEC;
         } else {
-            wbt_log_add("option aof_fsync is illegal ( expect off / always / everysec )\n");
+            wbt_log_print("option aof_fsync is illegal ( expect off / always / everysec )\n");
             return WBT_ERROR;
         }
     }
@@ -163,7 +163,7 @@ wbt_status wbt_conf_init() {
         } else if( wbt_strcmp( (wbt_str_t *)m_value, &wbt_conf_option_standard ) == 0 ) {
             wbt_conf.auth = 2;
         } else {
-            wbt_log_add("option auth is illegal ( expect none / baisc / standard )\n");
+            wbt_log_print("option auth is illegal ( expect none / baisc / standard )\n");
             return WBT_ERROR;
         }
     }
@@ -173,7 +173,7 @@ wbt_status wbt_conf_init() {
         if( ( m_value = wbt_conf_get_v("auth_password") ) != NULL ) {
             wbt_conf.auth_key = *m_value;
         } else {
-            wbt_log_add("option auth_password is required\n");
+            wbt_log_print("option auth_password is required\n");
             return WBT_ERROR;
         }
     } else if( wbt_conf.auth == 2 ) {
@@ -181,7 +181,7 @@ wbt_status wbt_conf_init() {
         if( ( m_value = wbt_conf_get_v("auth_key") ) != NULL ) {
             wbt_conf.auth_key = *m_value;
         } else {
-            wbt_log_add("option auth_key is required\n");
+            wbt_log_print("option auth_key is required\n");
             return WBT_ERROR;
         }
     }
@@ -216,7 +216,7 @@ wbt_status wbt_conf_init() {
         wbt_conf.root = *m_value;
         // TODO 检查 root 是否存在
     } else {
-        wbt_log_add("option root is required\n");
+        wbt_log_print("option root is required\n");
         return WBT_ERROR;
     }
     
@@ -235,6 +235,22 @@ wbt_status wbt_conf_init() {
         wbt_conf.user = *m_value;
     }
 
+    wbt_str_set_null(wbt_conf.data);
+    if( ( m_value = wbt_conf_get_v("data") ) != NULL ) {
+        wbt_conf.data = *m_value;
+    } else {
+        wbt_log_print("option data is required\n");
+        return WBT_ERROR;
+    }
+
+    wbt_str_set_null(wbt_conf.logs);
+    if( ( m_value = wbt_conf_get_v("logs") ) != NULL ) {
+        wbt_conf.logs = *m_value;
+    } else {
+        wbt_log_print("option logs is required\n");
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }
 
@@ -353,7 +369,7 @@ wbt_status wbt_conf_reload() {
     
     if( wbt_config_file.fd <= 0 ) {
         /* 找不到配置文件 */
-        wbt_log_add("Can't find config file: %.*s\n", wbt_config_file_name.len, wbt_config_file_name.str);
+        wbt_log_print("Can't find config file: %.*s\n", wbt_config_file_name.len, wbt_config_file_name.str);
         return WBT_ERROR;
     }
 
@@ -377,7 +393,7 @@ wbt_status wbt_conf_reload() {
         return WBT_ERROR;
     }
     if( wbt_read_file( wbt_config_file.fd, wbt_config_file_content.str, wbt_config_file_content.len, 0) != wbt_config_file_content.len ) {
-        wbt_log_add("Read config file failed\n");
+        wbt_log_print("Read config file failed\n");
         return WBT_ERROR;
     }
     
@@ -398,7 +414,7 @@ wbt_status wbt_conf_reload() {
 		return WBT_OK;
     } else {
         wbt_free(wbt_config_file_content.str);
-        wbt_log_add("Syntax error on config file: line %d, charactor %d\n", wbt_conf_line, wbt_conf_charactor);
+        wbt_log_print("Syntax error on config file: line %d, charactor %d\n", wbt_conf_line, wbt_conf_charactor);
         return WBT_ERROR;
     }
 }

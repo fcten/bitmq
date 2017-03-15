@@ -15,11 +15,7 @@ static wbt_fd_t wbt_persist_mid_fd = 0;
 static wbt_fd_t wbt_persist_aof_fd = 0;
 static ssize_t wbt_persist_aof_size = 0;
 
-static wbt_str_t wbt_persist_mid = wbt_string("./data/bmq.mid");
-static wbt_str_t wbt_persist_aof = wbt_string("./data/bmq.aof");
-
 static wbt_atomic_t wbt_persist_aof_lock = 0;
-static wbt_str_t wbt_persist_mdp = wbt_string("./data/bmq.mdp");
 
 extern wbt_atomic_t wbt_wating_to_exit;
 
@@ -180,8 +176,14 @@ error:
 }
 
 wbt_status wbt_mq_persist_init() {
+    char mid_file[256];
+    snprintf( mid_file, sizeof(mid_file), "%.*s/bmq.mid", wbt_conf.data.len, wbt_conf.data.str );
+
+    char aof_file[256];
+    snprintf( aof_file, sizeof(aof_file), "%.*s/bmq.aof", wbt_conf.data.len, wbt_conf.data.str );
+    
     // 无论是否启用持久化，mid 都应当被保存，这样可以避免 msg_id 冲突（或减小其发生概率）
-    wbt_persist_mid_fd = wbt_open_datafile(wbt_persist_mid.str);
+    wbt_persist_mid_fd = wbt_open_datafile(mid_file);
     if ((int)wbt_persist_mid_fd <= 0) {
         return WBT_ERROR;
     }
@@ -199,7 +201,7 @@ wbt_status wbt_mq_persist_init() {
         return WBT_OK;
     }
 
-    wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
+    wbt_persist_aof_fd = wbt_open_logfile(aof_file);
     if( (int)wbt_persist_aof_fd <= 0 ) {
         return WBT_ERROR;
     }
@@ -373,6 +375,12 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg, int rf) {
 // 操作。而我们需要付出的唯一代价是导出的文件中可能会存在少量刚刚过期的消息
 // TODO 
 static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
+    char aof_file[256];
+    snprintf( aof_file, sizeof(aof_file), "%.*s/bmq.aof", wbt_conf.data.len, wbt_conf.data.str );
+    
+    char mdp_file[256];
+    snprintf( mdp_file, sizeof(mdp_file), "%.*s/bmq.mdp", wbt_conf.data.len, wbt_conf.data.str );
+
     // 临时文件 fd
     static wbt_fd_t rdp_fd = 0;
     // 记录当前的最大消息 ID max
@@ -413,7 +421,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 
     if( !rdp_fd ) {
         // 创建临时文件
-        rdp_fd = wbt_open_tmpfile(wbt_persist_mdp.str);
+        rdp_fd = wbt_open_tmpfile(mdp_file);
         if( (int)rdp_fd <= 0 ) {
             wbt_log_add("Could not open mdp file: %d\n", wbt_errno);
             // TODO data目录存在权限问题时会导致错误
@@ -470,13 +478,13 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
 
         if(MoveFileEx(wbt_persist_mdp.str, wbt_persist_aof.str, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
 #else
-        if( rename(wbt_persist_mdp.str, wbt_persist_aof.str) < 0 ) {
+        if( rename(mdp_file, aof_file) < 0 ) {
 #endif
             wbt_log_add("Could not rename mdp file. "
                 "rename: %d\n", wbt_errno);
             
             // 尝试重新打开 aof 文件
-            wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
+            wbt_persist_aof_fd = wbt_open_logfile(aof_file);
             if( (int)wbt_persist_aof_fd < 0 ) {
                 wbt_persist_aof_fd = 0;
                 wbt_log_add("Could not open AOF file: %d\n", wbt_errno);
