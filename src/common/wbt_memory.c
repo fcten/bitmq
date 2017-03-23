@@ -113,6 +113,10 @@ void * wbt_memcpy(void *dest, const void *src, size_t size) {
     return memcpy(dest, src, size);
 }
 
+void *wbt_memmove( void* dest, const void* src, size_t count ) {
+    return memmove(dest, src, count);
+}
+
 void * wbt_strdup(const void *ptr, size_t size) {
     void * p = wbt_malloc(size);
 

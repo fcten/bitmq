@@ -290,7 +290,7 @@ waiting:
             ev->buff_len = 0;
             bmtp->recv_offset = 0;
         } else if( ev->buff_len > msg_offset ) {
-            wbt_memcpy(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
+            wbt_memmove(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
             ev->buff_len -= msg_offset;
             bmtp->recv_offset -= msg_offset;
         } else {

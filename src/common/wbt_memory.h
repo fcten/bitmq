@@ -47,6 +47,7 @@ void wbt_free(void *ptr);
 
 void * wbt_memset(void *ptr, int ch, size_t size);
 void * wbt_memcpy(void *dest, const void *src, size_t size);
+void * wbt_memmove(void* dest, const void* src, size_t count);
 void * wbt_strdup(const void *ptr, size_t size);
 
 int wbt_is_oom();

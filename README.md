@@ -1,6 +1,6 @@
 # BitMQ
 
-BitMQ 是一款使用 ANSI C 语言编写的高性能消息队列与消息代理服务端程序。
+BitMQ 是一款开源消息队列与消息代理服务端程序。
 
 BitMQ 支持在 GNU/Linux 以及 Windows 上运行。BitMQ 目前在 Windows 下使用 select 模型，不建议用于高负载环境。
 

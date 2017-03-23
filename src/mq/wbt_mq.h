@@ -128,11 +128,16 @@ typedef struct wbt_auth_s {
     unsigned int max_subscriber_count;
     // 已连接的订阅者数量
     unsigned int subscriber_count;
+    // 订阅者踢除策略
+    // 0 - 默认：拒绝新的订阅者
+    // 1 - 断开最早连接的订阅者
+    unsigned int subscriber_kick;
     // 最大消息长度（上限 64K）
     unsigned int max_msg_len;
-    // 最长消息延迟时间
+    // 最长消息延迟时间（上限 30天）
+    // 如果 BitMQ 被当作消息代理使用，建议将该值设为 0。
     unsigned int max_effect;
-    // 最长消息有效时间
+    // 最长消息有效时间（上限 30天）
     unsigned int max_expire;
     // 每秒发布消息限额
     unsigned int max_pub_per_second;
