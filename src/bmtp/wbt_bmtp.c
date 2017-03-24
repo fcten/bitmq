@@ -181,7 +181,14 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
                         bmtp->state = STATE_RECV_PAYLOAD;
                         break;
                     case BMTP_CONN:
-                        bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
+                        if(wbt_bmtp_version(bmtp->header)==0x1){
+                            bmtp->state = STATE_RECV_PAYLOAD;
+                        } else if(wbt_bmtp_version(bmtp->header)==0x2) {
+                            bmtp->state = STATE_RECV_PAYLOAD_LENGTH;
+                        } else {
+                            wbt_log_add("BMTP error: unsupport bmtp version %d\n", wbt_bmtp_version(bmtp->header));
+                            return WBT_ERROR;
+                        }
                         break;
                     default:
                         wbt_log_add("BMTP error: unexpected header\n");
@@ -402,8 +409,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
 
     wbt_bmtp_t *bmtp = ev->data;
 
-    if( wbt_bmtp_version(bmtp->header) != BMTP_VERSION ||
-            bmtp->cid != 0x424D5450 ) { /* "BMTP" */
+    if( bmtp->cid != 0x424D5450 ) { /* "BMTP" */
         bmtp->is_exit = 1;
         wbt_log_add("BMTP error: invalid conn\n");
         return wbt_bmtp_send_connack(ev, 0x1);
