@@ -64,6 +64,8 @@ typedef struct wbt_conf_s {
     wbt_str_t auth_password;
     // 授权认证公钥文件路径
     wbt_str_t auth_key;
+    // 匿名订阅者授权
+    wbt_str_t auth_anonymous;
     // 持久化文件保存目录
     wbt_str_t data;
     // 日志文件保存目录

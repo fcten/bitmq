@@ -185,6 +185,11 @@ wbt_status wbt_conf_init() {
             return WBT_ERROR;
         }
     }
+    
+    wbt_str_set_null(wbt_conf.auth_anonymous);
+    if( ( m_value = wbt_conf_get_v("auth_anonymous") ) != NULL ) {
+        wbt_conf.auth_anonymous = *m_value;
+    }
 
     wbt_conf.keep_alive_timeout = 600000;
     if( ( value = wbt_conf_get("keep_alive_timeout") ) != NULL ) {

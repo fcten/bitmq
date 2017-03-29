@@ -113,25 +113,43 @@ typedef struct wbt_channel_list_s {
     wbt_mq_id seq_id;
 } wbt_channel_list_t;
 
+typedef struct wbt_auth_list_s {
+    // 链表结构体
+    wbt_list_t head;
+    // 授权 channel 区间
+    wbt_mq_id min_channel_id;
+    wbt_mq_id max_channel_id;
+} wbt_auth_list_t;
+
 /* 同一份授权可以由多个连接的多个订阅者共同使用。
  * 所有使用同一份授权的订阅者将共享限额。
  * 
- * 授权一旦生成，将会始终保存在内存中直至授权过期或主动撤销。
+ * 授权一旦生成，将会始终保存在内存中直至授权过期。
  * 这样可以确保即使订阅者发生断线重连也不会重置限额。
+ * 
+ * 授权无法被直接撤销，但可以被更新。较晚颁发的授权
+ * 可以覆盖较晚颁发的授权。通过更新授权，可以实现
+ * 动态调整限额，以及延长授权的有效期限。
  */
 typedef struct wbt_auth_s {
+    // 授权 ID
+    wbt_mq_id auth_id;
+    // 授权颁发时间
+    time_t create;
+    // 授权过期时间
+    time_t expire;
     // 允许 pub 的 channel 列表
-    wbt_channel_list_t pub_channels;
+    wbt_auth_list_t pub_channels;
     // 允许 sub 的 channel 列表
-    wbt_channel_list_t sub_channels;
+    wbt_auth_list_t sub_channels;
     // 订阅者限额
-    unsigned int max_subscriber_count;
+    unsigned int max_subscriber;
     // 已连接的订阅者数量
     unsigned int subscriber_count;
     // 订阅者踢除策略
     // 0 - 默认：拒绝新的订阅者
     // 1 - 断开最早连接的订阅者
-    unsigned int subscriber_kick;
+    unsigned int kick_subscriber;
     // 最大消息长度（上限 64K）
     unsigned int max_msg_len;
     // 最长消息延迟时间（上限 30天）
