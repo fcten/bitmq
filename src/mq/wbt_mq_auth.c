@@ -57,13 +57,45 @@ void wbt_mq_auth_parser( json_task_t * task, json_object_t * node ) {
     }
 }
 
+static wbt_auth_t *anonymous, *admin;
+
 wbt_status wbt_mq_auth_init() {
     wbt_rb_init(&wbt_mq_auths, WBT_RB_KEY_LONGLONG);
 
     // 加载匿名授权
-    //wbt_mq_auth_create();
-
+    if( wbt_conf.auth_anonymous.len > 0 ) {
+        anonymous = wbt_mq_auth_create(&wbt_conf.auth_anonymous);
+        if( anonymous == NULL ) {
+            wbt_log_add("invalid auth_anonymous token\n");
+            return WBT_ERROR;
+        }
+    } else {
+        anonymous = NULL;
+    }
+    
+    // 加载管理员授权
+    wbt_str_t admin_token = wbt_string("{}");
+    admin = wbt_mq_auth_create(&admin_token);
+    if( admin == NULL ) {
+        wbt_log_add("invalid auth_admin token\n");
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
+}
+
+/* 获取匿名授权
+ * 如果没有启用匿名授权 则返回 NULL
+ */
+wbt_auth_t * wbt_mq_auth_anonymous() {
+    return anonymous;
+}
+
+/* 获取管理员授权
+ * 不能为 NULL
+ */
+wbt_auth_t * wbt_mq_auth_admin() {
+    return admin;
 }
 
 /* 通过授权 token 创建或更新一份授权
@@ -109,25 +141,30 @@ wbt_auth_t * wbt_mq_auth_create(wbt_str_t *token) {
             return NULL;
         }
         
-        // 更新授权
-        old_auth->timer.timeout = auth->expire;
-        if( wbt_timer_mod(&old_auth->timer) != WBT_OK ) {
-            return NULL;
-        }
+        if( old_auth->create == auth->create &&
+            old_auth->expire == auth->expire ) {
+            // 颁发时间和过期时间完全相同的授权被视为统一份授权
+        } else {
+            // 更新授权
+            old_auth->timer.timeout = auth->expire;
+            if( wbt_timer_mod(&old_auth->timer) != WBT_OK ) {
+                return NULL;
+            }
 
-        old_auth->create = auth->create;
-        old_auth->expire = auth->expire;
-        old_auth->kick_subscriber = auth->kick_subscriber;
-        old_auth->max_effect = auth->max_effect;
-        old_auth->max_expire = auth->max_expire;
-        old_auth->max_msg_len = auth->max_msg_len;
-        old_auth->max_pub_per_day = auth->max_pub_per_day;
-        old_auth->max_pub_per_hour = auth->max_pub_per_hour;
-        old_auth->max_pub_per_minute = auth->max_pub_per_minute;
-        old_auth->max_pub_per_second = auth->max_pub_per_second;
-        old_auth->max_subscriber = auth->max_subscriber;
-        //old_auth->pub_channels
-        //old_auth->sub_channels
+            old_auth->create = auth->create;
+            old_auth->expire = auth->expire;
+            old_auth->kick_subscriber = auth->kick_subscriber;
+            old_auth->max_effect = auth->max_effect;
+            old_auth->max_expire = auth->max_expire;
+            old_auth->max_msg_len = auth->max_msg_len;
+            old_auth->max_pub_per_day = auth->max_pub_per_day;
+            old_auth->max_pub_per_hour = auth->max_pub_per_hour;
+            old_auth->max_pub_per_minute = auth->max_pub_per_minute;
+            old_auth->max_pub_per_second = auth->max_pub_per_second;
+            old_auth->max_subscriber = auth->max_subscriber;
+            //old_auth->pub_channels
+            //old_auth->sub_channels
+        }
         
         wbt_free(auth);
     }

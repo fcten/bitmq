@@ -10,6 +10,7 @@
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
 #include "wbt_mq_persistence.h"
+#include "wbt_mq_auth.h"
 #include "../json/wbt_json.h"
 
 wbt_str_t wbt_mq_str_message       = wbt_string("message");
@@ -52,19 +53,23 @@ wbt_module_t wbt_module_mq = {
 };
 
 wbt_status wbt_mq_init() {
-    if( wbt_mq_persist_init() !=WBT_OK ) {
+    if( wbt_mq_auth_init() != WBT_OK ) {
         return WBT_ERROR;
     }
 
-    if( wbt_mq_channel_init() !=WBT_OK ) {
+    if( wbt_mq_channel_init() != WBT_OK ) {
         return WBT_ERROR;
     }
 
-    if( wbt_mq_subscriber_init() !=WBT_OK ) {
+    if( wbt_mq_subscriber_init() != WBT_OK ) {
         return WBT_ERROR;
     }
 
-    if( wbt_mq_msg_init() !=WBT_OK ) {
+    if( wbt_mq_msg_init() != WBT_OK ) {
+        return WBT_ERROR;
+    }
+    
+    if( wbt_mq_persist_init() != WBT_OK ) {
         return WBT_ERROR;
     }
     
@@ -435,5 +440,16 @@ wbt_status wbt_mq_set_is_ready_cb(wbt_event_t *ev, wbt_status (*is_ready)(wbt_ev
     }
     
     subscriber->is_ready = is_ready;
+    return WBT_OK;
+}
+
+wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    if( subscriber == NULL ) {
+        return WBT_ERROR;
+    }
+    
+    subscriber->auth = auth;
+    
     return WBT_OK;
 }

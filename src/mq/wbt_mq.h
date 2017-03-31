@@ -231,6 +231,7 @@ wbt_status wbt_mq_ack(wbt_event_t *ev);
 
 wbt_status wbt_mq_set_send_cb(wbt_event_t *ev, wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int));
 wbt_status wbt_mq_set_is_ready_cb(wbt_event_t *ev, wbt_status (*is_ready)(wbt_event_t *));
+wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth);
 
 time_t wbt_mq_uptime();
 

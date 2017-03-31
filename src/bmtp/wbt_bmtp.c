@@ -12,9 +12,11 @@
 #include "../common/wbt_config.h"
 #include "../common/wbt_log.h"
 #include "../common/wbt_auth.h"
+#include "../common/wbt_base64.h"
 #include "../json/wbt_json.h"
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_msg.h"
+#include "../mq/wbt_mq_auth.h"
 #include "wbt_bmtp.h"
 #include "wbt_bmtp_sid.h"
 
@@ -416,8 +418,20 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     }
     
     // 授权验证
+    wbt_auth_t *auth = wbt_mq_auth_anonymous();
     if( wbt_conf.auth == 1 ) {
-        // TODO basic 验证
+        // basic 验证
+        if( bmtp->payload_length > 0 ) {
+        
+            // 通过 basic 验证的客户端拥有不受限制的访问授权
+            auth = wbt_mq_auth_admin();
+        } else {
+            if( auth == NULL ) {
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
+        }
     } else if( wbt_conf.auth == 2 ) {
         // standard 验证
         if( bmtp->payload_length > 0 ) {
@@ -428,7 +442,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             int pos = wbt_strpos(&token, &split);
             if(pos == -1) {
                 bmtp->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed\n");
+                wbt_log_add("BMTP error: authorize failed - invalid token\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
             sign.str = token.str+pos+1;
@@ -438,16 +452,44 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
 
             if(wbt_auth_verify(&token, &sign) != WBT_OK) {
                 bmtp->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed\n");
+                wbt_log_add("BMTP error: authorize failed - verify failed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
+
+            wbt_str_t token_decode;;
+            token_decode.len = token.len;
+            token_decode.str = (unsigned char*) wbt_malloc(token.len);
+            if( token_decode.str == NULL ) {
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed - out of memory\n");
+                return wbt_bmtp_send_connack(ev, 0x2);
+            }
+
+            if( wbt_base64_decode(&token_decode, &token) != WBT_OK ) {
+                wbt_free(token_decode.str);
+                
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed - base64 decode failed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
             
             // 读取授权信息
+            auth = wbt_mq_auth_create(&token_decode);
+            if( auth == NULL ) {
+                wbt_free(token_decode.str);
+                
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed - auth create failed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
             
+            wbt_free(token_decode.str);
         } else {
-            bmtp->is_exit = 1;
-            wbt_log_add("BMTP error: authorize failed\n");
-            return wbt_bmtp_send_connack(ev, 0x3);
+            if( auth == NULL ) {
+                bmtp->is_exit = 1;
+                wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
+                return wbt_bmtp_send_connack(ev, 0x3);
+            }
         }
     }
 
@@ -457,6 +499,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     
     wbt_mq_set_send_cb(ev, wbt_bmtp_send_pub);
     wbt_mq_set_is_ready_cb(ev, wbt_bmtp_is_ready);
+    wbt_mq_set_auth(ev, auth);
     
     bmtp->is_conn = 1;
     if( wbt_bmtp_send_connack(ev, 0x0) != WBT_OK ) {

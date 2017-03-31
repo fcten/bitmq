@@ -19,6 +19,9 @@ wbt_auth_t * wbt_mq_auth_create(wbt_str_t *token);
 wbt_auth_t * wbt_mq_auth_get(wbt_mq_id auth_id);
 void wbt_mq_auth_destory(wbt_auth_t *auth);
 
+wbt_auth_t * wbt_mq_auth_anonymous();
+wbt_auth_t * wbt_mq_auth_admin();
+
 #ifdef __cplusplus
 }
 #endif
