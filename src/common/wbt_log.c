@@ -67,7 +67,8 @@ wbt_status wbt_log_rotate() {
     }
 #else
     if( rename(log_file, new_log_file) < 0 ) {
-        wbt_log_add("Could not rename log file. "
+        // Bugfix: 如果 rename 执行失败，继续调用 wbt_lod_add 会导致死循环
+        wbt_log_debug("Could not rename log file. "
             "rename: %d\n", wbt_errno);
 
         return WBT_ERROR;
