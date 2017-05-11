@@ -400,6 +400,8 @@ wbt_status wbt_bmtp_on_close(wbt_event_t *ev) {
         wbt_free( msg_node->msg );
         wbt_free( msg_node );
     }
+    
+    wbt_mq_auth_disconn(ev);
 
     wbt_log_add("BMTP close: %d\n", ev->fd);
     
@@ -424,7 +426,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
         if( bmtp->payload_length > 0 ) {
         
             // 通过 basic 验证的客户端拥有不受限制的访问授权
-            auth = wbt_mq_auth_admin();
+            auth = NULL;
         } else {
             if( auth == NULL ) {
                 bmtp->is_exit = 1;
@@ -500,13 +502,16 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     wbt_mq_set_send_cb(ev, wbt_bmtp_send_pub);
     wbt_mq_set_is_ready_cb(ev, wbt_bmtp_is_ready);
     wbt_mq_set_auth(ev, auth);
-    
-    bmtp->is_conn = 1;
-    if( wbt_bmtp_send_connack(ev, 0x0) != WBT_OK ) {
-        return WBT_ERROR;
+
+    if( wbt_mq_auth_conn_limit(ev) != WBT_OK ) {
+        bmtp->is_exit = 1;
+        wbt_log_add("BMTP error: too many connections\n");
+        return wbt_bmtp_send_connack(ev, 0x3);
     }
+
+    bmtp->is_conn = 1;
     
-    return WBT_OK;
+    return wbt_bmtp_send_connack(ev, 0x0);
 }
 
 wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
@@ -519,6 +524,10 @@ wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
     //wbt_log_debug("new pub\n");
+    if( wbt_mq_auth_pub_limit(ev) != WBT_OK ) {
+        // out of limit
+        return wbt_bmtp_send_puback(ev, 0x3);
+    }
     
     wbt_bmtp_t *bmtp = ev->data;
 
@@ -538,6 +547,11 @@ wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
 wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
+    if( wbt_mq_auth_sub_permission(ev, bmtp->cid) != WBT_OK ) {
+        // permission denied
+        return wbt_bmtp_send_suback(ev, 0x3);
+    }
+    
     // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
     if( wbt_mq_subscribe(ev, bmtp->cid) != WBT_OK ) {
         return wbt_bmtp_send_suback(ev, 0x1);

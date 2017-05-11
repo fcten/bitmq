@@ -246,7 +246,7 @@ wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
 
     msg->effect = msg->create + msg->effect * 1000;
     msg->expire = msg->effect + msg->expire * 1000;
-
+    
     return WBT_OK;
 }
 
@@ -272,7 +272,8 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
         return WBT_ERROR;
     }
     
-    if( wbt_mq_parser(&t, msg) != WBT_OK ) {
+    if( wbt_mq_parser(&t, msg) != WBT_OK ||
+        wbt_mq_auth_pub_permission(ev, msg) != WBT_OK  ) {
         wbt_log_add("Message attribute error: %.*s\n", len<200 ? len : 200, data);
 
         json_delete_object(t.root);

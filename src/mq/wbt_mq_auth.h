@@ -22,6 +22,12 @@ void wbt_mq_auth_destory(wbt_auth_t *auth);
 wbt_auth_t * wbt_mq_auth_anonymous();
 wbt_auth_t * wbt_mq_auth_admin();
 
+wbt_status wbt_mq_auth_disconn(wbt_event_t *ev);
+wbt_status wbt_mq_auth_conn_limit(wbt_event_t *ev);
+wbt_status wbt_mq_auth_pub_limit(wbt_event_t *ev);
+wbt_status wbt_mq_auth_sub_permission(wbt_event_t *ev, wbt_mq_id channel_id);
+wbt_status wbt_mq_auth_pub_permission(wbt_event_t *ev, wbt_msg_t *msg);
+
 #ifdef __cplusplus
 }
 #endif
