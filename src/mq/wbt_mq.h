@@ -149,7 +149,7 @@ typedef struct wbt_auth_s {
     // 订阅者踢除策略
     // 0 - 默认：拒绝新的订阅者
     // 1 - 断开最早连接的订阅者
-    unsigned int kick_subscriber;
+    //unsigned int kick_subscriber;
     // 最大消息长度（上限 64K）
     unsigned int max_msg_len;
     // 最长消息延迟时间（上限 30天）

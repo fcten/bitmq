@@ -13,7 +13,6 @@ wbt_str_t wbt_mq_auth_str_expire      = wbt_string("expire");
 wbt_str_t wbt_mq_auth_pub_channels    = wbt_string("pub_channels");
 wbt_str_t wbt_mq_auth_sub_channels    = wbt_string("sub_channels");
 wbt_str_t wbt_mq_auth_max_subscriber  = wbt_string("max_subscriber");
-wbt_str_t wbt_mq_auth_kick_subscriber = wbt_string("kick_subscriber");
 wbt_str_t wbt_mq_auth_max_msg_len     = wbt_string("max_msg_len");
 wbt_str_t wbt_mq_auth_max_effect      = wbt_string("max_effect");
 wbt_str_t wbt_mq_auth_max_expire      = wbt_string("max_expire");
@@ -255,7 +254,7 @@ wbt_auth_t * wbt_mq_auth_create(wbt_str_t *token) {
 
             old_auth->create = auth->create;
             old_auth->expire = auth->expire;
-            old_auth->kick_subscriber = auth->kick_subscriber;
+            //old_auth->kick_subscriber = auth->kick_subscriber;
             old_auth->max_effect = auth->max_effect;
             old_auth->max_expire = auth->max_expire;
             old_auth->max_msg_len = auth->max_msg_len;

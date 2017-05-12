@@ -506,7 +506,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     if( wbt_mq_auth_conn_limit(ev) != WBT_OK ) {
         bmtp->is_exit = 1;
         wbt_log_add("BMTP error: too many connections\n");
-        return wbt_bmtp_send_connack(ev, 0x3);
+        return wbt_bmtp_send_connack(ev, 0x4);
     }
 
     bmtp->is_conn = 1;
