@@ -34,7 +34,7 @@ enum {
     STATE_CONNECTED,
     STATE_RECV_HEADER,
     STATE_RECV_PAYLOAD_LENGTH,
-    STATE_RECV_MASK,
+    STATE_RECV_MASK_KEY,
     STATE_RECV_PAYLOAD
 };
 
@@ -216,10 +216,187 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         
         return wbt_websocket_send(ev, buf.str, buf.len);
     } else if( ev->protocol == WBT_PROTOCOL_WEBSOCKET ) {
-        wbt_log_debug("ws: recv data\n");
+        //wbt_log_debug("ws: recv data\n");
+        
+        wbt_websocket_t *ws = ev->data;
+    
+        if( ws->is_exit ) {
+            return WBT_OK;
+        }
+
+        int msg_offset = 0;
+        unsigned char c;
+
+        while(!ws->is_exit) {
+            switch(ws->state) {
+                case STATE_CONNECTED:
+                    ws->payload = NULL;
+                    ws->payload_length = 0;
+                    ws->state = STATE_RECV_HEADER;
+                    break;
+                case STATE_RECV_HEADER:
+                    msg_offset = ws->recv_offset;
+
+                    if( ws->recv_offset + 2 > ev->buff_len ) {
+                        goto waiting;
+                    }
+
+                    c = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+
+                    switch(c & 0xF0) {
+                        case 0x80:
+                            ws->fin = 1;
+                            break;
+                        case 0x00:
+                            ws->fin = 0;
+                            break;
+                        default:
+                            return WBT_ERROR;
+                    }
+                    
+                    ws->opcode = c & 0x0F;
+                    switch(ws->opcode) {
+                        case 0x0:
+                        case 0x1:
+                        case 0x2:
+                        case 0x8:
+                        case 0x9:
+                        case 0xA:
+                            break;
+                        default:
+                            return WBT_ERROR;
+                    }
+                    
+                    c = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                    
+                    ws->mask = c >> 7;
+                    ws->payload_length = c & 0x7F;
+                    
+                    if( ws->mask != 1 ) {
+                        return WBT_ERROR;
+                    }
+                    
+                    ws->state = STATE_RECV_PAYLOAD_LENGTH;
+                    break;
+                case STATE_RECV_PAYLOAD_LENGTH:
+                    if( ws->payload_length <= 125 ) {
+                        ws->state = STATE_RECV_MASK_KEY;
+                    } else if( ws->payload_length == 126 ) {
+                        if( ws->recv_offset + 2 > ev->buff_len ) {
+                            goto waiting;
+                        }
+
+                        ws->payload_length  = ((unsigned char *)ev->buff)[ws->recv_offset ++] << 8;
+                        ws->payload_length += ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                        
+                        ws->state = STATE_RECV_MASK_KEY;
+                    } else if( ws->payload_length == 127 ) {
+                        if( ws->recv_offset + 8 > ev->buff_len ) {
+                            goto waiting;
+                        }
+
+                        ws->payload_length = *((unsigned long long int *)ev->buff);
+                        ws->recv_offset += 8;
+                        
+                        ws->state = STATE_RECV_MASK_KEY;
+                    } else {
+                        return WBT_ERROR;
+                    }
+                    break;
+                case STATE_RECV_MASK_KEY:
+                    if( ws->recv_offset + 4 > ev->buff_len ) {
+                        goto waiting;
+                    }
+
+                    ws->mask_key[0] = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                    ws->mask_key[1] = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                    ws->mask_key[2] = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                    ws->mask_key[3] = ((unsigned char *)ev->buff)[ws->recv_offset ++];
+                    
+                    ws->state = STATE_RECV_PAYLOAD;
+                    break;
+                case STATE_RECV_PAYLOAD:
+                    if( ws->recv_offset + ws->payload_length > ev->buff_len ) {
+                        goto waiting;
+                    }
+
+                    ws->payload = (unsigned char *)ev->buff + ws->recv_offset;
+                    ws->recv_offset += ws->payload_length;
+
+                    // 解码
+                    for(int i = 0;i < ws->payload_length; i++) {
+                        ws->payload[i] ^= ws->mask_key[i%4];
+                    }
+                    
+
+                    wbt_websocket_send_msg(ev, ws->payload, ws->payload_length);
+                    
+                    ws->state = STATE_CONNECTED;
+                    break;
+                default:
+                    return WBT_ERROR;
+            }
+        }
+
+    waiting:
+
+        if( msg_offset > 0 ) {
+            /* 删除已经处理完毕的消息
+             */
+            if( ev->buff_len == msg_offset ) {
+                wbt_free(ev->buff);
+                ev->buff = NULL;
+                ev->buff_len = 0;
+                ws->recv_offset = 0;
+            } else if( ev->buff_len > msg_offset ) {
+                wbt_memmove(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
+                ev->buff_len -= msg_offset;
+                ws->recv_offset -= msg_offset;
+            } else {
+                wbt_log_add("ws error: unexpected error\n");
+                return WBT_ERROR;
+            }
+        } else if( msg_offset == 0 &&
+                ws->recv_offset + ws->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
+            /* 消息长度超过限制
+             */
+            wbt_log_add("ws error: message length exceeds limit\n");
+            return WBT_ERROR;
+        }
+
+        ev->events |= WBT_EV_READ;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+
+        return WBT_OK;
+
     }
 
     return WBT_OK;
+}
+
+wbt_status wbt_websocket_send_msg(wbt_event_t *ev, char *data, int len) {
+    if( len > 64 * 1024 - 4 ) {
+        len = 64 * 1024 - 4;
+    }
+
+    if( len <= 125 ) {
+        unsigned char *buf = wbt_malloc(len+2);
+        buf[0] = 0x82;
+        buf[1] = len;
+        wbt_memcpy(buf+2, data, len);
+        return wbt_websocket_send(ev, buf, len+2);
+    } else {
+        unsigned char *buf = wbt_malloc(len+4);
+        buf[0] = 0x82;
+        buf[1] = 126;
+        buf[2] = len >> 8;
+        buf[3] = len;
+        wbt_memcpy(buf+4, data, len);
+        return wbt_websocket_send(ev, buf, len+4);
+    }
 }
 
 wbt_status wbt_websocket_send(wbt_event_t *ev, char *buf, int len) {

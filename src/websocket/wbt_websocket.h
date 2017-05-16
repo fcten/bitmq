@@ -51,14 +51,18 @@ typedef struct wbt_websocket_s {
     // 会话状态
     unsigned int state;
     
+    unsigned int is_exit:1;
+    
     unsigned int fin:1;
     unsigned int mask:1;
     unsigned int opcode:4;
     
+    unsigned char mask_key[4];
+    
     unsigned long long int payload_length;
     unsigned char *payload;
-
-    unsigned int is_exit:1;
+    
+    unsigned int recv_offset;
 
     wbt_websocket_msg_t send_queue;
 } wbt_websocket_t;
@@ -71,6 +75,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev );
 wbt_status wbt_websocket_on_send( wbt_event_t *ev );
 
 wbt_status wbt_websocket_send( wbt_event_t *ev, char *buf, int len );
+wbt_status wbt_websocket_send_msg(wbt_event_t *ev, char *data, int len);
 
 #ifdef	__cplusplus
 }
