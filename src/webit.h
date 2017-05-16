@@ -15,6 +15,8 @@ extern "C" {
 #include <stdio.h>
 #include <stdint.h>
 
+#define WITH_WEBSOCKET
+
 #ifndef WIN32
 
 #define WBT_DEBUG

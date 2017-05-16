@@ -86,6 +86,13 @@ wbt_str_t HTTP_HEADERS[] = {
     wbt_string("Cookie"),
     wbt_string("Set-Cookie"),
     wbt_string("Access-Control-Allow-Origin"),
+#ifdef WITH_WEBSOCKET
+    wbt_string("Sec-WebSocket-Key"),
+    wbt_string("Sec-WebSocket-Version"),
+    wbt_string("Sec-WebSocket-Protocol"),
+    wbt_string("Sec-WebSocket-Extensions"),
+    wbt_string("Sec-WebSocket-Accept"),
+#endif
     wbt_null_string
 };
 

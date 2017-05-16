@@ -19,6 +19,9 @@ extern wbt_module_t wbt_module_conn;
 extern wbt_module_t wbt_module_ssl;
 extern wbt_module_t wbt_module_mq;
 extern wbt_module_t wbt_module_http1_parser;
+#ifdef WITH_WEBSOCKET
+extern wbt_module_t wbt_module_websocket;
+#endif
 extern wbt_module_t wbt_module_http1_mq;
 extern wbt_module_t wbt_module_http1_generater;
 extern wbt_module_t wbt_module_bmtp;
@@ -35,6 +38,9 @@ wbt_module_t * wbt_modules[] = {
     &wbt_module_ssl,
     &wbt_module_mq,
     &wbt_module_http1_parser,
+#ifdef WITH_WEBSOCKET
+    &wbt_module_websocket,
+#endif
     &wbt_module_http1_mq,
     &wbt_module_http1_generater,
     &wbt_module_bmtp,
@@ -49,18 +55,18 @@ wbt_status wbt_module_init() {
         if( wbt_modules[i]->init && wbt_modules[i]->init(/*cycle*/) != WBT_OK ) {
             /* fatal */
 #ifndef WIN32
-			wbt_log_print( "\rInitialize module %-15.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rInitialize module %-15.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			wbt_log_print("\rInitialize module %-15.*s [ FAILED ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+            wbt_log_print("\rInitialize module %-15.*s [ FAILED ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
-			return WBT_ERROR;
+            return WBT_ERROR;
         } else {
 #ifndef WIN32
-			//wbt_log_print( "\rInitialize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            //wbt_log_print( "\rInitialize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			//wbt_log_print("\rInitialize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+            //wbt_log_print("\rInitialize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
-		}
+        }
     }
     return WBT_OK;
 }
@@ -73,17 +79,17 @@ wbt_status wbt_module_exit() {
         if( wbt_modules[i]->exit && wbt_modules[i]->exit(/*cycle*/) != WBT_OK ) {
             /* fatal */
 #ifndef WIN32
-			wbt_log_print( "\rFinalize module %-15.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            wbt_log_print( "\rFinalize module %-15.*s [ \033[31;49;1mFAILED\033[0m ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			wbt_log_print("\rFinalize module %-15.*s [ FAILED ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+            wbt_log_print("\rFinalize module %-15.*s [ FAILED ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
-		} else {
+        } else {
 #ifndef WIN32
-			//wbt_log_print( "\rFinalize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
+            //wbt_log_print( "\rFinalize module %-15.*s [   \033[32;49;1mOK\033[0m   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str );
 #else
-			//wbt_log_print("\rFinalize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
+            //wbt_log_print("\rFinalize module %-15.*s [   OK   ]", wbt_modules[i]->name.len, wbt_modules[i]->name.str);
 #endif
-		}
+        }
     }
     return WBT_OK;
 }
