@@ -438,7 +438,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
         // standard 验证
         if( bmtp->payload_length > 0 ) {
             wbt_str_t token, sign, split = wbt_string(".");
-            token.str = bmtp->payload;
+            token.str = (char *)bmtp->payload;
             token.len = bmtp->payload_length;
 
             int pos = wbt_strpos(&token, &split);
@@ -460,7 +460,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
 
             wbt_str_t token_decode;;
             token_decode.len = token.len;
-            token_decode.str = (unsigned char*) wbt_malloc(token.len);
+            token_decode.str = (char *) wbt_malloc(token.len);
             if( token_decode.str == NULL ) {
                 bmtp->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - out of memory\n");
@@ -532,10 +532,10 @@ wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
     if( wbt_bmtp_qos(bmtp->header) == 0 ) {
-        wbt_mq_push(ev, bmtp->payload, bmtp->payload_length);
+        wbt_mq_push(ev, (char *)bmtp->payload, bmtp->payload_length);
         return WBT_OK;
     } else {
-        if( wbt_mq_push(ev, bmtp->payload, bmtp->payload_length) != WBT_OK ) {
+        if( wbt_mq_push(ev, (char *)bmtp->payload, bmtp->payload_length) != WBT_OK ) {
             // TODO 需要返回更详细的错误原因
             return wbt_bmtp_send_puback(ev, 0x2);
         } else {
@@ -773,7 +773,7 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     }
 
     msg_node->len = len;
-    msg_node->msg = buf;
+    msg_node->msg = (unsigned char *)buf;
     
     if (wbt_bmtp_cmd(buf[0]) == BMTP_PUB &&
         wbt_bmtp_qos(buf[0]) > 0 &&
