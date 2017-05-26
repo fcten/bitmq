@@ -55,7 +55,7 @@ wbt_status wbt_log_rotate() {
     }
     wbt_log_file_fd = 0;
 
-    if(MoveFileEx(wbt_log_file, new_log_file, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
+    if(MoveFileEx(log_file, new_log_file, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
         // 尝试重新打开日志文件
 	    wbt_log_file_fd = wbt_open_logfile(wbt_log_file);
         if( (int)wbt_log_file_fd <=0 ) {

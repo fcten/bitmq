@@ -579,8 +579,8 @@ wbt_status wbt_http_mq_status_subscriber(wbt_event_t *ev) {
     wbt_mq_subscriber_channel_print(subscriber, channel_list);
 
     struct sockaddr_in sa;
-    int sa_len = sizeof( sa );
-    if( !getpeername( subscriber->ev->fd, ( struct sockaddr * )&sa, (socklen_t *)&sa_len ) ) {
+    unsigned int sa_len = sizeof( sa );
+    if( !getpeername( subscriber->ev->fd, ( struct sockaddr * )&sa, &sa_len ) ) {
         wbt_str_t ip;
         ip.str = inet_ntoa( sa.sin_addr );
         ip.len = strlen( ip.str );

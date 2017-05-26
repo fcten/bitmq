@@ -126,7 +126,7 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
 #ifdef WBT_USE_ACCEPT4
     while((int)(conn_sock = accept4(wbt_listen_fd,(struct sockaddr *) &remote, (socklen_t *)&addrlen, SOCK_NONBLOCK)) >= 0) {
 #else
-    while((int)(conn_sock = accept(wbt_listen_fd,(struct sockaddr *) &remote, (socklen_t *)&addrlen)) >= 0) {
+    while((int)(conn_sock = accept(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
         wbt_nonblocking(conn_sock); 
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */

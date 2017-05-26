@@ -476,7 +476,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         }
         rdp_fd = 0;
 
-        if(MoveFileEx(wbt_persist_mdp.str, wbt_persist_aof.str, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
+        if(MoveFileEx(mdp_file, aof_file, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
 #else
         if( rename(mdp_file, aof_file) < 0 ) {
 #endif
@@ -494,7 +494,7 @@ static wbt_status wbt_mq_persist_dump(wbt_timer_t *timer) {
         }
 
 #ifdef WIN32
-        wbt_persist_aof_fd = wbt_open_logfile(wbt_persist_aof.str);
+        wbt_persist_aof_fd = wbt_open_logfile(aof_file);
         if( (int)wbt_persist_aof_fd <= 0 ) {
             wbt_persist_aof_fd = 0;
             wbt_log_add("Could not open AOF file: %d\n", wbt_errno);
