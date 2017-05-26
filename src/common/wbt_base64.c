@@ -51,7 +51,7 @@ static wbt_status wbt_base64_decode_internal(wbt_str_t *dst, wbt_str_t *src, con
     size_t len;
     unsigned char *d, *s;
 
-    for (len = 0; len < src->len; len++) {
+    for (len = 0; len < (unsigned int)src->len; len++) {
         if (src->str[len] == '=') {
             break;
         }

@@ -115,7 +115,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    int msg_offset = 0;
+    unsigned int msg_offset = 0;
     
     while(!bmtp->is_exit) {
         switch(bmtp->state) {
