@@ -167,7 +167,7 @@ void wbt_master_process() {
     sigaction(SIGUSR2, &act, NULL); /* 更新二进制文件 */
     /* TODO: 自定义的 reload 信号 */
 
-    time_t prev_time;
+    time_t prev_time = 0;
     int count = 0;
     while(1) {
         /* 防止 worker process 出错导致 fork 炸弹 */

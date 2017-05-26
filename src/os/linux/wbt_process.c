@@ -41,6 +41,7 @@ int wbt_proc_fork( void (*proc)() ) {
         /* 这个时候信号还在阻塞中，需要重新打开 */
         proc();
         wbt_exit(0);
+        return 0;
     } else {
         /* In parent */
         wbt_proc_push(childpid);

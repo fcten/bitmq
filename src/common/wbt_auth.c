@@ -55,7 +55,7 @@ wbt_status wbt_auth_verify(wbt_str_t *token, wbt_str_t *sign) {
     static wbt_str_t signature;
     if(signature.len == 0) {
         signature.len = EVP_PKEY_size(key);
-        signature.str = (unsigned char*) wbt_malloc(signature.len);
+        signature.str = (char *) wbt_malloc(signature.len);
     }
 
     if( wbt_base64_decode(&signature, sign) != WBT_OK ) {

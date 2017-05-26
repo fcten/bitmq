@@ -77,7 +77,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
                 wbt_mq_persist_recovery_offset += sizeof(uint32_t);
             }
             
-            if( crc32 != wbt_crc32( (char *)block, sizeof(wbt_msg_block_t) ) ) {
+            if( crc32 != wbt_crc32( (unsigned char *)block, sizeof(wbt_msg_block_t) ) ) {
                 // 校验失败
                 goto error;
             }
@@ -102,7 +102,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
                 wbt_mq_persist_recovery_offset += sizeof(uint32_t);
             }
             
-            if( crc32 != wbt_crc32( data, block->data_len ) ) {
+            if( crc32 != wbt_crc32( (unsigned char *)data, block->data_len ) ) {
                 // 校验失败
                 wbt_free( data );
                 goto error;
@@ -316,7 +316,7 @@ wbt_status wbt_mq_persist_append_to_file(wbt_fd_t fd, wbt_msg_t *msg) {
     }
 
     if( wbt_conf.aof_crc ) {
-        uint32_t crc32 = wbt_crc32( (char *)msg, sizeof(wbt_msg_block_t) );
+        uint32_t crc32 = wbt_crc32( (unsigned char *)msg, sizeof(wbt_msg_block_t) );
 
         nwrite = wbt_append_file(fd, &crc32, sizeof(uint32_t));
         if( wbt_mq_persist_check( nwrite, sizeof(crc32) ) != WBT_OK ) {
@@ -330,7 +330,7 @@ wbt_status wbt_mq_persist_append_to_file(wbt_fd_t fd, wbt_msg_t *msg) {
     }
     
     if( wbt_conf.aof_crc ) {
-        uint32_t crc32 = wbt_crc32( (char *)msg->data, msg->data_len );
+        uint32_t crc32 = wbt_crc32( (unsigned char *)msg->data, msg->data_len );
 
         nwrite = wbt_append_file(fd, &crc32, sizeof(uint32_t));
         if( wbt_mq_persist_check( nwrite, sizeof(crc32) ) != WBT_OK ) {

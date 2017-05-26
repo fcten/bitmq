@@ -20,13 +20,13 @@ void wbt_term_update_size() {
         if( wbuf.ws_col > 0 ) {
             wbt_terminal_width = wbuf.ws_col;
         } else {
-            if( tp = getenv("COLUMNS") )
+            if(( tp = getenv("COLUMNS") ))
                 wbt_terminal_width = atoi( tp );
         }
         if( wbuf.ws_row > 0 ) {
             wbt_terminal_height = wbuf.ws_row;
         } else {
-            if( tp = getenv("LINES") )
+            if(( tp = getenv("LINES") ))
                 wbt_terminal_height = atoi( tp );
         }
     }

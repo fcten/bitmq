@@ -74,8 +74,8 @@ wbt_status wbt_websocket_on_close( wbt_event_t *ev );
 wbt_status wbt_websocket_on_recv( wbt_event_t *ev );
 wbt_status wbt_websocket_on_send( wbt_event_t *ev );
 
-wbt_status wbt_websocket_send( wbt_event_t *ev, char *buf, int len );
-wbt_status wbt_websocket_send_msg(wbt_event_t *ev, char *data, int len);
+wbt_status wbt_websocket_send( wbt_event_t *ev, unsigned char *buf, int len );
+wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len);
 
 #ifdef	__cplusplus
 }

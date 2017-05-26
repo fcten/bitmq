@@ -144,7 +144,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         }
 
         wbt_http_header_t * header;
-        wbt_str_t upgrade, connection, sec_websocket_key, sec_websocket_version;
+        wbt_str_t upgrade, connection, sec_websocket_version, sec_websocket_key = wbt_null_string;
         header = http->headers;
         while( header != NULL ) {
             switch( header->key ) {
@@ -159,6 +159,8 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                     break;
                 case HEADER_CONNECTION:
                     wbt_offset_to_str(header->value.o, connection, ev->buff);
+                    break;
+                default:
                     break;
             }
 
@@ -209,12 +211,12 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         
         wbt_str_t src, dst;
         src.len = SHA_DIGEST_LENGTH;
-        src.str = md;
+        src.str = (char *)md;
         dst.len = 28;
         dst.str = buf.str + buf.len - 32; // 28 + 4
         wbt_base64_encode(&dst, &src);
         
-        return wbt_websocket_send(ev, buf.str, buf.len);
+        return wbt_websocket_send(ev, (unsigned char *)buf.str, buf.len);
     } else if( ev->protocol == WBT_PROTOCOL_WEBSOCKET ) {
         //wbt_log_debug("ws: recv data\n");
         
@@ -377,7 +379,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
     return WBT_OK;
 }
 
-wbt_status wbt_websocket_send_msg(wbt_event_t *ev, char *data, int len) {
+wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len) {
     if( len > 64 * 1024 - 4 ) {
         len = 64 * 1024 - 4;
     }
@@ -399,7 +401,7 @@ wbt_status wbt_websocket_send_msg(wbt_event_t *ev, char *data, int len) {
     }
 }
 
-wbt_status wbt_websocket_send(wbt_event_t *ev, char *buf, int len) {
+wbt_status wbt_websocket_send(wbt_event_t *ev, unsigned char *buf, int len) {
     wbt_websocket_t *ws = ev->data;
 
     wbt_websocket_msg_t *msg_node = (wbt_websocket_msg_t *)wbt_calloc(sizeof(wbt_websocket_msg_t));

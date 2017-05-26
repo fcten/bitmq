@@ -12,8 +12,8 @@ static void wbt_base64_encode_internal(wbt_str_t *dst, wbt_str_t *src, const cha
     size_t len;
 
     len = src->len;
-    s = src->str;
-    d = dst->str;
+    s = (unsigned char *)src->str;
+    d = (unsigned char *)dst->str;
 
     while (len > 2) {
         *d++ = basis[(s[0] >> 2) & 0x3f];
@@ -56,7 +56,7 @@ static wbt_status wbt_base64_decode_internal(wbt_str_t *dst, wbt_str_t *src, con
             break;
         }
 
-        if (basis[src->str[len]] == 77) {
+        if (basis[(unsigned char)(src->str[len])] == 77) {
             return WBT_ERROR;
         }
     }
@@ -65,8 +65,8 @@ static wbt_status wbt_base64_decode_internal(wbt_str_t *dst, wbt_str_t *src, con
         return WBT_ERROR;
     }
 
-    s = src->str;
-    d = dst->str;
+    s = (unsigned char *)src->str;
+    d = (unsigned char *)dst->str;
 
     while (len > 3) {
         *d++ = (char) (basis[s[0]] << 2 | basis[s[1]] >> 4);
@@ -91,20 +91,20 @@ static wbt_status wbt_base64_decode_internal(wbt_str_t *dst, wbt_str_t *src, con
 }
 
 void wbt_base64_encode(wbt_str_t *dst, wbt_str_t *src) {
-    static unsigned char basis64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    static char basis64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     wbt_base64_encode_internal(dst, src, basis64, 1);
 }
 
 
 void wbt_base64_encode_url(wbt_str_t *dst, wbt_str_t *src) {
-    static unsigned char basis64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    static char basis64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
     wbt_base64_encode_internal(dst, src, basis64, 0);
 }
 
 wbt_status wbt_base64_decode(wbt_str_t *dst, wbt_str_t *src) {
-    static unsigned char basis64[] = {
+    static char basis64[] = {
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77, 77, 63,
@@ -128,7 +128,7 @@ wbt_status wbt_base64_decode(wbt_str_t *dst, wbt_str_t *src) {
 }
 
 wbt_status wbt_base64_decode_url(wbt_str_t *dst, wbt_str_t *src) {
-    static unsigned char basis64[] = {
+    static char basis64[] = {
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77,

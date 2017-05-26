@@ -80,7 +80,7 @@ int json_parse_null( json_task_t *task ) {
 int json_parse_number( json_task_t *task, json_object_t *parent ) {
     char ch;
     task->status = STS_NUMBER_START;
-    while( ch = *(task->str + task->count) ) {
+    while(( ch = *(task->str + task->count) )) {
         task->count ++;
 
         switch( task->status ) {
@@ -172,7 +172,7 @@ int json_parse_number( json_task_t *task, json_object_t *parent ) {
 int json_parse_string( json_task_t *task ) {
     char ch;
     task->status = STS_STRING_START;
-    while( ch = *(task->str + task->count) ) {
+    while(( ch = *(task->str + task->count) )) {
         task->count ++;
 
         switch( task->status ) {
@@ -225,7 +225,7 @@ int json_parse_string( json_task_t *task ) {
 
 int json_parse_value( json_task_t *task, json_object_t *parent ) {
     char ch;
-    while( ch = *(task->str + task->count) ) {
+    while(( ch = *(task->str + task->count) )) {
         task->count ++;
 
         if( ch == '"' ) {
@@ -262,7 +262,7 @@ int json_parse_value( json_task_t *task, json_object_t *parent ) {
 
 int json_parse_array( json_task_t *task, json_object_t *parent ) {
     char ch;
-    json_object_t node, * append;
+    json_object_t node, * append = NULL;
     
     node.next = parent;
     node.key = NULL;
@@ -278,7 +278,7 @@ int json_parse_array( json_task_t *task, json_object_t *parent ) {
     
     task->status = STS_ARRAY_START;
 
-    while( ch = *(task->str + task->count) ) {
+    while(( ch = *(task->str + task->count) )) {
         task->count ++;
         
         if( ch == ' ' || ch == '\n' || ch == '\t' ) {
@@ -368,7 +368,7 @@ int json_parse_array( json_task_t *task, json_object_t *parent ) {
 
 int json_parse_object( json_task_t *task, json_object_t *parent ) {
     char ch;
-    json_object_t node, * append;
+    json_object_t node, * append = NULL;
     
     node.next = parent;
     node.key = NULL;
@@ -384,7 +384,7 @@ int json_parse_object( json_task_t *task, json_object_t *parent ) {
     
     task->status = STS_OBJECT_START;
 
-    while( ch = *(task->str + task->count) ) {
+    while(( ch = *(task->str + task->count) )) {
         task->count ++;
         
         if( ch == ' ' || ch == '\n' || ch == '\t' ) {
@@ -497,7 +497,7 @@ void json_err_psotion( json_task_t *task, int *line, int *row ) {
     char ch;
     (*line) = 1;
     (*row) = 0;
-    while( ch = *(task->str + p) ) {
+    while(( ch = *(task->str + p) )) {
         p ++;
         
         if( ch == '\n' ) {

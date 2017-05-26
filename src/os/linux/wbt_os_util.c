@@ -146,10 +146,6 @@ ssize_t wbt_get_file_size(wbt_fd_t fd) {
     }
 }
 
-time_t wbt_get_file_last_write_time(wbt_fd_t fd) {
-    
-}
-
 int wbt_close_file(wbt_fd_t fd) {
     return close(fd);
 }

@@ -513,6 +513,8 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     http->bit_flag &= ~WBT_HTTP_GZIP;
                 }
                 break;
+            default:
+                break;
         }
 
         header = header->next;
