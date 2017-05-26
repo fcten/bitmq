@@ -226,7 +226,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
             return WBT_OK;
         }
 
-        int msg_offset = 0;
+        unsigned int msg_offset = 0;
         unsigned char c;
 
         while(!ws->is_exit) {
@@ -323,7 +323,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                     }
 
                     ws->payload = (unsigned char *)ev->buff + ws->recv_offset;
-                    ws->recv_offset += ws->payload_length;
+                    ws->recv_offset += (unsigned int)ws->payload_length;
 
                     // 解码
                     for(int i = 0;i < ws->payload_length; i++) {
@@ -331,7 +331,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                     }
                     
 
-                    wbt_websocket_send_msg(ev, ws->payload, ws->payload_length);
+                    wbt_websocket_send_msg(ev, ws->payload, (unsigned int)ws->payload_length);
                     
                     ws->state = STATE_CONNECTED;
                     break;
