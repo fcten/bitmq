@@ -19,7 +19,7 @@ extern "C" {
 
 #ifndef WIN32
 
-#define WBT_DEBUG
+//#define WBT_DEBUG
 #include "os/linux/wbt_os_util.h"
 
 #else /* WIN32 */
@@ -34,7 +34,7 @@ int wbt_main( int argc, char** argv );
 
 #endif /* WIN32 */
 
-#define WBT_VERSION         "0.5.0"
+#define WBT_VERSION         BMQ_VERSION " (build " BMQ_TIMESTAMP ")"
 
 #define WBT_MAX_EVENTS      512
 #define WBT_EVENT_LIST_SIZE 1024

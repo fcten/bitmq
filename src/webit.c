@@ -310,7 +310,7 @@ int wbt_main( int argc, char** argv ) {
     while( ( ch = wbt_getopt(argc,argv,"c:hs:tvd") ) != -1 ) {
         switch(ch) {
             case 'v':
-                wbt_log_print( "bitmq version: bitmq/" WBT_VERSION "\n" );
+                wbt_log_print( "BitMQ V" WBT_VERSION "\n" );
                 return 0;
             case 'h':
                   wbt_log_print(
@@ -359,7 +359,7 @@ int wbt_main( int argc, char** argv ) {
 #endif
 
     /* 初始化所有组件 */
-    wbt_log_print( "bitmq version: bitmq/" WBT_VERSION "\n" );
+    wbt_log_print( "BitMQ V" WBT_VERSION "\n" );
     if( wbt_module_init() != WBT_OK ) {
         wbt_log_print( "\n\n" );
         return 1;
