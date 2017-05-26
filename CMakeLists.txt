@@ -11,9 +11,6 @@ project(bmq)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-SET(CMAKE_C_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
-SET(CMAKE_C_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-
 set (VERSION 0.5.0)
 
 if (WIN32)
@@ -22,6 +19,8 @@ if (WIN32)
 else (WIN32)
 	execute_process(COMMAND date "+%F %T%z" OUTPUT_VARIABLE TIMESTAMP
 			OUTPUT_STRIP_TRAILING_WHITESPACE)
+    SET(CMAKE_C_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+    SET(CMAKE_C_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 endif (WIN32)
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\" -DTIMESTAMP=\"${TIMESTAMP}\")
