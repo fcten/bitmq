@@ -444,10 +444,12 @@ wbt_status wbt_websocket_on_handler( wbt_event_t *ev ) {
             ev->buff = NULL;
             ev->buff_len = 0;
             ws->recv_offset = 0;
+            ws->bmtp.recv_offset = 0;
         } else if( ev->buff_len > ws->msg_offset ) {
             wbt_memmove(ev->buff, (unsigned char *)ev->buff + ws->msg_offset, ev->buff_len - ws->msg_offset);
             ev->buff_len -= ws->msg_offset;
             ws->recv_offset -= ws->msg_offset;
+            ws->bmtp.recv_offset -= ws->msg_offset;
         } else {
             wbt_log_add("ws error: unexpected error\n");
             return WBT_ERROR;
