@@ -181,6 +181,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     
     t->protocol = 0;
     t->ssl = NULL;
+    
+    t->is_exit = 0;
 
     /* 注册select事件 */
     if (((t->events & WBT_EV_READ) && read_fd_set.fd_count >= FD_SETSIZE) ||
@@ -234,6 +236,8 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->data = NULL;
     
     ev->protocol = 0;
+    
+    ev->is_exit = 0;
 
     /* 删除select事件 */
     if (ev->events & WBT_EV_READ) {

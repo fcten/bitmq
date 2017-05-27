@@ -148,6 +148,8 @@ wbt_event_t * wbt_event_add(wbt_event_t *ev) {
     
     t->protocol = 0;
     t->ssl = NULL;
+    
+    t->is_exit = 0;
 
     /* 注册epoll事件 */
     if(t->fd >= 0) {
@@ -196,6 +198,8 @@ wbt_status wbt_event_del(wbt_event_t *ev) {
     ev->data = NULL;
     
     ev->protocol = 0;
+    
+    ev->is_exit = 0;
 
     /* 删除epoll事件 */
     ev->fd = -1;        /* close 之后 fd 会自动从 epoll 中删除 */

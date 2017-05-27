@@ -47,7 +47,8 @@ typedef struct wbt_event_s {
     SSL * ssl;                                      /* 使用加密连接 */
     void * buff;                                    /* 事件数据缓存（接收到的数据） */
     size_t buff_len;
-    int protocol;
+    unsigned int is_exit:1;
+    unsigned int protocol:4;
     void * data;                                    /* 供模块使用的自定义指针（http结构体） */
     void * ctx;
 } wbt_event_t;

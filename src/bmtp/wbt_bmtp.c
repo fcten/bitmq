@@ -29,36 +29,6 @@ enum {
     STATE_RECV_PAYLOAD
 };
 
-wbt_status wbt_bmtp_init();
-wbt_status wbt_bmtp_exit();
-
-wbt_status wbt_bmtp_on_conn(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_recv(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_send(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_close(wbt_event_t *ev);
-
-wbt_status wbt_bmtp_on_connect(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_connack(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_pub(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_puback(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_sub(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_ping(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev);
-wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev);
-
-wbt_status wbt_bmtp_send_conn(wbt_event_t *ev);
-wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, char *buf, unsigned int len, int qos, int dup);
-wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp_send_sub(wbt_event_t *ev, unsigned long long int channel_id);
-wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp_send_ping(wbt_event_t *ev);
-wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev);
-wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev);
-wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len);
-
-wbt_status wbt_bmtp_is_ready(wbt_event_t *ev);
-
 wbt_module_t wbt_module_bmtp = {
     wbt_string("bmtp"),
     wbt_bmtp_init,
@@ -84,7 +54,7 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    ev->data = wbt_calloc( sizeof(wbt_bmtp_t) );
+    ev->data = ev->data ? ev->data : wbt_calloc( sizeof(wbt_bmtp_t) );
     if( ev->data == NULL ) {
         return WBT_ERROR;
     }
@@ -105,19 +75,15 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
-    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP || ev->is_exit ) {
         return WBT_OK;
     }
 
     wbt_bmtp_t *bmtp = ev->data;
     
-    if( bmtp->is_exit ) {
-        return WBT_OK;
-    }
-    
     unsigned int msg_offset = 0;
     
-    while(!bmtp->is_exit) {
+    while(!ev->is_exit) {
         switch(bmtp->state) {
             case STATE_CONNECTED:
                 bmtp->sid = 0;
@@ -356,9 +322,7 @@ wbt_status wbt_bmtp_on_send(wbt_event_t *ev) {
         }
     }
     
-    if( bmtp->is_exit ) {
-        wbt_on_close(ev);
-    } else {
+    if( !ev->is_exit ) {
         ev->events &= ~WBT_EV_WRITE;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
 
@@ -414,7 +378,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
 
     if( bmtp->cid != 0x424D5450 ) { /* "BMTP" */
-        bmtp->is_exit = 1;
+        ev->is_exit = 1;
         wbt_log_add("BMTP error: invalid conn\n");
         return wbt_bmtp_send_connack(ev, 0x1);
     }
@@ -429,7 +393,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             auth = NULL;
         } else {
             if( auth == NULL ) {
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -443,7 +407,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
 
             int pos = wbt_strpos(&token, &split);
             if(pos == -1) {
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - invalid token\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -453,7 +417,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             token.len = pos;
 
             if(wbt_auth_verify(&token, &sign) != WBT_OK) {
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - verify failed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -462,7 +426,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             token_decode.len = token.len;
             token_decode.str = (char *) wbt_malloc(token.len);
             if( token_decode.str == NULL ) {
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - out of memory\n");
                 return wbt_bmtp_send_connack(ev, 0x2);
             }
@@ -470,7 +434,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             if( wbt_base64_decode(&token_decode, &token) != WBT_OK ) {
                 wbt_free(token_decode.str);
                 
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - base64 decode failed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -480,7 +444,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             if( auth == NULL ) {
                 wbt_free(token_decode.str);
                 
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - auth create failed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -488,7 +452,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
             wbt_free(token_decode.str);
         } else {
             if( auth == NULL ) {
-                bmtp->is_exit = 1;
+                ev->is_exit = 1;
                 wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
                 return wbt_bmtp_send_connack(ev, 0x3);
             }
@@ -504,7 +468,7 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     wbt_mq_set_auth(ev, auth);
 
     if( wbt_mq_auth_conn_limit(ev) != WBT_OK ) {
-        bmtp->is_exit = 1;
+        ev->is_exit = 1;
         wbt_log_add("BMTP error: too many connections\n");
         return wbt_bmtp_send_connack(ev, 0x4);
     }
@@ -561,7 +525,7 @@ wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
     resp.len = 1024 * 64;
     resp.str = wbt_malloc( resp.len );
     if( resp.str == NULL ) {
-        bmtp->is_exit = 1;
+        ev->is_exit = 1;
         return wbt_bmtp_send_suback(ev, 0x2);
     }
     
@@ -621,7 +585,7 @@ wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
         resp.len = 1024 * 64;
         resp.str = wbt_malloc( resp.len );
         if( resp.str == NULL ) {
-            return wbt_bmtp_on_disconn(ev);
+            return wbt_bmtp_send_disconn(ev);
         }
 
         wbt_msg_t *msg;
@@ -668,16 +632,7 @@ wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev) {
-    wbt_bmtp_t *bmtp = ev->data;
-
-    ev->events |= WBT_EV_WRITE;
-    ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
-
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
-    }
-
-    bmtp->is_exit = 1;
+    ev->is_exit = 1;
     
     wbt_log_add("BMTP recvived disconn\n");
     
@@ -736,7 +691,7 @@ wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status) {
 wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status) {
     wbt_bmtp_t *bmtp = ev->data;
     
-	char buf[] = { BMTP_SUBACK + status, (char)(bmtp->cid >> 24), (char)(bmtp->cid >> 16), (char)(bmtp->cid >> 8), (char)bmtp->cid };
+    char buf[] = { BMTP_SUBACK + status, (char)(bmtp->cid >> 24), (char)(bmtp->cid >> 16), (char)(bmtp->cid >> 8), (char)bmtp->cid };
     
     return wbt_bmtp_send(ev, wbt_strdup(buf, sizeof(buf)), sizeof(buf));
 }
@@ -754,8 +709,7 @@ wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev) {
-    wbt_bmtp_t *bmtp = ev->data;
-    bmtp->is_exit = 1;
+    ev->is_exit = 1;
     
     wbt_log_add("BMTP send disconn\n");
 

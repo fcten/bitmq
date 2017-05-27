@@ -39,19 +39,9 @@ extern "C" {
  +---------------------------------------------------------------+
  */
 
-typedef struct wbt_websocket_msg_s {
-    wbt_list_t head;
-
-    unsigned int  len;
-    unsigned int  offset;
-    unsigned char *msg;
-} wbt_websocket_msg_t;
-
 typedef struct wbt_websocket_s {
     // 会话状态
     unsigned int state;
-    
-    unsigned int is_exit:1;
     
     unsigned int fin:1;
     unsigned int mask:1;
@@ -64,7 +54,7 @@ typedef struct wbt_websocket_s {
     
     unsigned int recv_offset;
 
-    wbt_websocket_msg_t send_queue;
+    wbt_bmtp_t bmtp;
 } wbt_websocket_t;
     
 wbt_status wbt_websocket_init();
@@ -73,9 +63,6 @@ wbt_status wbt_websocket_on_conn( wbt_event_t *ev );
 wbt_status wbt_websocket_on_close( wbt_event_t *ev );
 wbt_status wbt_websocket_on_recv( wbt_event_t *ev );
 wbt_status wbt_websocket_on_send( wbt_event_t *ev );
-
-wbt_status wbt_websocket_send( wbt_event_t *ev, unsigned char *buf, int len );
-wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len);
 
 #ifdef	__cplusplus
 }

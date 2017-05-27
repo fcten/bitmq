@@ -91,7 +91,7 @@ wbt_status wbt_conn_cleanup() {
 
 wbt_status wbt_conn_close_listen() {
     if( wbt_listen_fd >= 0 ) {
-		wbt_close_socket(wbt_listen_fd);
+        wbt_close_socket(wbt_listen_fd);
         wbt_listen_fd = -1;
     }
     
@@ -111,7 +111,7 @@ wbt_status wbt_on_close(wbt_event_t *ev) {
         // 似乎并不能做什么
     }
 
-	wbt_close_socket(ev->fd);
+    wbt_close_socket(ev->fd);
     wbt_event_del(ev);
     
     wbt_connection_count --;
@@ -275,6 +275,10 @@ wbt_status wbt_on_send(wbt_event_t *ev) {
     }
     
     wbt_module_on_success(ev);
+    
+    if( ev->is_exit ) {
+        wbt_on_close(ev);
+    }
 
     return WBT_OK;
 }

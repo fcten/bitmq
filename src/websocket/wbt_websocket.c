@@ -16,8 +16,9 @@
 #include "../common/wbt_file.h"
 #include "../common/wbt_gzip.h"
 #include "../common/wbt_base64.h"
+#include "../http/wbt_http.h"
+#include "../bmtp/wbt_bmtp.h"
 #include "wbt_websocket.h"
-#include "http/wbt_http.h"
 
 #ifdef WITH_WEBSOCKET
 
@@ -48,6 +49,14 @@ wbt_module_t wbt_module_websocket = {
     wbt_websocket_on_close
 };
 
+#define BEGIN_BMTP_CTX if(1){\
+    wbt_websocket_t *ws = ev->data;\
+    ev->data = &ws->bmtp;\
+    ev->protocol = WBT_PROTOCOL_BMTP;
+#define ENDOF_BMTP_CTX \
+    ev->data = ws;\
+    ev->protocol = WBT_PROTOCOL_WEBSOCKET;}
+
 wbt_status wbt_websocket_init() {
     return WBT_OK;
 }
@@ -65,10 +74,10 @@ wbt_status wbt_websocket_on_conn( wbt_event_t *ev ) {
     if( ev->data == NULL ) {
         return WBT_ERROR;
     }
-    
-    wbt_websocket_t *ws = ev->data;
 
-    wbt_list_init(&ws->send_queue.head);
+    BEGIN_BMTP_CTX;
+    wbt_bmtp_on_conn(ev);
+    ENDOF_BMTP_CTX;
     
     return WBT_OK;
 }
@@ -78,40 +87,9 @@ wbt_status wbt_websocket_on_send( wbt_event_t *ev ) {
         return WBT_OK;
     }
 
-    wbt_websocket_t *ws = ev->data;
-
-    while (!wbt_list_empty(&ws->send_queue.head)) {
-        wbt_websocket_msg_t *msg_node = wbt_list_first_entry(&ws->send_queue.head, wbt_websocket_msg_t, head);
-        int ret = wbt_send(ev, (char *)msg_node->msg + msg_node->offset, msg_node->len - msg_node->offset);
-        if (ret <= 0) {
-            if( wbt_socket_errno == WBT_EAGAIN ) {
-                return WBT_OK;
-            } else {
-                wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
-                return WBT_ERROR;
-            }
-        } else {
-            if (ret + msg_node->offset >= msg_node->len) {
-                wbt_list_del(&msg_node->head);
-
-                wbt_free(msg_node->msg);
-                wbt_free(msg_node);
-            } else {
-                msg_node->offset += ret;
-            }
-        }
-    }
-    
-    if( ws->is_exit ) {
-        wbt_on_close(ev);
-    } else {
-        ev->events &= ~WBT_EV_WRITE;
-        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
-
-        if(wbt_event_mod(ev) != WBT_OK) {
-            return WBT_ERROR;
-        }
-    }
+    BEGIN_BMTP_CTX;
+    wbt_bmtp_on_send(ev);
+    ENDOF_BMTP_CTX;
 
     return WBT_OK;
 }
@@ -121,6 +99,10 @@ wbt_status wbt_websocket_on_close( wbt_event_t *ev ) {
         return WBT_OK;
     }
 
+    BEGIN_BMTP_CTX;
+    wbt_bmtp_on_close(ev);
+    ENDOF_BMTP_CTX;
+    
     return WBT_OK;
 }
 
@@ -216,20 +198,25 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         dst.str = buf.str + buf.len - 32; // 28 + 4
         wbt_base64_encode(&dst, &src);
         
-        return wbt_websocket_send(ev, (unsigned char *)buf.str, buf.len);
+        /* 注意，这里 buf[0] = 'H'，即 0x48。在 BMTP 中，该数据帧会被当作 PUBACK 处理。
+         * 目前 PUBACK 不经任何处理直接发送，所以暂时不会产生问题。
+         */
+        BEGIN_BMTP_CTX;
+        wbt_bmtp_send(ev, buf.str, buf.len);
+        ENDOF_BMTP_CTX;
     } else if( ev->protocol == WBT_PROTOCOL_WEBSOCKET ) {
         //wbt_log_debug("ws: recv data\n");
         
         wbt_websocket_t *ws = ev->data;
     
-        if( ws->is_exit ) {
+        if( ev->is_exit ) {
             return WBT_OK;
         }
 
         unsigned int msg_offset = 0;
         unsigned char c;
 
-        while(!ws->is_exit) {
+        while(!ev->is_exit) {
             switch(ws->state) {
                 case STATE_CONNECTED:
                     ws->payload = NULL;
@@ -330,9 +317,51 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                         ws->payload[i] ^= ws->mask_key[i%4];
                     }
                     
+                    if( ws->fin == 1 && ws->opcode > 0 ) {
+                        // 未分片消息
+                        switch(ws->opcode) {
+                            case 0x1: // 文本帧
+                            case 0x2: // 二进制帧
+                                //wbt_websocket_send_msg(ev, ws->payload, (unsigned int)ws->payload_length);
+                                BEGIN_BMTP_CTX;
+                                void *tmp_buff = ev->buff;
+                                unsigned int tmp_buff_len = ev->buff_len;
+                                ev->buff = ws->payload;
+                                ev->buff_len = ws->payload_length;
+                                if( wbt_bmtp_on_recv(ev) != WBT_OK || ev->buff_len > 0 ) {
+                                    // error
+                                    wbt_bmtp_send_disconn(ev);
+                                }
+                                ev->buff = tmp_buff;
+                                ev->buff_len = tmp_buff_len;
+                                ENDOF_BMTP_CTX;
+                                break;
+                            case 0x8: // 关闭帧
+                                BEGIN_BMTP_CTX;
+                                wbt_bmtp_send_disconn(ev);
+                                ENDOF_BMTP_CTX;
+                                break;
+                            case 0x9: // ping
+                            case 0xA: // pong
+                                // do nothing
+                                break;
+                            default:
+                                return WBT_ERROR;
+                        }
+                    } else if( ws->fin == 1 && ws->opcode == 0 ) {
+                        // 分片消息的最后一帧
+                    } else { // ws->fin == 0
+                        switch(ws->opcode) {
+                            case 0x0: // 继续帧
+                                break;
+                            case 0x1: // 文本帧
+                            case 0x2: // 二进制帧
+                                break;
+                            default:
+                                return WBT_ERROR;
+                        }
+                    }
 
-                    wbt_websocket_send_msg(ev, ws->payload, (unsigned int)ws->payload_length);
-                    
                     ws->state = STATE_CONNECTED;
                     break;
                 default:
@@ -378,6 +407,21 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
 
     return WBT_OK;
 }
+/*
+wbt_status wbt_websocket_send_frame_header(wbt_event_t *ev, int len) {
+    if( len > 64 * 1024 - 4 ) {
+        len = 64 * 1024 - 4;
+    }
+
+    if( len <= 125 ) {
+        unsigned char buf[] = {0x82, len};
+        return wbt_websocket_send(ev, buf, sizeof(buf));
+    } else {
+        unsigned char buf[] = {0x82, 126, len >> 8, len};
+        return wbt_websocket_send(ev, buf, sizeof(buf));
+    }
+    return WBT_OK;
+}
 
 wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len) {
     if( len > 64 * 1024 - 4 ) {
@@ -400,29 +444,5 @@ wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len)
         return wbt_websocket_send(ev, buf, len+4);
     }
 }
-
-wbt_status wbt_websocket_send(wbt_event_t *ev, unsigned char *buf, int len) {
-    wbt_websocket_t *ws = ev->data;
-
-    wbt_websocket_msg_t *msg_node = (wbt_websocket_msg_t *)wbt_calloc(sizeof(wbt_websocket_msg_t));
-    if (!msg_node) {
-        return WBT_ERROR;
-    }
-
-    msg_node->len = len;
-    msg_node->msg = buf;
-
-    wbt_list_add_tail(&msg_node->head, &ws->send_queue.head);
-    wbt_log_debug( "ws: add to send queue\n" );
-
-    ev->events |= WBT_EV_WRITE;
-    ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
-
-    if(wbt_event_mod(ev) != WBT_OK) {
-        return WBT_ERROR;
-    }
-    
-    return WBT_OK;
-}
-
+*/
 #endif

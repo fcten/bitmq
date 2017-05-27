@@ -211,7 +211,6 @@ typedef struct {
     unsigned int  recv_offset;
     
     unsigned int  is_conn:1;
-    unsigned int  is_exit:1;
     
     unsigned int  last_sid:8;
     unsigned int  usable_sids:8;
@@ -221,6 +220,36 @@ typedef struct {
     wbt_bmtp_msg_t send_queue;
     wbt_bmtp_msg_t ack_queue;
 } wbt_bmtp_t;
+
+wbt_status wbt_bmtp_init();
+wbt_status wbt_bmtp_exit();
+
+wbt_status wbt_bmtp_on_conn(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_recv(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_send(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_close(wbt_event_t *ev);
+
+wbt_status wbt_bmtp_on_connect(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_connack(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_pub(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_puback(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_sub(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_ping(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_pingack(wbt_event_t *ev);
+wbt_status wbt_bmtp_on_disconn(wbt_event_t *ev);
+
+wbt_status wbt_bmtp_send_conn(wbt_event_t *ev);
+wbt_status wbt_bmtp_send_connack(wbt_event_t *ev, unsigned char status);
+wbt_status wbt_bmtp_send_pub(wbt_event_t *ev, char *buf, unsigned int len, int qos, int dup);
+wbt_status wbt_bmtp_send_puback(wbt_event_t *ev, unsigned char status);
+wbt_status wbt_bmtp_send_sub(wbt_event_t *ev, unsigned long long int channel_id);
+wbt_status wbt_bmtp_send_suback(wbt_event_t *ev, unsigned char status);
+wbt_status wbt_bmtp_send_ping(wbt_event_t *ev);
+wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev);
+wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev);
+wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len);
+
+wbt_status wbt_bmtp_is_ready(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }

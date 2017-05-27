@@ -19,7 +19,7 @@ extern "C" {
 
 #ifndef WIN32
 
-//#define WBT_DEBUG
+#define WBT_DEBUG
 #include "os/linux/wbt_os_util.h"
 
 #else /* WIN32 */
