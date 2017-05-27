@@ -53,6 +53,7 @@ typedef struct wbt_websocket_s {
     unsigned char *payload;
     
     unsigned int recv_offset;
+    unsigned int msg_offset;
 
     wbt_bmtp_t bmtp;
 } wbt_websocket_t;
@@ -63,6 +64,8 @@ wbt_status wbt_websocket_on_conn( wbt_event_t *ev );
 wbt_status wbt_websocket_on_close( wbt_event_t *ev );
 wbt_status wbt_websocket_on_recv( wbt_event_t *ev );
 wbt_status wbt_websocket_on_send( wbt_event_t *ev );
+
+wbt_status wbt_websocket_on_handler( wbt_event_t *ev );
 
 #ifdef	__cplusplus
 }

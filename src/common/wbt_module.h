@@ -28,6 +28,7 @@ typedef struct wbt_module_s {
     wbt_status  (*on_send)( wbt_event_t * );    /* 需要发送响应时调用 */
     wbt_status  (*on_close)( wbt_event_t * );   /* 关闭连接前调用 */
     wbt_status  (*on_success)( wbt_event_t * ); /* 响应发送成功时调用 */
+    wbt_status  (*on_handler)( wbt_event_t * ); /* 数据接收并处理完毕后调用 */
 } wbt_module_t;
 
 wbt_status wbt_module_init();
@@ -37,6 +38,7 @@ wbt_status wbt_module_on_recv(wbt_event_t *ev);
 wbt_status wbt_module_on_send(wbt_event_t *ev);
 wbt_status wbt_module_on_close(wbt_event_t *ev);
 wbt_status wbt_module_on_success(wbt_event_t *ev);
+wbt_status wbt_module_on_handler(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }

@@ -36,7 +36,9 @@ wbt_module_t wbt_module_bmtp = {
     wbt_bmtp_on_conn,
     wbt_bmtp_on_recv,
     wbt_bmtp_on_send,
-    wbt_bmtp_on_close
+    wbt_bmtp_on_close,
+    NULL,
+    wbt_bmtp_on_handler
 };
 
 wbt_status wbt_bmtp_init() {
@@ -81,7 +83,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
 
     wbt_bmtp_t *bmtp = ev->data;
     
-    unsigned int msg_offset = 0;
+    bmtp->msg_offset = 0;
     
     while(!ev->is_exit) {
         switch(bmtp->state) {
@@ -94,7 +96,7 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
             case STATE_RECV_HEADER:
                 /* 记录消息包的起始偏移量
                  */
-                msg_offset = bmtp->recv_offset;
+                bmtp->msg_offset = bmtp->recv_offset;
 
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
                     goto waiting;
@@ -256,36 +258,46 @@ wbt_status wbt_bmtp_on_recv(wbt_event_t *ev) {
     
 waiting:
 
-    if( msg_offset > 0 ) {
-        /* 删除已经处理完毕的消息
-         */
-        if( ev->buff_len == msg_offset ) {
-            wbt_free(ev->buff);
-            ev->buff = NULL;
-            ev->buff_len = 0;
-            bmtp->recv_offset = 0;
-        } else if( ev->buff_len > msg_offset ) {
-            wbt_memmove(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
-            ev->buff_len -= msg_offset;
-            bmtp->recv_offset -= msg_offset;
-        } else {
-            wbt_log_add("BMTP error: unexpected error\n");
-            return WBT_ERROR;
-        }
-    } else if( msg_offset == 0 &&
-            bmtp->recv_offset + bmtp->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
-        /* 消息长度超过限制
-         */
-        wbt_log_add("BMTP error: message length exceeds limit\n");
-        return WBT_ERROR;
-    }
-
     ev->events |= WBT_EV_READ;
     ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
     if(wbt_event_mod(ev) != WBT_OK) {
         return WBT_ERROR;
     }
 
+    return WBT_OK;
+}
+
+wbt_status wbt_bmtp_on_handler(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
+    wbt_bmtp_t *bmtp = ev->data;
+
+    if( bmtp->msg_offset > 0 ) {
+        /* 删除已经处理完毕的消息
+         */
+        if( ev->buff_len == bmtp->msg_offset ) {
+            wbt_free(ev->buff);
+            ev->buff = NULL;
+            ev->buff_len = 0;
+            bmtp->recv_offset = 0;
+        } else if( ev->buff_len > bmtp->msg_offset ) {
+            wbt_memmove(ev->buff, (unsigned char *)ev->buff + bmtp->msg_offset, ev->buff_len - bmtp->msg_offset);
+            ev->buff_len -= bmtp->msg_offset;
+            bmtp->recv_offset -= bmtp->msg_offset;
+        } else {
+            wbt_log_add("BMTP error: unexpected error\n");
+            return WBT_ERROR;
+        }
+    } else if( bmtp->msg_offset == 0 &&
+            bmtp->recv_offset + bmtp->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
+        /* 消息长度超过限制
+         */
+        wbt_log_add("BMTP error: message length exceeds limit\n");
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }
 

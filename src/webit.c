@@ -247,7 +247,7 @@ void wbt_exit(int exit_code) {
     wbt_log_add("bitmq exit (pid: %d)\n", wbt_getpid());
     wbt_log_print("\n\nbitmq exit (pid: %d)\n", wbt_getpid());
 
-	exit(exit_code);
+    exit(exit_code);
 }
 
 extern wbt_str_t wbt_log_buf;

@@ -155,3 +155,13 @@ wbt_status wbt_module_on_success(wbt_event_t *ev) {
     }
     return WBT_OK;
 }
+
+wbt_status wbt_module_on_handler(wbt_event_t *ev) {
+    int i , size = sizeof(wbt_modules)/sizeof(wbt_module_t *) - 1;
+    for( i = 0 ; i < size ; i++ ) {
+        if( wbt_modules[i]->on_handler ) {
+            wbt_modules[i]->on_handler(ev);
+        }
+    }
+    return WBT_OK;
+}

@@ -46,7 +46,9 @@ wbt_module_t wbt_module_websocket = {
     NULL, // websocket 连接需要由 http 连接升级而来
     wbt_websocket_on_recv,
     wbt_websocket_on_send,
-    wbt_websocket_on_close
+    wbt_websocket_on_close,
+    NULL,
+    wbt_websocket_on_handler
 };
 
 #define BEGIN_BMTP_CTX if(1){\
@@ -88,6 +90,48 @@ wbt_status wbt_websocket_on_send( wbt_event_t *ev ) {
     }
 
     BEGIN_BMTP_CTX;
+    /* 在消息前添加 webscoket 帧头部
+     * 唯一的例外是握手响应不需要添加
+     * 
+     * TODO 每次 on_send 调用都需要执行该过程，需要优化
+     */
+    wbt_bmtp_t *bmtp = ev->data;
+    wbt_bmtp_msg_t *msg_node, *prev_node;
+    
+    wbt_list_for_each_entry(msg_node, wbt_bmtp_msg_t, &bmtp->send_queue.head, head) {
+        prev_node = wbt_list_prev_entry(msg_node, wbt_bmtp_msg_t, head);
+        switch( msg_node->msg[0] ) {
+            case 'H':
+            case 0x82:
+            // do nothing
+                break;
+            default:
+                if( prev_node->msg && prev_node->msg[0] == 0x82 ) {
+                    // 目前 0x82 不会出现在 BMTP 消息中出现，
+                    // 所以可以用于判断是否为 websocket 帧头部
+                    // do nothing
+                } else {
+                    wbt_bmtp_msg_t *new_node = (wbt_bmtp_msg_t *)wbt_calloc(sizeof(wbt_bmtp_msg_t));
+                    if (!new_node) {
+                        return WBT_ERROR;
+                    }
+
+                    if( msg_node->len <= 125 ) {
+                        unsigned char buf[] = {0x82, msg_node->len};
+                        new_node->len = sizeof(buf);
+                        new_node->msg = wbt_strdup(buf, new_node->len);
+                    } else {
+                        unsigned char buf[] = {0x82, 126, msg_node->len >> 8, msg_node->len};
+                        new_node->len = sizeof(buf);
+                        new_node->msg = wbt_strdup(buf, new_node->len);
+                    }
+
+                    __wbt_list_add(&new_node->head, &prev_node->head, &msg_node->head);
+                }
+                break;
+        }
+    }
+    
     wbt_bmtp_on_send(ev);
     ENDOF_BMTP_CTX;
 
@@ -213,7 +257,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
             return WBT_OK;
         }
 
-        unsigned int msg_offset = 0;
+        ws->msg_offset = 0;
         unsigned char c;
 
         while(!ev->is_exit) {
@@ -224,7 +268,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                     ws->state = STATE_RECV_HEADER;
                     break;
                 case STATE_RECV_HEADER:
-                    msg_offset = ws->recv_offset;
+                    ws->msg_offset = ws->recv_offset;
 
                     if( ws->recv_offset + 2 > ev->buff_len ) {
                         goto waiting;
@@ -324,11 +368,12 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                             case 0x2: // 二进制帧
                                 //wbt_websocket_send_msg(ev, ws->payload, (unsigned int)ws->payload_length);
                                 BEGIN_BMTP_CTX;
+                                wbt_bmtp_t *bmtp = ev->data;;
                                 void *tmp_buff = ev->buff;
                                 unsigned int tmp_buff_len = ev->buff_len;
                                 ev->buff = ws->payload;
                                 ev->buff_len = ws->payload_length;
-                                if( wbt_bmtp_on_recv(ev) != WBT_OK || ev->buff_len > 0 ) {
+                                if( wbt_bmtp_on_recv(ev) != WBT_OK || bmtp->msg_offset != ev->buff_len ) {
                                     // error
                                     wbt_bmtp_send_disconn(ev);
                                 }
@@ -371,30 +416,6 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
 
     waiting:
 
-        if( msg_offset > 0 ) {
-            /* 删除已经处理完毕的消息
-             */
-            if( ev->buff_len == msg_offset ) {
-                wbt_free(ev->buff);
-                ev->buff = NULL;
-                ev->buff_len = 0;
-                ws->recv_offset = 0;
-            } else if( ev->buff_len > msg_offset ) {
-                wbt_memmove(ev->buff, (unsigned char *)ev->buff + msg_offset, ev->buff_len - msg_offset);
-                ev->buff_len -= msg_offset;
-                ws->recv_offset -= msg_offset;
-            } else {
-                wbt_log_add("ws error: unexpected error\n");
-                return WBT_ERROR;
-            }
-        } else if( msg_offset == 0 &&
-                ws->recv_offset + ws->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
-            /* 消息长度超过限制
-             */
-            wbt_log_add("ws error: message length exceeds limit\n");
-            return WBT_ERROR;
-        }
-
         ev->events |= WBT_EV_READ;
         ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
         if(wbt_event_mod(ev) != WBT_OK) {
@@ -407,42 +428,39 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
 
     return WBT_OK;
 }
-/*
-wbt_status wbt_websocket_send_frame_header(wbt_event_t *ev, int len) {
-    if( len > 64 * 1024 - 4 ) {
-        len = 64 * 1024 - 4;
-    }
 
-    if( len <= 125 ) {
-        unsigned char buf[] = {0x82, len};
-        return wbt_websocket_send(ev, buf, sizeof(buf));
-    } else {
-        unsigned char buf[] = {0x82, 126, len >> 8, len};
-        return wbt_websocket_send(ev, buf, sizeof(buf));
+wbt_status wbt_websocket_on_handler( wbt_event_t *ev ) {
+    if( ev->protocol != WBT_PROTOCOL_WEBSOCKET ) {
+        return WBT_OK;
     }
+    
+    wbt_websocket_t *ws = ev->data;
+    
+    if( ws->msg_offset > 0 ) {
+        /* 删除已经处理完毕的消息
+         */
+        if( ev->buff_len == ws->msg_offset ) {
+            wbt_free(ev->buff);
+            ev->buff = NULL;
+            ev->buff_len = 0;
+            ws->recv_offset = 0;
+        } else if( ev->buff_len > ws->msg_offset ) {
+            wbt_memmove(ev->buff, (unsigned char *)ev->buff + ws->msg_offset, ev->buff_len - ws->msg_offset);
+            ev->buff_len -= ws->msg_offset;
+            ws->recv_offset -= ws->msg_offset;
+        } else {
+            wbt_log_add("ws error: unexpected error\n");
+            return WBT_ERROR;
+        }
+    } else if( ws->msg_offset == 0 &&
+            ws->recv_offset + ws->payload_length > WBT_MAX_PROTO_BUF_LEN ) {
+        /* 消息长度超过限制
+         */
+        wbt_log_add("ws error: message length exceeds limit\n");
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }
 
-wbt_status wbt_websocket_send_msg(wbt_event_t *ev, unsigned char *data, int len) {
-    if( len > 64 * 1024 - 4 ) {
-        len = 64 * 1024 - 4;
-    }
-
-    if( len <= 125 ) {
-        unsigned char *buf = wbt_malloc(len+2);
-        buf[0] = 0x82;
-        buf[1] = len;
-        wbt_memcpy(buf+2, data, len);
-        return wbt_websocket_send(ev, buf, len+2);
-    } else {
-        unsigned char *buf = wbt_malloc(len+4);
-        buf[0] = 0x82;
-        buf[1] = 126;
-        buf[2] = len >> 8;
-        buf[3] = len;
-        wbt_memcpy(buf+4, data, len);
-        return wbt_websocket_send(ev, buf, len+4);
-    }
-}
-*/
 #endif

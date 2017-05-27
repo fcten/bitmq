@@ -261,6 +261,8 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
     
+    wbt_module_on_handler(ev);
+    
     return WBT_OK;
 }
 

@@ -209,6 +209,7 @@ typedef struct {
     unsigned char *payload;
     
     unsigned int  recv_offset;
+    unsigned int  msg_offset;
     
     unsigned int  is_conn:1;
     
@@ -228,6 +229,8 @@ wbt_status wbt_bmtp_on_conn(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_recv(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_send(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_close(wbt_event_t *ev);
+
+wbt_status wbt_bmtp_on_handler(wbt_event_t *ev);
 
 wbt_status wbt_bmtp_on_connect(wbt_event_t *ev);
 wbt_status wbt_bmtp_on_connack(wbt_event_t *ev);
