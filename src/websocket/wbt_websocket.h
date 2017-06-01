@@ -17,6 +17,7 @@ extern "C" {
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
 #include "../event/wbt_event.h"
+#include "../bmtp/wbt_bmtp.h"
 
 /*
   0                   1                   2                   3
@@ -66,6 +67,9 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev );
 wbt_status wbt_websocket_on_send( wbt_event_t *ev );
 
 wbt_status wbt_websocket_on_handler( wbt_event_t *ev );
+
+wbt_status wbt_websocket_send_pub(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup);
+wbt_status wbt_websocket_is_ready(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }

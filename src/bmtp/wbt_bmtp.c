@@ -17,6 +17,9 @@
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_msg.h"
 #include "../mq/wbt_mq_auth.h"
+#ifdef WITH_WEBSOCKET
+#include "../websocket/wbt_websocket.h"
+#endif
 #include "wbt_bmtp.h"
 #include "wbt_bmtp_sid.h"
 
@@ -475,8 +478,13 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
         return wbt_bmtp_send_connack(ev, 0x2);
     }
     
+#ifdef WITH_WEBSOCKET
+    wbt_mq_set_send_cb(ev, wbt_websocket_send_pub);
+    wbt_mq_set_is_ready_cb(ev, wbt_websocket_is_ready);
+#else
     wbt_mq_set_send_cb(ev, wbt_bmtp_send_pub);
     wbt_mq_set_is_ready_cb(ev, wbt_bmtp_is_ready);
+#endif
     wbt_mq_set_auth(ev, auth);
 
     if( wbt_mq_auth_conn_limit(ev) != WBT_OK ) {

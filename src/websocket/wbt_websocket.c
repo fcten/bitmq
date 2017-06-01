@@ -150,6 +150,34 @@ wbt_status wbt_websocket_on_close( wbt_event_t *ev ) {
     return WBT_OK;
 }
 
+wbt_status wbt_websocket_send_pub(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup) {
+    if( ev->protocol == WBT_PROTOCOL_BMTP ) {
+        return wbt_bmtp_send_pub(ev, data, len, qos, dup);
+    } else { // ev->protocol == WBT_PROTOCOL_WEBSOCKET
+        wbt_status ret;
+
+        BEGIN_BMTP_CTX;
+        ret = wbt_bmtp_send_pub(ev, data, len, qos, dup);
+        ENDOF_BMTP_CTX;
+
+        return ret;
+    }
+}
+
+wbt_status wbt_websocket_is_ready(wbt_event_t *ev) {
+    if( ev->protocol == WBT_PROTOCOL_BMTP ) {
+        return wbt_bmtp_is_ready(ev);
+    } else { // ev->protocol == WBT_PROTOCOL_WEBSOCKET
+        wbt_status ret;
+
+        BEGIN_BMTP_CTX;
+        ret = wbt_bmtp_is_ready(ev);
+        ENDOF_BMTP_CTX;
+
+        return ret;
+    }
+}
+
 wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
     if( ev->protocol == WBT_PROTOCOL_HTTP ) {
         /* websocket 协议由 http 协议升级而来
