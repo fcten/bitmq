@@ -225,11 +225,11 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         wbt_str_t s2  = wbt_string("websocket");
         wbt_str_t s3  = wbt_string("13");
         
-        if( wbt_strcmp( &connection, &s1 ) != 0 ) {
+        if( wbt_stripos( &connection, &s1 ) == -1 ) {
             http->status = STATUS_400;
             return WBT_OK;
         }
-        if( wbt_strcmp( &upgrade, &s2 ) != 0 ) {
+        if( wbt_stricmp( &upgrade, &s2 ) != 0 ) {
             http->status = STATUS_400;
             return WBT_OK;
         }
@@ -242,11 +242,6 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
             http->status = STATUS_400;
             return WBT_OK;
         }
-        
-        // 切换为 websocket
-        wbt_http_on_close(ev);
-        ev->protocol = WBT_PROTOCOL_WEBSOCKET;
-        wbt_websocket_on_conn(ev);
         
         // 生成响应
         wbt_str_t key  = wbt_string("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
@@ -269,7 +264,12 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         dst.len = 28;
         dst.str = buf.str + buf.len - 32; // 28 + 4
         wbt_base64_encode(&dst, &src);
-        
+
+        // 切换为 websocket
+        wbt_http_on_close(ev);
+        ev->protocol = WBT_PROTOCOL_WEBSOCKET;
+        wbt_websocket_on_conn(ev);
+
         /* 注意，这里 buf[0] = 'H'，即 0x48。在 BMTP 中，该数据帧会被当作 PUBACK 处理。
          * 目前 PUBACK 不经任何处理直接发送，所以暂时不会产生问题。
          */
@@ -385,7 +385,8 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                     ws->recv_offset += (unsigned int)ws->payload_length;
 
                     // 解码
-                    for(int i = 0;i < ws->payload_length; i++) {
+                    int i = 0;
+                    for(i = 0;i < ws->payload_length; i++) {
                         ws->payload[i] ^= ws->mask_key[i%4];
                     }
                     
