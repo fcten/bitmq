@@ -89,11 +89,8 @@ BitMQ 使用 CMake (>=2.8) 进行构建。您可以在源码目录下使用以�
 
 ## 授权协议
 
-BitMQ 遵循 GPL v2 协议发布。
-
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+BitMQ 遵循 BSD 许可证。
 
 ## 获取 BitMQ
 
-* https://github.com/fcten/webit
-* http://git.oschina.net/fcten/Webit
+* http://www.bitmq.com/
