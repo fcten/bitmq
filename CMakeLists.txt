@@ -11,7 +11,7 @@ project(bmq)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-set (VERSION 0.5.0)
+set (VERSION 0.6.0)
 
 if (WIN32)
 	execute_process(COMMAND cmd /c echo %DATE% %TIME% OUTPUT_VARIABLE TIMESTAMP

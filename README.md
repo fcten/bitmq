@@ -75,6 +75,11 @@ BitMQ 使用 CMake (>=2.8) 进行构建。您可以在源码目录下使用以�
 
 ## 更新日志
 
+### V0.6.0
+
+ * Feature: 添加 WebSocket 协议支持
+ * Feature: 添加授权认证和权限控制
+
 ### V0.5.0
 
  * Feature: 添加 BMTP 协议支持
