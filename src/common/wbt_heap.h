@@ -35,6 +35,8 @@ wbt_timer_t * wbt_heap_get(wbt_heap_t * p);
 wbt_status wbt_heap_delete(wbt_heap_t * p);
 /* 删除指定元素 */
 wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx);
+/* 更新指定元素的位置 */
+wbt_status wbt_heap_update(wbt_heap_t * p, unsigned int heap_idx);
 /* 删除堆 */
 wbt_status wbt_heap_destroy(wbt_heap_t * p);
 /* 删除所有超时元素 */

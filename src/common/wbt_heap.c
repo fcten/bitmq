@@ -89,7 +89,12 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
         p->heap[i]->heap_idx = i;
     }
     // 将最后一个元素移动到堆顶位置
-    p->heap[1] = p->heap[p->size--];
+    if( p->size > 1 ) {
+        p->heap[1] = p->heap[p->size--];
+        p->heap[1]->heap_idx = 1;
+    } else {
+        p->size = 0;
+    }
 
     // 调整堆使其符合最小堆性质
     int current = 1, child = 2;
@@ -121,6 +126,43 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
         wbt_log_debug("heap resize to %u\n", p->max);
     }
     
+    return WBT_OK;
+}
+
+wbt_status wbt_heap_update(wbt_heap_t * p, unsigned int heap_idx) {
+    // 保存当前元素
+    p->heap[0] = p->heap[heap_idx];
+    
+    // 依次用父元素覆盖当前元素，以空出堆顶位置
+    int i = heap_idx;
+    for( ; i/2 > 0 ; i /= 2 ) { 
+        p->heap[i] = p->heap[i/2];
+        p->heap[i]->heap_idx = i;
+    }
+    
+    // 将当前元素移动到堆顶位置
+    p->heap[1] = p->heap[0];
+    p->heap[1]->heap_idx = 1;
+    
+    // 调整堆使其符合最小堆性质
+    int current = 1, child = 2;
+    for( ; child <= p->size ; current = child, child *= 2 ) {
+        if( child + 1 <= p->size && p->heap[child+1]->timeout <  p->heap[child]->timeout ) {
+            child++;
+        }
+
+        if( p->heap[child]->timeout < p->heap[current]->timeout ) {
+            p->heap[child]->heap_idx = current;
+            p->heap[current]->heap_idx = child;
+            
+            p->heap[0] = p->heap[current];
+            p->heap[current] = p->heap[child];
+            p->heap[child] = p->heap[0];
+        } else {
+            break;
+        }
+    }
+
     return WBT_OK;
 }
 
