@@ -129,10 +129,9 @@ wbt_status wbt_mq_msg_event_effect(wbt_timer_t *timer) {
     wbt_timer_add(&msg->timer);
     
     if( msg->state == MSG_CREATED ) {
-        // !!TODO: 同一时间的定时事件无法保证先后执行的顺序，这回导致同一时间的消息 ID 乱序
         msg->seq_id = ++wbt_msg_effect_count;
         msg->state = MSG_EFFECTIVE;
-        
+
         wbt_channel_t * channel = wbt_mq_channel_get(msg->consumer_id);
         if( channel == NULL ) {
             return WBT_ERROR;
@@ -149,14 +148,12 @@ wbt_status wbt_mq_msg_event_effect(wbt_timer_t *timer) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_msg_timer_add(wbt_msg_t *msg) {
+wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     wbt_timer_del(&msg->timer);
     
     if( msg->expire < wbt_cur_mtime ) {
         // 过期消息
-        msg->timer.on_timeout = wbt_mq_msg_event_expire;
-        msg->timer.timeout    = msg->expire;
-        return wbt_timer_add(&msg->timer);
+        return wbt_mq_msg_event_expire(&msg->timer);
     } else if( msg->effect > wbt_cur_mtime ) {
         // 未生效消息
         msg->timer.on_timeout = wbt_mq_msg_event_effect;
@@ -164,9 +161,7 @@ wbt_status wbt_mq_msg_timer_add(wbt_msg_t *msg) {
         return wbt_timer_add(&msg->timer);
     } else {
         // 已生效消息
-        msg->timer.on_timeout = wbt_mq_msg_event_effect;
-        msg->timer.timeout    = msg->effect;
-        return wbt_timer_add(&msg->timer);
+        return wbt_mq_msg_event_effect(&msg->timer);
     }
 }
 
@@ -196,7 +191,7 @@ wbt_status wbt_mq_msg_refer_dec(wbt_msg_t *msg) {
     msg->reference_count --;
     
     if( msg->reference_count == 0 ) {
-        wbt_mq_msg_timer_add(msg);
+        wbt_mq_msg_delivery(msg);
     }
     
     return WBT_OK;

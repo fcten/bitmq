@@ -134,7 +134,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
                 wbt_memcpy(msg, block, sizeof(wbt_msg_block_t));
                 msg->data = data;
 
-                wbt_mq_msg_timer_add(msg);
+                wbt_mq_msg_delivery(msg);
             }
         } else {
             wbt_free(data);

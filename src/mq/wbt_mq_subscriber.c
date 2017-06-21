@@ -77,7 +77,7 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         
         if(msg) {
             msg->state = MSG_CREATED;
-            wbt_mq_msg_timer_add(msg);
+            wbt_mq_msg_delivery(msg);
             
             wbt_log_debug("msg_id %lld: %ld\n", msg->msg_id, msg->effect);
         }

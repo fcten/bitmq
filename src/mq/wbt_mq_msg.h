@@ -38,7 +38,7 @@ wbt_rb_t* wbt_mq_msg_get_all();
 
 void wbt_mq_msg_update_create_count(wbt_mq_id msg_id);
 
-wbt_status wbt_mq_msg_timer_add(wbt_msg_t *msg);
+wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_refer_inc(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_refer_dec(wbt_msg_t *msg);
 

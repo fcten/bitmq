@@ -304,7 +304,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
                 wbt_mq_persist_append(msg, 1);
             }
 
-            wbt_mq_msg_timer_add(msg);
+            wbt_mq_msg_delivery(msg);
         }
     } else {
         if( msg->type == MSG_ACK ) {
