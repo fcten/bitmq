@@ -73,6 +73,7 @@ wbt_status wbt_timer_del(wbt_timer_t *timer) {
     return WBT_OK;
 }
 
+// TODO: 可优化，通过新旧 timeout 的大小决定向上或向下调整位置
 wbt_status wbt_timer_mod(wbt_timer_t *timer) {
     wbt_timer_t tmp;
     tmp.on_timeout = timer->on_timeout;
@@ -102,7 +103,7 @@ time_t wbt_timer_process() {
     while(p && p->timeout <= wbt_cur_mtime ) {
         /* 移除超时事件 */
         wbt_heap_delete(&wbt_timer);
-        p->heap_idx = 0;
+        //p->heap_idx = 0;
         /* 尝试调用回调函数 */
         if(p->on_timeout != NULL) {
             p->on_timeout(p);

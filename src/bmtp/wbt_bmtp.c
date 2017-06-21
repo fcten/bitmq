@@ -17,6 +17,7 @@
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_msg.h"
 #include "../mq/wbt_mq_auth.h"
+#include "../mq/wbt_mq_subscriber.h"
 #ifdef WITH_WEBSOCKET
 #include "../websocket/wbt_websocket.h"
 #endif
@@ -479,11 +480,9 @@ wbt_status wbt_bmtp_on_connect(wbt_event_t *ev) {
     }
     
 #ifdef WITH_WEBSOCKET
-    wbt_mq_set_send_cb(ev, wbt_websocket_send_pub);
-    wbt_mq_set_is_ready_cb(ev, wbt_websocket_is_ready);
+    wbt_mq_set_notify(ev, wbt_websocket_notify);
 #else
-    wbt_mq_set_send_cb(ev, wbt_bmtp_send_pub);
-    wbt_mq_set_is_ready_cb(ev, wbt_bmtp_is_ready);
+    wbt_mq_set_notify(ev, wbt_bmtp_notify);
 #endif
     wbt_mq_set_auth(ev, auth);
 
@@ -569,7 +568,9 @@ wbt_status wbt_bmtp_on_sub(wbt_event_t *ev) {
         json_delete_object(obj);
   
         // TODO 如果这里 send 失败了
-        wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+        int ret = wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+        
+        wbt_log_debug("sub: msg %lld %d\n", msg->msg_id, ret);
         
         total += resp.len;
         if( total >= 1024 * 64 ) {
@@ -619,7 +620,9 @@ wbt_status wbt_bmtp_on_puback(wbt_event_t *ev) {
             
             json_delete_object(obj);
 
-            wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+            int ret = wbt_bmtp_send_pub(ev, resp.str, resp.len, msg->qos, 0 );
+            
+            wbt_log_debug("puback: msg %lld %d\n", msg->msg_id, ret);
         }
         
         wbt_free(resp.str);
@@ -770,12 +773,41 @@ wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len) {
     return WBT_OK;
 }
 
-wbt_status wbt_bmtp_is_ready(wbt_event_t *ev) {
+wbt_status wbt_bmtp_notify(wbt_event_t *ev) {
     wbt_bmtp_t *bmtp = ev->data;
     
     if( wbt_list_empty(&bmtp->wait_queue.head) ) {
-        return WBT_OK;
+        // 发送消息
+        wbt_msg_t *msg = NULL;
+        if( !(wbt_mq_pull(ev, &msg) == WBT_OK && msg) ) {
+            return WBT_ERROR;
+        }
+        
+        wbt_log_debug("notify msg %lld\n", msg->msg_id);
+
+        json_object_t *obj = wbt_mq_msg_print(msg);
+
+        wbt_str_t resp;
+        resp.len = 1024 * 64;
+        resp.str = wbt_malloc( resp.len );
+        if( resp.str == NULL ) {
+            json_delete_object(obj);
+            return WBT_ERROR;
+        }        
+        char *p = resp.str;
+        size_t l = resp.len;
+        json_print(obj, &p, &l);
+        resp.len -= l;
+        resp.str = wbt_realloc( resp.str, resp.len );
+
+        json_delete_object(obj);
+
+        wbt_bmtp_send_pub(ev, resp.str,resp.len, 1, 0);
+        
+        wbt_free(resp.str);
     } else {
-        return WBT_ERROR;
+        wbt_log_debug("not ready\n");
     }
+    
+    return WBT_OK;
 }

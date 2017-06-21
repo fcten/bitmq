@@ -68,9 +68,20 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         wbt_free(channel_node);
     }
 
+    // 重新投递尚未返回 ACK 响应的负载均衡消息
     wbt_msg_list_t * msg_node;
+    wbt_msg_t *msg;
     while(!wbt_list_empty(&subscriber->delivered_list.head)) {
         msg_node = wbt_list_first_entry(&subscriber->delivered_list.head, wbt_msg_list_t, head);
+        msg = wbt_mq_msg_get(msg_node->msg_id);
+        
+        if(msg) {
+            msg->state = MSG_CREATED;
+            wbt_mq_msg_timer_add(msg);
+            
+            wbt_log_debug("msg_id %lld: %ld\n", msg->msg_id, msg->effect);
+        }
+        
         wbt_list_del(&msg_node->head);
         wbt_mq_msg_destory_node(msg_node);
     }
@@ -104,74 +115,6 @@ wbt_status wbt_mq_subscriber_add_channel(wbt_subscriber_t *subscriber, wbt_chann
     wbt_list_add(&channel_node->head, &subscriber->channel_list.head);
     
     return WBT_OK;
-}
-
-/**
- * 向一个订阅者发送消息
- * @param subscriber
- * @param msg
- * @return 
- */
-wbt_status wbt_mq_subscriber_send_msg(wbt_subscriber_t *subscriber) {
-    // 遍历所订阅的频道，获取可投递消息
-    wbt_channel_list_t *channel_node;
-    wbt_rb_node_t *node;
-    wbt_msg_t *msg = NULL;
-    wbt_str_t key;
-    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list.head, head) {
-        wbt_variable_to_str(channel_node->seq_id, key);
-        node = wbt_rb_get_greater(&channel_node->channel->queue, &key);
-        if( node ) {
-            msg = (wbt_msg_t *)node->value.str;
-            break;
-        }
-    }
-
-    if(msg) {
-        json_object_t *obj = wbt_mq_msg_print(msg);
-
-        wbt_str_t resp;
-        resp.len = 1024 * 64;
-        resp.str = wbt_malloc( resp.len );
-        if( resp.str == NULL ) {
-            return WBT_ERROR;
-        }        
-        char *p = resp.str;
-        size_t l = resp.len;
-        json_print(obj, &p, &l);
-        resp.len -= l;
-        resp.str = wbt_realloc( resp.str, resp.len );
-        
-        json_delete_object(obj);
-        
-        if( subscriber->send( subscriber->ev, resp.str, resp.len, msg->qos, 0 ) != WBT_OK ) {
-            wbt_free(resp.str);
-            return WBT_ERROR;
-        }
-        wbt_free(resp.str);
-
-        // 如果是负载均衡消息，将该消息移动到 delivered_list 中
-        if( msg->type == MSG_LOAD_BALANCE ) {
-            // 消息本身不能被释放
-            node->value.str = NULL;
-            wbt_rb_delete(&channel_node->channel->queue, node);
-
-            wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(msg->msg_id);
-            if( msg_node == NULL ) {
-                return WBT_ERROR;
-            }
-            wbt_list_add_tail( &msg_node->head, &subscriber->delivered_list.head );
-        }
-
-        wbt_mq_msg_inc_delivery(msg);
-
-        // 更新消息处理进度
-        channel_node->seq_id = msg->seq_id;
-
-        return WBT_OK;
-    }
-
-    return WBT_ERROR;
 }
 
 wbt_status wbt_mq_subscriber_msg_ack(wbt_subscriber_t *subscriber, wbt_mq_id msg_id) {

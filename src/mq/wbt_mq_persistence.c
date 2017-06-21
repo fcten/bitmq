@@ -134,10 +134,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
                 wbt_memcpy(msg, block, sizeof(wbt_msg_block_t));
                 msg->data = data;
 
-                if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
-                    // TODO 记录该错误
-                    wbt_mq_msg_destory( msg );
-                }
+                wbt_mq_msg_timer_add(msg);
             }
         } else {
             wbt_free(data);

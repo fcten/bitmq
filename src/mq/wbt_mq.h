@@ -79,8 +79,10 @@ typedef struct wbt_msg_s {
     // 消费次数
     unsigned int consumption_count;
     // 引用次数
-    // 如果该消息正在被发送，或者正在等待 ACK 响应，则不能被释放
-    //unsigned int reference_count;
+    // 如果该消息正在被发送，则不能被释放
+    unsigned int reference_count;
+    // 消息状态
+    unsigned int state:3;
     // 消息内容
     void * data;
 } wbt_msg_t;
@@ -93,7 +95,7 @@ typedef struct wbt_msg_list_s {
     // 过期时间
     //time_t expire;
     // 消息 ID
-    // 使用指针效率更高，但是必须在内存中保存所有消息的索引，会对消息持久化造成障碍
+    // 为了尽量避免妨碍消息过期，这里使用 msg_id 而不是指针
     wbt_mq_id msg_id;
 } wbt_msg_list_t;
 
@@ -194,15 +196,14 @@ typedef struct wbt_subscriber_s {
     wbt_event_t * ev;
     // 所订阅频道 ID
     struct wbt_channel_list_s channel_list;
-    // 已投递消息队列
+    // 已投递队列
     // 保存已投递但尚未返回 ACK 响应的负载均衡消息
     struct wbt_msg_list_s delivered_list;
     // 权限信息
     struct wbt_auth_s * auth;
-    // 消息投递回调函数
+    // 消息投递回调函数，用于通知该订阅者有消息可投递
     // 设置该方法是为了同时支持多种协议
-    wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int);
-    wbt_status (*is_ready)(wbt_event_t *);
+    wbt_status (*notify)(wbt_event_t *);
 } wbt_subscriber_t;
 
 typedef struct wbt_channel_s {
@@ -229,8 +230,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len);
 wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
 
-wbt_status wbt_mq_set_send_cb(wbt_event_t *ev, wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int));
-wbt_status wbt_mq_set_is_ready_cb(wbt_event_t *ev, wbt_status (*is_ready)(wbt_event_t *));
+wbt_status wbt_mq_set_notify(wbt_event_t *ev, wbt_status (*notify)(wbt_event_t *));
 wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth);
 
 time_t wbt_mq_uptime();

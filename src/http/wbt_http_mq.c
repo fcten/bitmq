@@ -21,8 +21,8 @@ wbt_status wbt_http_mq_login(wbt_event_t *ev);
 wbt_status wbt_http_mq_push(wbt_event_t *ev);
 wbt_status wbt_http_mq_pull(wbt_event_t *ev);
 
-wbt_status wbt_http_mq_send(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup);
-wbt_status wbt_http_mq_is_ready(wbt_event_t *ev);
+wbt_status wbt_http_mq_send(wbt_event_t *ev);
+wbt_status wbt_http_mq_notify(wbt_event_t *ev);
 
 wbt_status wbt_http_mq_status(wbt_event_t *ev);
 
@@ -112,8 +112,7 @@ wbt_status wbt_http_mq_login(wbt_event_t *ev) {
         return WBT_OK;
     }
     
-    wbt_mq_set_send_cb(ev, wbt_http_mq_send);
-    wbt_mq_set_is_ready_cb(ev, wbt_http_mq_is_ready);
+    wbt_mq_set_notify(ev, wbt_http_mq_notify);
 
     // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
     wbt_str_t channel_ids;
@@ -180,12 +179,13 @@ wbt_status wbt_http_mq_pull_timeout(wbt_timer_t *timer) {
     return WBT_OK;
 }
 
-wbt_status wbt_http_mq_is_ready(wbt_event_t *ev) {
+wbt_status wbt_http_mq_notify(wbt_event_t *ev) {
     if( ev->timer.on_timeout == wbt_http_mq_pull_timeout ) {
-        return WBT_OK;
-    } else {
-        return WBT_ERROR;
+        // 发送消息
+        wbt_http_mq_send(ev);
     }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
@@ -239,11 +239,33 @@ wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_http_mq_send(wbt_event_t *ev, char *data, unsigned int len, int qos, int dup) {
+wbt_status wbt_http_mq_send(wbt_event_t *ev) {
     wbt_http_t * http = ev->data;
 
-    http->resp_body_memory.len = len;
-    http->resp_body_memory.str = wbt_strdup(data, len);
+    wbt_msg_t *msg = NULL;
+    if( !(wbt_mq_pull(ev, &msg) == WBT_OK && msg) ) {
+        return WBT_ERROR;
+    }
+
+    json_object_t *obj = wbt_mq_msg_print(msg);
+
+    wbt_str_t resp;
+    resp.len = 1024 * 64;
+    resp.str = wbt_malloc( resp.len );
+    if( resp.str == NULL ) {
+        json_delete_object(obj);
+        return WBT_ERROR;
+    }        
+    char *p = resp.str;
+    size_t l = resp.len;
+    json_print(obj, &p, &l);
+    resp.len -= l;
+    resp.str = wbt_realloc( resp.str, resp.len );
+
+    json_delete_object(obj);
+
+    http->resp_body_memory.len = resp.len;
+    http->resp_body_memory.str = resp.str;
     http->status = STATUS_200;
     http->state = STATE_SENDING;
 

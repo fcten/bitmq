@@ -101,18 +101,6 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
         wbt_mq_channel_del_subscriber(channel_node->channel, subscriber);
     }
 
-    // 重新投递尚未返回 ACK 响应的负载均衡消息
-    wbt_msg_list_t *msg_node;
-    wbt_msg_t *msg;
-    wbt_list_for_each_entry(msg_node, wbt_msg_list_t, &subscriber->delivered_list.head, head) {
-        msg = wbt_mq_msg_get(msg_node->msg_id);
-        if( msg ) {
-            if( wbt_mq_msg_delivery(msg) != WBT_OK ) {
-                wbt_mq_msg_destory(msg);
-            }
-        }
-    }
-
     // 删除该订阅者
     wbt_mq_subscriber_destory(subscriber);
 
@@ -312,18 +300,11 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
 
             wbt_mq_msg_destory( msg );
         } else {
-            if( wbt_mq_msg_delivery( msg ) != WBT_OK ) {
-                if( wbt_conf.aof ) {
-                    wbt_mq_persist_append(msg, 1);
-                }
-
-                wbt_mq_msg_destory( msg );
-                return WBT_ERROR;
-            } else {
-                if( wbt_conf.aof ) {
-                    wbt_mq_persist_append(msg, 1);
-                }
+            if( wbt_conf.aof ) {
+                wbt_mq_persist_append(msg, 1);
             }
+
+            wbt_mq_msg_timer_add(msg);
         }
     } else {
         if( msg->type == MSG_ACK ) {
@@ -404,7 +385,7 @@ wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr) {
             node->value.str = NULL;
             wbt_rb_delete(&channel_node->channel->queue, node);
 
-            wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(msg->msg_id);
+            wbt_msg_list_t *msg_node = wbt_mq_msg_create_node(msg);
             if( msg_node == NULL ) {
                 return WBT_ERROR;
             }
@@ -424,23 +405,13 @@ wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr) {
     }
 }
 
-wbt_status wbt_mq_set_send_cb(wbt_event_t *ev, wbt_status (*send)(wbt_event_t *, char *, unsigned int, int, int)) {
+wbt_status wbt_mq_set_notify(wbt_event_t *ev, wbt_status (*notify)(wbt_event_t *)) {
     wbt_subscriber_t *subscriber = ev->ctx;
     if( subscriber == NULL ) {
         return WBT_ERROR;
     }
     
-    subscriber->send = send;
-    return WBT_OK;
-}
-
-wbt_status wbt_mq_set_is_ready_cb(wbt_event_t *ev, wbt_status (*is_ready)(wbt_event_t *)) {
-    wbt_subscriber_t *subscriber = ev->ctx;
-    if( subscriber == NULL ) {
-        return WBT_ERROR;
-    }
-    
-    subscriber->is_ready = is_ready;
+    subscriber->notify = notify;
     return WBT_OK;
 }
 

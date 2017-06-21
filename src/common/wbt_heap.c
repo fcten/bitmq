@@ -15,7 +15,7 @@ wbt_status wbt_heap_init(wbt_heap_t * p, size_t max_size) {
         return WBT_ERROR;
     }
 
-    p->heap[0] = NULL; // 位置 0 保留不用
+    p->heap[0] = NULL;
     p->max     = max_size;
     p->size    = 0;
     
@@ -39,14 +39,20 @@ wbt_status wbt_heap_insert(wbt_heap_t * p, wbt_timer_t * node) {
         }
     }
     
-    int i;
-    for( i = ++p->size; p->heap[i/2] && p->heap[i/2]->timeout > node->timeout; i /= 2 ) { 
-        p->heap[i] = p->heap[i/2];
-        p->heap[i]->heap_idx = i;
-    }
-
+    // 将元素插入到堆末尾
+    int i = ++p->size;
     p->heap[i] = node;
     p->heap[i]->heap_idx = i;
+    
+    // 调整堆使其符合最小堆性质
+    for( ; i/2 > 0 && p->heap[i/2]->timeout > p->heap[i]->timeout; i /= 2 ) { 
+        p->heap[i]->heap_idx = i/2;
+        p->heap[i/2]->heap_idx = i;
+
+        p->heap[0] = p->heap[i/2];
+        p->heap[i/2] = p->heap[i];
+        p->heap[i] = p->heap[0];
+    }
     
     //wbt_log_debug("heap insert, %d nodes.\n", p->size);
     
@@ -73,29 +79,37 @@ wbt_status wbt_heap_delete(wbt_heap_t * p) {
 }
 
 wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
-    unsigned int current = heap_idx, child = heap_idx*2;
-    wbt_timer_t *last_node = p->heap[p->size--];
+    // 标记为已删除
+    p->heap[heap_idx]->heap_idx = 0;
 
-    p->heap[current]->heap_idx = 0;
+    // 依次用父元素覆盖当前元素，以空出堆顶位置
+    int i = heap_idx;
+    for( ; i/2 > 0 ; i /= 2 ) { 
+        p->heap[i] = p->heap[i/2];
+        p->heap[i]->heap_idx = i;
+    }
+    // 将最后一个元素移动到堆顶位置
+    p->heap[1] = p->heap[p->size--];
 
-    if( last_node != p->heap[current] ) {
-        for( ; child <= p->size ; current = child, child *= 2 ) {
-            if( child != p->size && p->heap[child+1]->timeout <  p->heap[child]->timeout ) {
-                child++;
-            }
-
-            if( p->heap[child]->timeout < last_node->timeout ) {
-                p->heap[child]->heap_idx = current;
-                p->heap[current] = p->heap[child];
-            } else {
-                break;
-            }
+    // 调整堆使其符合最小堆性质
+    int current = 1, child = 2;
+    for( ; child <= p->size ; current = child, child *= 2 ) {
+        if( child + 1 <= p->size && p->heap[child+1]->timeout <  p->heap[child]->timeout ) {
+            child++;
         }
 
-        last_node->heap_idx = current;
-        p->heap[current] = last_node;
+        if( p->heap[child]->timeout < p->heap[current]->timeout ) {
+            p->heap[child]->heap_idx = current;
+            p->heap[current]->heap_idx = child;
+            
+            p->heap[0] = p->heap[current];
+            p->heap[current] = p->heap[child];
+            p->heap[child] = p->heap[0];
+        } else {
+            break;
+        }
     }
-    
+
     //wbt_log_debug("heap remove, %d nodes.\n", p->size);
 
     // 删除元素后尝试释放空间

@@ -7,6 +7,7 @@
 
 #include "wbt_mq_channel.h"
 #include "wbt_mq_msg.h"
+#include "wbt_mq_subscriber.h"
 
 // 存储所有可用频道
 static wbt_rb_t wbt_mq_channels;
@@ -176,6 +177,7 @@ long long int wbt_mq_channel_status_active() {
 }
 
 wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
+    // 把消息记录到该频道的消息队列
     wbt_str_t key;
     wbt_variable_to_str(msg->seq_id, key);
     wbt_rb_node_t *node = wbt_rb_insert(&channel->queue, &key);
@@ -183,8 +185,33 @@ wbt_status wbt_mq_channel_add_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
         // seq_id 重复或者内存不足
         return WBT_ERROR;
     }
-    
     node->value.str = (char *)msg;
+    
+    // 将消息推送给频道内的订阅者
+    if( msg->type == MSG_BROADCAST ) {
+        // 广播模式
+        wbt_subscriber_list_t * subscriber_node;
+        wbt_subscriber_t * subscriber;
+        wbt_list_for_each_entry( subscriber_node, wbt_subscriber_list_t, &channel->subscriber_list.head, head ) {
+            subscriber = subscriber_node->subscriber;
+            subscriber->notify(subscriber->ev);
+        }
+    } else if( msg->type == MSG_LOAD_BALANCE ) {
+        if( wbt_list_empty( &channel->subscriber_list.head ) ) {
+            // 频道没有任何订阅者
+            return WBT_OK;
+        }
+
+        // 负载均衡模式，队列中的第一个订阅者获取该消息
+        wbt_subscriber_list_t * subscriber_node;
+        wbt_subscriber_t * subscriber;
+        subscriber_node = wbt_list_first_entry(&channel->subscriber_list.head, wbt_subscriber_list_t, head);
+        subscriber = subscriber_node->subscriber;
+        subscriber->notify(subscriber->ev);
+
+        // 将该订阅者移动到链表末尾
+        wbt_list_move_tail(&subscriber_node->head, &channel->subscriber_list.head);
+    }
     
     return WBT_OK;
 }

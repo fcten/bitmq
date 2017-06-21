@@ -252,7 +252,7 @@ wbt_status wbt_bmtp_send_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp_send_disconn(wbt_event_t *ev);
 wbt_status wbt_bmtp_send(wbt_event_t *ev, char *buf, int len);
 
-wbt_status wbt_bmtp_is_ready(wbt_event_t *ev);
+wbt_status wbt_bmtp_notify(wbt_event_t *ev);
 
 #ifdef	__cplusplus
 }
