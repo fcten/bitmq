@@ -159,120 +159,120 @@ wbt_status wbt_mq_subscribe(wbt_event_t *ev, wbt_mq_id channel_id) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_parser( json_task_t * task, wbt_msg_t * msg ) {
-    json_object_t * node = task->root;
+wbt_msg_t wbt_mq_parsed_msg;
+
+void wbt_mq_json_parser_cb(json_task_t *task, json_object_t *node) {
+    if( node->next != NULL ) {
+        return;
+    }
+
     wbt_str_t key;
-    
-    while( node && node->object_type == JSON_OBJECT ) {
-        key.str = node->key;
-        key.len = node->key_len;
-        switch( node->value_type ) {
-            case JSON_LONGLONG:
-                if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0  ) {
-                    msg->consumer_id = node->value.l;
-                } else if ( wbt_strcmp(&key, &wbt_mq_str_producer_id) == 0 ) {
-                    msg->producer_id = node->value.l;
-                } else if ( wbt_strcmp(&key, &wbt_mq_str_effect) == 0 ) {
-                    if( node->value.l >= 0 && node->value.l <= 2592000 ) {
-                        msg->effect = (unsigned int)node->value.l;
-                    }
-                } else if ( wbt_strcmp(&key, &wbt_mq_str_expire) == 0 ) {
-                    if( node->value.l >= 0 && node->value.l <= 2592000 ) {
-                        msg->expire = (unsigned int)node->value.l;
-                    }
-                } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
-                    switch(node->value.l) {
-                        case MSG_BROADCAST:
-                            msg->qos  = 0;
-                            msg->type = (unsigned int)node->value.l;
-                            break;
-                        case MSG_LOAD_BALANCE:
-                            msg->qos  = 1;
-                            msg->type = (unsigned int)node->value.l;
-                            break;
-                        case MSG_ACK:
-                            msg->qos  = 0;
-                            msg->type = (unsigned int)node->value.l;
-                            break;
-                        default:
-                            return WBT_ERROR;
-                    }
-                }
-                break;
-            case JSON_STRING:
-                if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    msg->data = wbt_strdup( node->value.s, node->value_len );
-                    if( msg->data == NULL ) {
-                        return WBT_ERROR;
-                    }
-                    msg->data_len = node->value_len;
-                }
-                break;
-            case JSON_ARRAY:
-            case JSON_OBJECT:
-                if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
-                    msg->data_len = 1024 * 64;
-                    msg->data = wbt_malloc( msg->data_len );
-                    if( msg->data == NULL ) {
-                        return WBT_ERROR;
-                    }
-                    char *p = msg->data;
-                    size_t l = msg->data_len;
-                    json_print(node->value.p, &p, &l);
-                    msg->data_len -= l;
-                    msg->data = wbt_realloc( msg->data, msg->data_len );
-                }
-                break;
-        }
+    key.str = node->key;
+    key.len = node->key_len;
 
-        node = node->next;
+    switch( node->value_type ) {
+        case JSON_LONGLONG:
+            if ( wbt_strcmp(&key, &wbt_mq_str_consumer_id) == 0  ) {
+                wbt_mq_parsed_msg.consumer_id = node->value.l;
+            } else if ( wbt_strcmp(&key, &wbt_mq_str_producer_id) == 0 ) {
+                wbt_mq_parsed_msg.producer_id = node->value.l;
+            } else if ( wbt_strcmp(&key, &wbt_mq_str_effect) == 0 ) {
+                if( node->value.l >= 0 && node->value.l <= 2592000 ) {
+                    wbt_mq_parsed_msg.effect = (unsigned int)node->value.l;
+                }
+            } else if ( wbt_strcmp(&key, &wbt_mq_str_expire) == 0 ) {
+                if( node->value.l >= 0 && node->value.l <= 2592000 ) {
+                    wbt_mq_parsed_msg.expire = (unsigned int)node->value.l;
+                }
+            } else if ( wbt_strcmp(&key, &wbt_mq_str_delivery_mode) == 0 ) {
+                switch(node->value.l) {
+                    case MSG_BROADCAST:
+                        wbt_mq_parsed_msg.qos  = 0;
+                        wbt_mq_parsed_msg.type = (unsigned int)node->value.l;
+                        break;
+                    case MSG_LOAD_BALANCE:
+                        wbt_mq_parsed_msg.qos  = 1;
+                        wbt_mq_parsed_msg.type = (unsigned int)node->value.l;
+                        break;
+                    case MSG_ACK:
+                        wbt_mq_parsed_msg.qos  = 0;
+                        wbt_mq_parsed_msg.type = (unsigned int)node->value.l;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            break;
+        case JSON_STRING:
+        case JSON_ARRAY:
+        case JSON_OBJECT:
+            if ( wbt_strcmp(&key, &wbt_mq_str_data) == 0 ) {
+                wbt_mq_parsed_msg.data = wbt_strdup( node->value.s, node->value_len );
+                if( wbt_mq_parsed_msg.data == NULL ) {
+                    wbt_mq_parsed_msg.data_len = 0;
+                } else {
+                    wbt_mq_parsed_msg.data_len = node->value_len;
+                }
+            }
+            break;
+        default:
+            break;
     }
-
-    if( !msg->consumer_id || !msg->data_len ) {
-        return WBT_ERROR;
-    }
-
-    msg->effect = msg->create + msg->effect * 1000;
-    msg->expire = msg->effect + msg->expire * 1000;
-    
-    return WBT_OK;
 }
 
-wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
+wbt_msg_t * wbt_mq_json_parser( char *data, int len ) {
     json_task_t t;
     t.str = data;
     t.len = len;
-    t.callback = NULL;
+    t.callback = wbt_mq_json_parser_cb;
+    
+    wbt_memset(&wbt_mq_parsed_msg, 0, sizeof(wbt_mq_parsed_msg));
 
     if( json_parser(&t) != 0 ) {
-        wbt_log_add("Message format error: %.*s\n", len<200 ? len : 200, data);
+        wbt_log_add("Message format error: %.*s\n", t.len<200 ? t.len : 200, t.str);
 
-        json_delete_object(t.root);
-        
+        return NULL;
+    }
+
+    if( !wbt_mq_parsed_msg.consumer_id || !wbt_mq_parsed_msg.data_len ) {
+        return NULL;
+    }
+
+    return &wbt_mq_parsed_msg;
+}
+
+wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
+    if( message == NULL ) {
+        // message format error
         return WBT_ERROR;
     }
 
+    if( wbt_mq_auth_pub_limit(ev) != WBT_OK ) {
+        // out of limit
+        return WBT_ERROR;
+    }
+
+    if( wbt_mq_auth_pub_permission(ev, message) != WBT_OK  ) {
+        // permission denied
+        return WBT_ERROR;
+    }
+    
     // 创建消息并初始化
     wbt_msg_t * msg = wbt_mq_msg_create(0);
     if( msg == NULL ) {
-        json_delete_object(t.root);
-
         return WBT_ERROR;
     }
     
-    if( wbt_mq_parser(&t, msg) != WBT_OK ||
-        wbt_mq_auth_pub_permission(ev, msg) != WBT_OK  ) {
-        wbt_log_add("Message attribute error: %.*s\n", len<200 ? len : 200, data);
+    msg->producer_id = message->producer_id;
+    msg->consumer_id = message->consumer_id;
+    msg->effect      = msg->create + message->effect * 1000;
+    msg->expire      = msg->effect + message->expire * 1000;
+    msg->type        = message->type;
+    msg->qos         = message->qos;
+    msg->data_len    = message->data_len;
+    msg->data        = message->data;
 
-        json_delete_object(t.root);
-        wbt_mq_msg_destory( msg );
-
-        return WBT_ERROR;
-    }
-
-    wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, len<200 ? len : 200, data);
-    
-    json_delete_object(t.root);
+    wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, msg->data_len<200 ? msg->data_len : 200, msg->data);
     
     // 如果使用释放 TTL 最小的消息的策略
     // 如果不使用该策略，并且开启了持久化，那么该消息会暂时存储到文件中
@@ -283,6 +283,11 @@ wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len) {
             // TODO 从超时队列中找到超时时间最小的消息，并删除
         }
     }
+    
+    // TODO
+    // 1、持久化
+    // 2、主从复制
+    // 3、投递
 
     // 投递消息
     if( wbt_mq_persist_aof_is_lock() == 0 && !wbt_is_oom() ) {

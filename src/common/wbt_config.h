@@ -76,7 +76,8 @@ typedef struct wbt_conf_s {
 #define AOF_FSYNC_ALWAYS   1
 #define AOF_FSYNC_EVERYSEC 2
 
-#define WBT_MAX_PROTO_BUF_LEN 64*1024
+// 增大这个值可以略微增加消息处理性能
+#define WBT_MAX_PROTO_BUF_LEN 128*1024
 
 extern wbt_conf_t wbt_conf;
 

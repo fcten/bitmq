@@ -141,8 +141,10 @@ wbt_status wbt_http_mq_push(wbt_event_t *ev) {
     // 解析请求
     wbt_str_t data;
     wbt_offset_to_str(http->body, data, ev->buff);
+    
+    wbt_msg_t *msg = wbt_mq_json_parser( data.str, data.len );
 
-    if( wbt_mq_push(ev, data.str, data.len) != WBT_OK ) {
+    if( wbt_mq_push(ev, msg) != WBT_OK ) {
         // TODO 需要返回更详细的错误原因
         http->status = STATUS_403;
         return WBT_OK;

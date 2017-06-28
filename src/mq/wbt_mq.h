@@ -226,7 +226,7 @@ wbt_status wbt_mq_on_success(wbt_event_t *ev);
 
 wbt_status wbt_mq_login(wbt_event_t *ev);
 wbt_status wbt_mq_subscribe(wbt_event_t *ev, wbt_mq_id channel_id);
-wbt_status wbt_mq_push(wbt_event_t *ev, char *data, int len);
+wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *msg);
 wbt_status wbt_mq_pull(wbt_event_t *ev, wbt_msg_t **msg_ptr);
 wbt_status wbt_mq_ack(wbt_event_t *ev);
 
@@ -234,6 +234,8 @@ wbt_status wbt_mq_set_notify(wbt_event_t *ev, wbt_status (*notify)(wbt_event_t *
 wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth);
 
 time_t wbt_mq_uptime();
+
+wbt_msg_t * wbt_mq_json_parser( char *data, int len );
 
 extern wbt_str_t wbt_mq_str_message;
 extern wbt_str_t wbt_mq_str_channel;

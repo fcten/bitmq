@@ -319,12 +319,13 @@ int json_parse_array( json_task_t *task, json_object_t *parent ) {
                         case JSON_LONGLONG:
                             node.value.l = atoll(node.value.s);
                             break;
+                        case JSON_ARRAY:
+                        case JSON_OBJECT:
+                            break;
                     }
 
                     // 需要放在 node.key_len ++ 之前以便正确输出数组下标
-                    if( task->callback &&
-                            node.value_type != JSON_ARRAY &&
-                            node.value_type != JSON_OBJECT ) {
+                    if( task->callback ) {
                         task->callback( task, &node );
                     }
 
@@ -450,11 +451,12 @@ int json_parse_object( json_task_t *task, json_object_t *parent ) {
                         case JSON_LONGLONG:
                             node.value.l = atoll(node.value.s);
                             break;
+                        case JSON_ARRAY:
+                        case JSON_OBJECT:
+                            break;
                     }
 
-                    if( task->callback &&
-                            node.value_type != JSON_ARRAY &&
-                            node.value_type != JSON_OBJECT ) {
+                    if( task->callback ) {
                         task->callback( task, &node );
                     }
                     

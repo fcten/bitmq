@@ -507,18 +507,16 @@ wbt_status wbt_bmtp_on_connack(wbt_event_t *ev) {
 
 wbt_status wbt_bmtp_on_pub(wbt_event_t *ev) {
     //wbt_log_debug("new pub\n");
-    if( wbt_mq_auth_pub_limit(ev) != WBT_OK ) {
-        // out of limit
-        return wbt_bmtp_send_puback(ev, 0x3);
-    }
-    
     wbt_bmtp_t *bmtp = ev->data;
 
+    // 解析消息
+    wbt_msg_t *msg = wbt_mq_json_parser( (char *)bmtp->payload, bmtp->payload_length );
+
     if( wbt_bmtp_qos(bmtp->header) == 0 ) {
-        wbt_mq_push(ev, (char *)bmtp->payload, bmtp->payload_length);
+        wbt_mq_push(ev, msg);
         return WBT_OK;
     } else {
-        if( wbt_mq_push(ev, (char *)bmtp->payload, bmtp->payload_length) != WBT_OK ) {
+        if( wbt_mq_push(ev, msg) != WBT_OK ) {
             // TODO 需要返回更详细的错误原因
             return wbt_bmtp_send_puback(ev, 0x2);
         } else {
