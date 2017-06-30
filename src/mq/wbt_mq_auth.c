@@ -6,6 +6,7 @@
  */
 
 #include "wbt_mq_auth.h"
+#include "wbt_mq_subscriber.h"
 #include "json/wbt_json.h"
 
 wbt_str_t wbt_mq_auth_str_create      = wbt_string("create");
@@ -452,11 +453,20 @@ wbt_status wbt_mq_auth_pub_permission(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
+    if( msg->type == MSG_ACK ) {
+        // 这里不仅检查了 ACK 消息的权限，同时也对 ACK 消息进行了处理
+        if( wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id ) != WBT_OK ) {
+            return WBT_ERROR;
+        } else {
+            return WBT_OK;
+        }
+    }
+
     wbt_auth_t *auth = subscriber->auth;
     if( auth == NULL ) {
         return WBT_OK;
     }
-    
+
     int is_ok = 0;
     wbt_auth_list_t *node;
     wbt_list_for_each_entry(node, wbt_auth_list_t, &auth->pub_channels.head, head) {
@@ -471,11 +481,11 @@ wbt_status wbt_mq_auth_pub_permission(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
-    if( auth->max_effect < ( msg->effect - msg->create ) / 1000 ) {
+    if( auth->max_effect < msg->effect ) {
         return WBT_ERROR;
     }
     
-    if( auth->max_expire < ( msg->expire - msg->effect ) / 1000 ) {
+    if( auth->max_expire < msg->expire ) {
         return WBT_ERROR;
     }
     

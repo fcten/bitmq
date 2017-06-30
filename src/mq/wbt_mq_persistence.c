@@ -119,7 +119,7 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             // 未过期但是已经收到 ACK 的负载均衡消息可能会在 fast_boot 期间被重复处理
             wbt_msg_t *msg = wbt_mq_msg_get(block->consumer_id);
             if(msg) {
-                wbt_mq_msg_destory(msg);
+                wbt_mq_msg_event_expire( &msg->timer );
             }
             wbt_free(data);
         } else if( block->expire > wbt_cur_mtime ) {
@@ -272,13 +272,6 @@ wbt_status wbt_mq_persist_check(ssize_t nwrite, size_t len) {
 }
 
 static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
-    if( wbt_persist_aof_fd ) {
-        // TODO 尝试使用 fdatasync
-        if( wbt_sync_file(wbt_persist_aof_fd) != 0 ) {
-            // 如果该操作失败，可能是磁盘故障
-        }
-    }
-    
     if( wbt_persist_mid_fd ) {
         ssize_t nwrite = wbt_write_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0);
         if( nwrite < 0 ) {
@@ -292,6 +285,13 @@ static wbt_status wbt_mq_persist_timer(wbt_timer_t *timer) {
         }
     }
     
+    if( wbt_persist_aof_fd ) {
+        // TODO 尝试使用 fdatasync
+        if( wbt_sync_file(wbt_persist_aof_fd) != 0 ) {
+            // 如果该操作失败，可能是磁盘故障
+        }
+    }
+
     if(timer && !wbt_wating_to_exit) {
         /* 重新注册定时事件 */
         timer->timeout += 1 * 1000;
@@ -338,20 +338,12 @@ wbt_status wbt_mq_persist_append_to_file(wbt_fd_t fd, wbt_msg_t *msg) {
     return WBT_OK;
 }
 
-// 参数 rf 用于指明是否需要修改数据恢复进度
-// 如果该消息已经在内存中生效，则需要
-// 如果该消息由于内存不足而延迟生效，则不需要
-wbt_status wbt_mq_persist_append(wbt_msg_t *msg, int rf) {
+wbt_status wbt_mq_persist_append(wbt_msg_t *msg) {
     if( wbt_mq_persist_append_to_file(wbt_persist_aof_fd, msg) != WBT_OK ) {
         return WBT_ERROR;
     }
     
     // 记录持久化进度
-    // * 注意，在实际使用过程中，由于该值的写入顺序在消息写入之后，所以
-    // 该值可能落后于真正的持久化进度，msg_id 大于该值的消息可能会因为
-    // msg_id 冲突而无法恢复
-    // * 不使用 fast_boot 可以避免该问题
-    // * 如果未能获取该值，则无法使用 fast_boot
     wbt_mq_persist_count = msg->msg_id;
     
     if( wbt_conf.aof_fsync == AOF_FSYNC_ALWAYS ) {
@@ -359,7 +351,10 @@ wbt_status wbt_mq_persist_append(wbt_msg_t *msg, int rf) {
     }
     
     wbt_persist_aof_size += sizeof(wbt_msg_block_t) + msg->data_len;
-    if( rf ) {
+    
+    // 如果没有启动数据恢复，则说明该消息将会被直接投递
+    // 需要修改数据恢复进度，防止消息被重复处理
+    if( !wbt_mq_persist_aof_is_lock() ) {
         wbt_mq_persist_recovery_offset += sizeof(wbt_msg_block_t) + msg->data_len;
     }
     

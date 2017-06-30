@@ -110,7 +110,12 @@ wbt_status wbt_mq_msg_event_expire(wbt_timer_t *timer) {
 
     wbt_msg_t *msg = wbt_timer_entry(timer, wbt_msg_t, timer);
 
-    wbt_mq_msg_destory(msg);
+    msg->state = MSG_EXPIRED;
+    
+    // 检查引用计数
+    if( msg->reference_count == 0 ) {
+        wbt_mq_msg_destory(msg);
+    }
     
     return WBT_OK;
 }
@@ -151,7 +156,7 @@ wbt_status wbt_mq_msg_event_effect(wbt_timer_t *timer) {
 wbt_status wbt_mq_msg_delivery(wbt_msg_t *msg) {
     wbt_timer_del(&msg->timer);
     
-    if( msg->expire < wbt_cur_mtime ) {
+    if( msg->state == MSG_EXPIRED || msg->expire < wbt_cur_mtime ) {
         // 过期消息
         return wbt_mq_msg_event_expire(&msg->timer);
     } else if( msg->effect > wbt_cur_mtime ) {

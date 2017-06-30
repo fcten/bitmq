@@ -274,83 +274,62 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
 
     wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, msg->data_len<200 ? msg->data_len : 200, msg->data);
     
-    // 如果使用释放 TTL 最小的消息的策略
-    // 如果不使用该策略，并且开启了持久化，那么该消息会暂时存储到文件中
-    // 注意：消息的超时时间并不会改变，如果后续消息长时间得不到处理，可能会直接过期
-    // 如果既不使用该策略，又没有开启持久化，则该条消息会被立刻删除并返回投递失败
-    if( 0 ) {
+    // 接收到消息之后，第一步是将消息持久化
+    if( wbt_conf.aof ) {
+        if( wbt_is_oom() && !wbt_mq_persist_aof_is_lock() ) {
+            // 如果内存不足，则启动数据恢复
+            wbt_mq_persist_aof_lock();
+
+            wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
+            timer->on_timeout = wbt_mq_persist_recovery;
+            timer->timeout = wbt_cur_mtime;
+            timer->heap_idx = 0;
+
+            if( wbt_timer_add(timer) != WBT_OK ) {
+                return WBT_ERROR;
+            }
+        }
+        
+        if( wbt_mq_persist_append(msg) != WBT_OK ) {
+            // 如果持久化失败了，消息投递就会失败
+            wbt_mq_msg_destory( msg );
+            
+            return WBT_ERROR;
+        }
+    } else {
+        // 如果没有开启持久化，则在内存不足时删除一些旧的消息
         while( wbt_is_oom() ) {
             // TODO 从超时队列中找到超时时间最小的消息，并删除
+            break;
         }
     }
     
-    // TODO
-    // 1、持久化
-    // 2、主从复制
-    // 3、投递
-
-    // 投递消息
-    if( wbt_mq_persist_aof_is_lock() == 0 && !wbt_is_oom() ) {
-        if( msg->type == MSG_ACK ) {
-            // ACK 消息总是立刻被处理
-            wbt_subscriber_t *subscriber = ev->ctx;
-            if( subscriber == NULL || wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id) != WBT_OK ) {
-                wbt_mq_msg_destory( msg );
-                return WBT_ERROR;
-            }
-
-            if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg, 1);
-            }
-
-            wbt_mq_msg_destory( msg );
-        } else {
-            if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg, 1);
-            }
-
-            wbt_mq_msg_delivery(msg);
+    // TODO 消息持久化之后，第二步是主从复制
+    // 主从复制算法根据是否开启持久化而有所区别
+    if( 0 /* TODO 如果存在 slave */ ) {
+        // TODO 主从同步的算法如下：
+        // 1、建立连接时，slave 发送最后一次同步时收到的 msg_id
+        // 2、master 根据收到的 msg_id 决定同步消息的起始位置
+        // 3、master 从当前同步位置开始不断发送消息，直至最新一条消息
+        // 4、当 master 收到新消息时，重复步骤 3
+        
+        // 如果开启了持久化，步骤 3 从 aof 文件中读取消息。
+        // 如果没有开启持久化，步骤 3 从内存中读取消息
+    }
+    
+    // 最后，进行消息投递
+    if( msg->type == MSG_ACK ) {
+        wbt_msg_t *msg_ack = wbt_mq_msg_get(msg->consumer_id);
+        if( msg_ack ) {
+            wbt_mq_msg_event_expire( &msg_ack->timer );
         }
+
+        wbt_mq_msg_destory( msg );
     } else {
-        if( msg->type == MSG_ACK ) {
-            // ACK 消息总是立刻被处理
-            wbt_subscriber_t *subscriber = ev->ctx;
-            if( subscriber == NULL || wbt_mq_subscriber_msg_ack(subscriber, msg->consumer_id) != WBT_OK ) {
-                wbt_mq_msg_destory( msg );
-                return WBT_ERROR;
-            }
-
-            if( wbt_conf.aof ) {
-                wbt_mq_persist_append(msg, 0);
-            }
-
+        if( wbt_mq_persist_aof_is_lock() ) {
             wbt_mq_msg_destory( msg );
         } else {
-            // 如果当前正在恢复数据，或者内存占用过高，则不进行投递
-            // 立刻删除该消息，等待数据恢复到该消息时再进行投递
-            if( !wbt_conf.aof || 0/* TODO 使用直接拒绝消息策略 */ ) {
-                // 如果内存占用过高且没有开启持久化
-                wbt_mq_msg_destory( msg );
-
-                return WBT_ERROR;
-            }
-            wbt_mq_persist_append(msg, 0);
-            wbt_mq_msg_destory( msg );
-
-            // 如果数据恢复并没有在进行，则启动之
-            if(wbt_mq_persist_aof_is_lock() == 0) {
-                // Bugfix: 必须立刻将数据恢复标记为已启动，否则连续收到的后续消息可能无法正确处理
-                wbt_mq_persist_aof_lock();
-
-                wbt_timer_t *timer = wbt_malloc(sizeof(wbt_timer_t));
-                timer->on_timeout = wbt_mq_persist_recovery;
-                timer->timeout = wbt_cur_mtime;
-                timer->heap_idx = 0;
-
-                if( wbt_timer_add(timer) != WBT_OK ) {
-                    return WBT_ERROR;
-                }
-            }
+            wbt_mq_msg_delivery( msg );
         }
     }
 
