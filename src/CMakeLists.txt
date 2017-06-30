@@ -64,7 +64,9 @@ set (WBT_SRCS
 	mq/wbt_mq_subscriber.c
 	mq/wbt_mq_subscriber.h
 	websocket/wbt_websocket.c
-	websocket/wbt_websocket.h)
+	websocket/wbt_websocket.h
+        bmtp2/wbt_bmtp2.c
+        bmtp2/wbt_bmtp2.h)
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}
