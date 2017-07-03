@@ -5,21 +5,6 @@
  * Created on 2017年6月19日, 下午9:31
  */
 
-#include "../webit.h"
-#include "../event/wbt_event.h"
-#include "../common/wbt_module.h"
-#include "../common/wbt_connection.h"
-#include "../common/wbt_config.h"
-#include "../common/wbt_log.h"
-#include "../common/wbt_auth.h"
-#include "../common/wbt_base64.h"
-#include "../json/wbt_json.h"
-#include "../mq/wbt_mq.h"
-#include "../mq/wbt_mq_msg.h"
-#include "../mq/wbt_mq_auth.h"
-#ifdef WITH_WEBSOCKET
-#include "../websocket/wbt_websocket.h"
-#endif
 #include "wbt_bmtp2.h"
 
 wbt_module_t wbt_module_bmtp2 = {
@@ -73,9 +58,6 @@ enum {
     STATE_VALUE_64BIT,
     STATE_END
 };
-
-wbt_status wbt_bmtp2_param_begin(wbt_event_t *ev);
-wbt_status wbt_bmtp2_param_end(wbt_event_t *ev);
 
 wbt_status wbt_bmtp2_init() {
     return WBT_OK;
@@ -293,13 +275,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     return WBT_ERROR;
                 }
                 
-                wbt_status ret = WBT_ERROR;
-                if( wbt_bmtp2_param_begin(ev) == WBT_OK ) {
-                    ret = wbt_bmtp2_cmd_table[bmtp->op_code].on_proc(ev);
-                }
-                wbt_bmtp2_param_end(ev);
-                
-                if( ret == WBT_OK ) {
+                if( wbt_bmtp2_cmd_table[bmtp->op_code].on_proc(ev) == WBT_OK ) {
                     bmtp->state = STATE_START;
                 } else {
                     return WBT_ERROR;
@@ -313,18 +289,16 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_bmtp2_param_begin(wbt_event_t *ev) {
+wbt_status wbt_bmtp2_param_parser(wbt_event_t *ev, wbt_status (*callback)(wbt_event_t *ev, wbt_bmtp2_param_t *p)) {
     wbt_bmtp2_t *bmtp = ev->data;
     
     if( bmtp->op_type != TYPE_STRING ) {
         return WBT_OK;
     }
     
-    wbt_list_init(&bmtp->param.head);
-    
     int state = STATE_START;
     int offset = 0;
-    wbt_bmtp2_param_list_t param, *new_param;
+    wbt_bmtp2_param_t param;
     unsigned char *buf = bmtp->op_value.s;
     unsigned char c;
     
@@ -456,14 +430,11 @@ wbt_status wbt_bmtp2_param_begin(wbt_event_t *ev) {
                 break;
 
             case STATE_END:
-                new_param = wbt_strdup(&param, sizeof(param));
-                if( new_param == NULL ) {
-                    return WBT_ERROR;
+                if( callback(ev, &param) == WBT_OK ) {
+                    state = STATE_START;
+                } else {
+                    goto end;
                 }
-                
-                wbt_list_add_tail(&new_param->head, &bmtp->param.head);
-                
-                state = STATE_START;
                 break;
             default:
                 return WBT_ERROR;
@@ -476,23 +447,6 @@ wbt_status wbt_bmtp2_param_begin(wbt_event_t *ev) {
     } else {
         return WBT_OK;
     }
-}
-
-wbt_status wbt_bmtp2_param_end(wbt_event_t *ev) {
-    wbt_bmtp2_t *bmtp = ev->data;
-    
-    if( bmtp->op_type != TYPE_STRING ) {
-        return WBT_OK;
-    }
-    
-    wbt_bmtp2_param_list_t *param;
-    while(!wbt_list_empty(&bmtp->param.head)) {
-        param = wbt_list_first_entry(&bmtp->param.head, wbt_bmtp2_param_list_t, head);
-        wbt_list_del(&param->head);
-        wbt_free( param );
-    }
-    
-    return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_on_send(wbt_event_t *ev) {
@@ -532,192 +486,7 @@ wbt_status wbt_bmtp2_on_handler(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-enum {
-    CONN_AUTH = 0
-};
-
-wbt_status wbt_bmtp2_on_connect(wbt_event_t *ev) {
-    wbt_log_debug("new conn\n");
-
-    wbt_bmtp2_t *bmtp = ev->data;
-    
-    wbt_bmtp2_param_list_t *param_auth = NULL;
-    
-    // 授权验证
-    wbt_auth_t *auth = wbt_mq_auth_anonymous();
-    if( wbt_conf.auth == 1 ) {
-        // basic 验证
-        if( param_auth != NULL ) {
-        
-            // 通过 basic 验证的客户端拥有不受限制的访问授权
-            auth = NULL;
-        } else {
-            if( auth == NULL ) {
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-        }
-    } else if( wbt_conf.auth == 2 ) {
-        // standard 验证
-        if( param_auth != NULL ) {
-            wbt_str_t token, sign, split = wbt_string(".");
-            token.str = (char *)param_auth->value.s;
-            token.len = param_auth->value.l;
-
-            int pos = wbt_strpos(&token, &split);
-            if(pos == -1) {
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - invalid token\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-            sign.str = token.str+pos+1;
-            sign.len = token.len-pos-1;
-
-            token.len = pos;
-
-            if(wbt_auth_verify(&token, &sign) != WBT_OK) {
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - verify failed\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-
-            wbt_str_t token_decode;;
-            token_decode.len = token.len;
-            token_decode.str = (char *) wbt_malloc(token.len);
-            if( token_decode.str == NULL ) {
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - out of memory\n");
-                return wbt_bmtp2_send_connack(ev, 0x2);
-            }
-
-            if( wbt_base64_decode(&token_decode, &token) != WBT_OK ) {
-                wbt_free(token_decode.str);
-                
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - base64 decode failed\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-            
-            // 读取授权信息
-            auth = wbt_mq_auth_create(&token_decode);
-            if( auth == NULL ) {
-                wbt_free(token_decode.str);
-                
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - auth create failed\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-            
-            wbt_free(token_decode.str);
-        } else {
-            if( auth == NULL ) {
-                ev->is_exit = 1;
-                wbt_log_add("BMTP error: authorize failed - anonymous not allowed\n");
-                return wbt_bmtp2_send_connack(ev, 0x3);
-            }
-        }
-    }
-
-    if( wbt_mq_login(ev) != WBT_OK ) {
-        return wbt_bmtp2_send_connack(ev, 0x2);
-    }
-    
-#ifdef WITH_WEBSOCKET
-    wbt_mq_set_notify(ev, wbt_websocket_notify);
-#else
-    wbt_mq_set_notify(ev, wbt_bmtp_notify);
-#endif
-    wbt_mq_set_auth(ev, auth);
-
-    if( wbt_mq_auth_conn_limit(ev) != WBT_OK ) {
-        ev->is_exit = 1;
-        wbt_log_add("BMTP error: too many connections\n");
-        return wbt_bmtp2_send_connack(ev, 0x4);
-    }
-
-    bmtp->is_conn = 1;
-    
-    return wbt_bmtp2_send_connack(ev, 0x0);
-}
-
-wbt_status wbt_bmtp2_on_connack(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_puback(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_sub(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_suback(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_ping(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_pingack(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_disconn(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_on_window(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
 wbt_status wbt_bmtp2_notify(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_conn(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_connack(wbt_event_t *ev, unsigned char status) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_puback(wbt_event_t *ev, unsigned char status) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_sub(wbt_event_t *ev, unsigned long long int channel_id) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_suback(wbt_event_t *ev, unsigned char status) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_ping(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_pingack(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_disconn(wbt_event_t *ev) {
-    return WBT_OK;
-}
-
-wbt_status wbt_bmtp2_send_window(wbt_event_t *ev) {
     return WBT_OK;
 }
 

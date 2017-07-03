@@ -12,10 +12,24 @@
 extern "C" {
 #endif
 
+#include "../webit.h"
+#include "../event/wbt_event.h"
 #include "../common/wbt_list.h"
 #include "../common/wbt_rbtree.h"
 #include "../common/wbt_string.h"
-#include "../event/wbt_event.h"
+#include "../common/wbt_module.h"
+#include "../common/wbt_connection.h"
+#include "../common/wbt_config.h"
+#include "../common/wbt_log.h"
+#include "../common/wbt_auth.h"
+#include "../common/wbt_base64.h"
+#include "../json/wbt_json.h"
+#include "../mq/wbt_mq.h"
+#include "../mq/wbt_mq_msg.h"
+#include "../mq/wbt_mq_auth.h"
+#ifdef WITH_WEBSOCKET
+#include "../websocket/wbt_websocket.h"
+#endif
 
 enum {
     TYPE_BOOL = 0,
@@ -70,15 +84,13 @@ typedef struct wbt_bmtp2_msg_list_s {
 } wbt_bmtp2_msg_list_t;
 
 typedef struct wbt_bmtp2_param_list_s {
-    wbt_list_t head;
-    
     unsigned int key;
     unsigned int key_type:3;
     struct {
         unsigned char *s;
         unsigned long long int l;
     } value;
-} wbt_bmtp2_param_list_t;
+} wbt_bmtp2_param_t;
 
 typedef struct {
     // 接收报文状态
@@ -95,7 +107,6 @@ typedef struct {
         unsigned char *s;
         unsigned long long int l;
     } op_value;
-    wbt_bmtp2_param_list_t param;
     
     // 发送报文队列
     wbt_bmtp2_msg_list_t send_list;
@@ -119,6 +130,8 @@ wbt_status wbt_bmtp2_on_send(wbt_event_t *ev);
 wbt_status wbt_bmtp2_on_close(wbt_event_t *ev);
 
 wbt_status wbt_bmtp2_on_handler(wbt_event_t *ev);
+
+wbt_status wbt_bmtp2_param_parser(wbt_event_t *ev, wbt_status (*callback)(wbt_event_t *ev, wbt_bmtp2_param_t *p));
 
 wbt_status wbt_bmtp2_on_connect(wbt_event_t *ev);
 wbt_status wbt_bmtp2_on_connack(wbt_event_t *ev);

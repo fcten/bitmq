@@ -65,8 +65,18 @@ set (WBT_SRCS
 	mq/wbt_mq_subscriber.h
 	websocket/wbt_websocket.c
 	websocket/wbt_websocket.h
-        bmtp2/wbt_bmtp2.c
-        bmtp2/wbt_bmtp2.h)
+	bmtp2/wbt_bmtp2.c
+	bmtp2/wbt_bmtp2.h
+	bmtp2/wbt_bmtp2_conn.c
+	bmtp2/wbt_bmtp2_connack.c
+	bmtp2/wbt_bmtp2_pub.c
+	bmtp2/wbt_bmtp2_puback.c
+	bmtp2/wbt_bmtp2_sub.c
+	bmtp2/wbt_bmtp2_suback.c
+	bmtp2/wbt_bmtp2_ping.c
+	bmtp2/wbt_bmtp2_pingack.c
+	bmtp2/wbt_bmtp2_disconn.c
+	bmtp2/wbt_bmtp2_window.c)
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}

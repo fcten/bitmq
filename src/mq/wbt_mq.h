@@ -233,6 +233,8 @@ wbt_status wbt_mq_ack(wbt_event_t *ev);
 wbt_status wbt_mq_set_notify(wbt_event_t *ev, wbt_status (*notify)(wbt_event_t *));
 wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth);
 
+wbt_auth_t * wbt_mq_get_auth(wbt_event_t *ev);
+
 time_t wbt_mq_uptime();
 
 wbt_msg_t * wbt_mq_json_parser( char *data, int len );
