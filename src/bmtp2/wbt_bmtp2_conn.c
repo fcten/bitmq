@@ -79,6 +79,8 @@ wbt_status wbt_bmtp2_on_connect_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param
             // 忽略无法识别的参数
             return WBT_OK;
     }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_on_connect(wbt_event_t *ev) {
@@ -115,6 +117,18 @@ wbt_status wbt_bmtp2_on_connect(wbt_event_t *ev) {
     return wbt_bmtp2_send_connack(ev, RET_OK);
 }
 
-wbt_status wbt_bmtp2_send_conn(wbt_event_t *ev) {
-    return WBT_OK;
+wbt_status wbt_bmtp2_send_conn(wbt_event_t *ev, wbt_str_t *auth) {
+    wbt_bmtp2_msg_list_t *node = wbt_calloc(sizeof(wbt_bmtp2_msg_list_t));
+    if( node == NULL ) {
+        return WBT_ERROR;
+    }
+
+    if( auth ) {
+        wbt_bmtp2_append_param(node, PARAM_AUTH, TYPE_STRING, (unsigned int)auth->len, (unsigned char*)auth->str);
+        wbt_bmtp2_append_opcode(node, OP_CONN, TYPE_STRING, 0);
+    } else {
+        wbt_bmtp2_append_opcode(node, OP_CONN, TYPE_BOOL, 0);
+    }
+    
+    return wbt_bmtp2_send(ev, node);
 }

@@ -159,6 +159,7 @@ wbt_status wbt_mq_subscribe(wbt_event_t *ev, wbt_mq_id channel_id) {
     return WBT_OK;
 }
 
+// TODO 使用全局变量不是多线程安全的，如果未来 BitMQ 引入了多线程，这里可能带来问题
 wbt_msg_t wbt_mq_parsed_msg;
 
 void wbt_mq_json_parser_cb(json_task_t *task, json_object_t *node) {

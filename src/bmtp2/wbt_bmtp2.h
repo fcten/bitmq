@@ -67,23 +67,7 @@ typedef struct {
     wbt_status (*on_proc)( wbt_event_t *ev );
 } wbt_bmtp2_cmd_t;
 
-typedef struct wbt_bmtp2_msg_list_s {
-    wbt_list_t head;
-
-    unsigned int   buff_len;
-    unsigned int   buff_offset;
-    unsigned char *buff;
-    
-    /* 为了避免拷贝消息产生性能损耗，这里使用指针来直接读取消息内容。
-     * 由此产生的问题是，消息可能会在发送的过程中过期。
-     * 
-     * TODO 通过引用计数来避免消息过期
-     */
-    wbt_msg_t     *msg;
-    unsigned int   msg_offset;
-} wbt_bmtp2_msg_list_t;
-
-typedef struct wbt_bmtp2_param_list_s {
+typedef struct wbt_bmtp2_param_s {
     unsigned int key;
     unsigned int key_type:3;
     struct {
@@ -91,6 +75,17 @@ typedef struct wbt_bmtp2_param_list_s {
         unsigned long long int l;
     } value;
 } wbt_bmtp2_param_t;
+
+typedef struct wbt_bmtp2_msg_list_s {
+    wbt_list_t head;
+
+    unsigned char *hed;
+    unsigned int   hed_length;
+    unsigned int   hed_offset;
+    
+    wbt_msg_t     *msg;
+    unsigned int   msg_offset;
+} wbt_bmtp2_msg_list_t;
 
 typedef struct {
     // 接收报文状态
@@ -108,10 +103,11 @@ typedef struct {
         unsigned long long int l;
     } op_value;
     
+    unsigned int payload_length;
+    unsigned char *payload;
+    
     // 发送报文队列
     wbt_bmtp2_msg_list_t send_list;
-    // 等待确认报文队列
-    wbt_rb_t ack_queue;
     
     // 连接状态
     unsigned int is_conn:1;
@@ -146,17 +142,20 @@ wbt_status wbt_bmtp2_on_window(wbt_event_t *ev);
 
 wbt_status wbt_bmtp2_notify(wbt_event_t *ev);
 
-wbt_status wbt_bmtp2_send_conn(wbt_event_t *ev);
+wbt_status wbt_bmtp2_send_conn(wbt_event_t *ev, wbt_str_t *auth);
 wbt_status wbt_bmtp2_send_connack(wbt_event_t *ev, unsigned char status);
 wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg);
-wbt_status wbt_bmtp2_send_puback(wbt_event_t *ev, unsigned char status);
-wbt_status wbt_bmtp2_send_sub(wbt_event_t *ev, unsigned long long int channel_id);
-wbt_status wbt_bmtp2_send_suback(wbt_event_t *ev, unsigned char status);
+wbt_status wbt_bmtp2_send_puback(wbt_event_t *ev, wbt_mq_id stream_id, unsigned char status);
+wbt_status wbt_bmtp2_send_sub(wbt_event_t *ev, wbt_mq_id channel_id);
+wbt_status wbt_bmtp2_send_suback(wbt_event_t *ev, wbt_mq_id channel_id, unsigned char status);
 wbt_status wbt_bmtp2_send_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp2_send_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp2_send_disconn(wbt_event_t *ev);
-wbt_status wbt_bmtp2_send_window(wbt_event_t *ev);
-wbt_status wbt_bmtp2_send(wbt_event_t *ev, char *buf, int len);
+wbt_status wbt_bmtp2_send_window(wbt_event_t *ev, unsigned int size);
+wbt_status wbt_bmtp2_send(wbt_event_t *ev, wbt_bmtp2_msg_list_t *node);
+
+wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_code, unsigned char op_type, unsigned long long int l);
+wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key, unsigned char key_type, unsigned long long int l, unsigned char *s);
 
 #ifdef __cplusplus
 }

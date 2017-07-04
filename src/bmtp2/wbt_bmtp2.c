@@ -56,6 +56,12 @@ enum {
     STATE_VALUE_VARINT_EXT9,
     STATE_VALUE_STRING,
     STATE_VALUE_64BIT,
+    STATE_PAYLOAD_LENGTH,
+    STATE_PAYLOAD_LENGTH_EXT1,
+    STATE_PAYLOAD_LENGTH_EXT2,
+    STATE_PAYLOAD_LENGTH_EXT3,
+    STATE_PAYLOAD_LENGTH_EXT4,
+    STATE_PAYLOAD,
     STATE_END
 };
 
@@ -80,7 +86,9 @@ wbt_status wbt_bmtp2_on_conn(wbt_event_t *ev) {
     wbt_bmtp2_t *bmtp = ev->data;
     
     bmtp->state = STATE_START;
-
+    
+    wbt_list_init(&bmtp->send_list.head);
+    
     wbt_log_add("BMTP connect: %d\n", ev->fd);
     
     return WBT_OK;
@@ -184,7 +192,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
             case STATE_VALUE_BOOL:
                 bmtp->op_value.l = 1;
                 
-                bmtp->state = STATE_END;
+                bmtp->state = STATE_PAYLOAD_LENGTH;
                 break;
             case STATE_VALUE_64BIT:
                 if( bmtp->recv_offset + 8 > ev->buff_len ) {
@@ -195,7 +203,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                 
                 bmtp->recv_offset += 8;
 
-                bmtp->state = STATE_END;
+                bmtp->state = STATE_PAYLOAD_LENGTH;
                 break;
             case STATE_VALUE_VARINT:
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
@@ -209,7 +217,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                 if( c & 0x80 ) {
                     bmtp->state = STATE_VALUE_VARINT_EXT1;
                 } else {
-                    bmtp->state = STATE_END;
+                    bmtp->state = STATE_PAYLOAD_LENGTH;
                 }
                 break;
             case STATE_VALUE_VARINT_EXT1:
@@ -239,23 +247,70 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     if( bmtp->op_type == TYPE_STRING ) {
                         bmtp->state = STATE_VALUE_STRING;
                     } else {
-                        bmtp->state = STATE_END;
+                        bmtp->state = STATE_PAYLOAD_LENGTH;
                     }
                 }
                 break;
             case STATE_VALUE_STRING:
                 if( bmtp->recv_offset + bmtp->op_value.l > ev->buff_len ) {
-                    if( bmtp->recv_offset - bmtp->msg_offset + bmtp->op_value.l > WBT_MAX_PROTO_BUF_LEN ) {
-                        wbt_log_add("BMTP error: message length exceeds limitation\n");
-                        return WBT_ERROR;
-                    } else {
-                        return WBT_OK;
-                    }
+                    return WBT_OK;
                 }
                 
                 bmtp->op_value.s = (unsigned char *)(ev->buff + bmtp->recv_offset );
                 
                 bmtp->recv_offset += bmtp->op_value.l;
+
+                bmtp->state = STATE_PAYLOAD_LENGTH;
+                break;
+            case STATE_PAYLOAD_LENGTH:
+                if( bmtp->op_code != OP_PUB ) {
+                    bmtp->state = STATE_END;
+                }
+
+                if( bmtp->recv_offset + 1 > ev->buff_len ) {
+                    return WBT_OK;
+                }
+                
+                c = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
+                
+                bmtp->payload_length = ( c & 0x7F );                
+
+                if( c & 0x80 ) {
+                    bmtp->state = STATE_PAYLOAD_LENGTH_EXT1;
+                } else {
+                    bmtp->state = STATE_PAYLOAD;
+                }
+                break;
+            case STATE_PAYLOAD_LENGTH_EXT1:
+            case STATE_PAYLOAD_LENGTH_EXT2:
+            case STATE_PAYLOAD_LENGTH_EXT3:
+            case STATE_PAYLOAD_LENGTH_EXT4:
+                if( bmtp->recv_offset + 1 > ev->buff_len ) {
+                    return WBT_OK;
+                }
+                
+                c = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
+                
+                bmtp->payload_length += ( c & 0x7F ) << ( ( bmtp->state - STATE_PAYLOAD_LENGTH ) * 7 );                
+
+                if( c & 0x80 ) {
+                    if( bmtp->state == STATE_PAYLOAD_LENGTH_EXT4 ) {
+                        return WBT_ERROR;
+                    } else {
+                        bmtp->state += 1;
+                    }
+                } else {
+                    bmtp->state = STATE_PAYLOAD;
+                }
+                break;
+            case STATE_PAYLOAD:
+                if( bmtp->recv_offset + bmtp->payload_length > ev->buff_len ) {
+                    return WBT_OK;
+                }
+                
+                bmtp->payload = (unsigned char *)(ev->buff + bmtp->recv_offset );
+                
+                bmtp->recv_offset += bmtp->payload_length;
 
                 bmtp->state = STATE_END;
                 break;
@@ -450,10 +505,87 @@ wbt_status wbt_bmtp2_param_parser(wbt_event_t *ev, wbt_status (*callback)(wbt_ev
 }
 
 wbt_status wbt_bmtp2_on_send(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
+    wbt_bmtp2_t *bmtp = ev->data;
+
+    while (!wbt_list_empty(&bmtp->send_list.head)) {
+        wbt_bmtp2_msg_list_t *msg_node = wbt_list_first_entry(&bmtp->send_list.head, wbt_bmtp2_msg_list_t, head);
+        
+        while( msg_node->hed_offset < msg_node->hed_length ) {
+            int ret = wbt_send(ev, msg_node->hed + msg_node->hed_offset , msg_node->hed_length - msg_node->hed_offset);
+            if (ret <= 0) {
+                if( wbt_socket_errno == WBT_EAGAIN ) {
+                    return WBT_OK;
+                } else {
+                    wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
+                    return WBT_ERROR;
+                }
+            } else {
+                msg_node->hed_offset += ret;
+            }
+        }
+        
+        while( msg_node->msg_offset < msg_node->msg->data_len ) {
+            int ret = wbt_send(ev, msg_node->msg->data + msg_node->msg_offset , msg_node->msg->data_len - msg_node->msg_offset);
+            if (ret <= 0) {
+                if( wbt_socket_errno == WBT_EAGAIN ) {
+                    return WBT_OK;
+                } else {
+                    wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
+                    return WBT_ERROR;
+                }
+            } else {
+                msg_node->msg_offset += ret;
+            }
+        }
+        
+        wbt_list_del(&msg_node->head);
+
+        wbt_mq_msg_refer_dec(msg_node->msg);
+        
+        wbt_free(msg_node->hed);
+        wbt_free(msg_node);
+    }
+    
+    if( !ev->is_exit ) {
+        ev->events &= ~WBT_EV_WRITE;
+        ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+
+        if(wbt_event_mod(ev) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    }
+    
     return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_on_close(wbt_event_t *ev) {
+    if( ev->protocol != WBT_PROTOCOL_BMTP ) {
+        return WBT_OK;
+    }
+
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    // 释放 send_list
+    wbt_bmtp2_msg_list_t *msg_node;
+    while(!wbt_list_empty(&bmtp->send_list.head)) {
+        msg_node = wbt_list_first_entry(&bmtp->send_list.head, wbt_bmtp2_msg_list_t, head);
+
+        wbt_list_del(&msg_node->head);
+
+        wbt_mq_msg_refer_dec(msg_node->msg);
+
+        wbt_free( msg_node->hed );
+        wbt_free( msg_node );
+    }
+    
+    wbt_mq_auth_disconn(ev);
+
+    wbt_log_add("BMTP close: %d\n", ev->fd);
+    
     return WBT_OK;
 }
 
@@ -487,9 +619,172 @@ wbt_status wbt_bmtp2_on_handler(wbt_event_t *ev) {
 }
 
 wbt_status wbt_bmtp2_notify(wbt_event_t *ev) {
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    if( bmtp->window == 0 ) {
+        return WBT_OK;
+    }
+    
+    wbt_msg_t *msg;
+    while( wbt_mq_pull(ev, &msg) == WBT_OK && msg) {
+        if( wbt_bmtp2_send_pub(ev, msg) != WBT_OK ) {
+            return WBT_ERROR;
+        }
+        
+        if( bmtp->window > msg->data_len ) {
+            bmtp->window -= msg->data_len;
+        } else {
+            bmtp->window = 0;
+            break;
+        }
+    }
+    
     return WBT_OK;
 }
 
-wbt_status wbt_bmtp2_send(wbt_event_t *ev, char *buf, int len) {
+wbt_status wbt_bmtp2_send(wbt_event_t *ev, wbt_bmtp2_msg_list_t *node) {
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    wbt_log_debug( "bmtp: add to send queue\n" );
+    wbt_list_add_tail(&node->head, &bmtp->send_list.head);
+
+    ev->events |= WBT_EV_WRITE;
+    ev->timer.timeout = wbt_cur_mtime + wbt_conf.keep_alive_timeout;
+
+    if(wbt_event_mod(ev) != WBT_OK) {
+        return WBT_ERROR;
+    }
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_code, unsigned char op_type, unsigned long long int l) {
+    if( node->hed == NULL ) {
+        node->hed_length = 20;
+        node->hed = wbt_malloc( node->hed_length );
+        if( node->hed == NULL ) {
+            return WBT_ERROR;
+        }
+    }
+    
+    int len = 0;
+
+    node->hed[len++] = ( ( ( op_code & 0xF ) | 0x10 ) << 3 ) + op_type;
+    op_code >>= 4;
+
+    while(op_code) {
+        node->hed[len++] = ( op_code & 0x7F ) | 0x80;
+        op_code >>= 7;
+    };
+    
+    node->hed[len-1] &= 0x7F;
+    
+    if( op_code == OP_CONN ) {
+        node->hed[len++] = 'B';
+        node->hed[len++] = 'M';
+        node->hed[len++] = 'T';
+        node->hed[len++] = 'P';
+    }
+    
+    switch( op_type ) {
+        case TYPE_BOOL:
+            break;
+        case TYPE_VARINT:
+            do {
+                node->hed[len++] = ( l & 0x7F ) | 0x80;
+            } while( l >>= 7 );
+            node->hed[len-1] &= 0x7F;
+            break;
+        case TYPE_64BIT:
+            *((unsigned long long int *)(node->hed + len)) = l;
+            len += 8;
+            break;
+        case TYPE_STRING:
+            assert(node->hed_offset >= 20);
+            
+            l = node->hed_offset - 20;
+            do {
+                node->hed[len++] = ( l & 0x7F ) | 0x80;
+            } while( l >>= 7 );
+            node->hed[len-1] &= 0x7F;
+            break;
+        default:
+            return WBT_ERROR;
+    }
+    
+    node->hed_offset = 20 - len;
+    wbt_memmove(node->hed + node->hed_offset, node->hed, len);
+    
+    return WBT_OK;
+}
+
+wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key, unsigned char key_type, unsigned long long int l, unsigned char *s) {
+    if( node->hed == NULL ) {
+        node->hed_length = 64;
+        node->hed_offset = 20;
+        node->hed = wbt_malloc( node->hed_length );
+        if( node->hed == NULL ) {
+            return WBT_ERROR;
+        }
+    }
+    
+    int space = 15;
+    if( key_type == TYPE_STRING ) {
+        space += l;
+    }
+    
+    while( node->hed_length - node->hed_offset < space ) {
+        node->hed_length *= 2;
+    }
+    
+    unsigned char *p = wbt_realloc(node->hed, node->hed_length);
+    if( p == NULL ) {
+        return WBT_ERROR;
+    }
+    node->hed = p;
+    
+    int len = node->hed_offset;
+
+    node->hed[len++] = ( ( ( key & 0xF ) | 0x10 ) << 3 ) + key_type;
+    key >>= 4;
+
+    while(key) {
+        node->hed[len++] = ( key & 0x7F ) | 0x80;
+        key >>= 7;
+    };
+    
+    node->hed[len-1] &= 0x7F;
+    
+    int t;
+    
+    switch( key_type ) {
+        case TYPE_BOOL:
+            break;
+        case TYPE_VARINT:
+            do {
+                node->hed[len++] = ( l & 0x7F ) | 0x80;
+            } while( l >>= 7 );
+            node->hed[len-1] &= 0x7F;
+            break;
+        case TYPE_64BIT:
+            *((unsigned long long int *)(node->hed + len)) = l;
+            len += 8;
+            break;
+        case TYPE_STRING:
+            t = l;
+            do {
+                node->hed[len++] = ( t & 0x7F ) | 0x80;
+            } while( t >>= 7 );
+            node->hed[len-1] &= 0x7F;
+            
+            wbt_memcpy(node->hed + len, s, l);
+            len += l;
+            break;
+        default:
+            return WBT_ERROR;
+    }
+    
+    node->hed_offset = len;
+
     return WBT_OK;
 }

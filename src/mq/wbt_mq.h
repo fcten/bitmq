@@ -70,6 +70,7 @@ typedef struct wbt_msg_s {
     unsigned int qos:2;
     // 消息长度
     size_t data_len;
+    // ------------------ 分界线以上的数据会被持久化 ------------------
     // 消息生效顺序
     wbt_mq_id seq_id;
     // 超时事件

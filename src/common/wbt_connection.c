@@ -195,6 +195,14 @@ wbt_status wbt_on_recv(wbt_event_t *ev) {
             return WBT_OK;
         }
     }
+    
+    if( ev->buff_len >= WBT_MAX_PROTO_BUF_LEN ) {
+        /* 请求长度超过限制
+         */
+        wbt_log_add("connection close: request length exceeds limitation\n");
+        wbt_on_close(ev);
+        return WBT_OK;
+    }
 
     nread = wbt_recv(ev, (unsigned char *)ev->buff + ev->buff_len,
         WBT_MAX_PROTO_BUF_LEN - ev->buff_len);
