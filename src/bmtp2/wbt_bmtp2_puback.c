@@ -1,7 +1,7 @@
 #include "wbt_bmtp2.h"
 
 enum {
-    PARAM_STREAM_ID = 0,
+    PARAM_STREAM_ID = 1,
     PARAM_MSG_ID,
     PARAM_STATUS
 };
@@ -20,6 +20,8 @@ wbt_status wbt_bmtp2_send_puback(wbt_event_t *ev, unsigned long long int stream_
     if( node == NULL ) {
         return WBT_ERROR;
     }
+    
+    //wbt_log_add("stream_id: %lld\n" ,stream_id );
 
     wbt_bmtp2_append_param(node, PARAM_STREAM_ID, TYPE_VARINT, stream_id, NULL);
     wbt_bmtp2_append_param(node, PARAM_STATUS, TYPE_VARINT, status, NULL);

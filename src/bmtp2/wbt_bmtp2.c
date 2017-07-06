@@ -217,7 +217,11 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                 if( c & 0x80 ) {
                     bmtp->state = STATE_VALUE_VARINT_EXT1;
                 } else {
-                    bmtp->state = STATE_PAYLOAD_LENGTH;
+                    if( bmtp->op_type == TYPE_STRING ) {
+                        bmtp->state = STATE_VALUE_STRING;
+                    } else {
+                        bmtp->state = STATE_PAYLOAD_LENGTH;
+                    }
                 }
                 break;
             case STATE_VALUE_VARINT_EXT1:
@@ -265,6 +269,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
             case STATE_PAYLOAD_LENGTH:
                 if( bmtp->op_code != OP_PUB ) {
                     bmtp->state = STATE_END;
+                    break;
                 }
 
                 if( bmtp->recv_offset + 1 > ev->buff_len ) {
@@ -528,23 +533,27 @@ wbt_status wbt_bmtp2_on_send(wbt_event_t *ev) {
             }
         }
         
-        while( msg_node->msg_offset < msg_node->msg->data_len ) {
-            int ret = wbt_send(ev, msg_node->msg->data + msg_node->msg_offset , msg_node->msg->data_len - msg_node->msg_offset);
-            if (ret <= 0) {
-                if( wbt_socket_errno == WBT_EAGAIN ) {
-                    return WBT_OK;
+        if( msg_node->msg ) {
+            while( msg_node->msg_offset < msg_node->msg->data_len ) {
+                int ret = wbt_send(ev, msg_node->msg->data + msg_node->msg_offset , msg_node->msg->data_len - msg_node->msg_offset);
+                if (ret <= 0) {
+                    if( wbt_socket_errno == WBT_EAGAIN ) {
+                        return WBT_OK;
+                    } else {
+                        wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
+                        return WBT_ERROR;
+                    }
                 } else {
-                    wbt_log_add("wbt_send failed: %d\n", wbt_socket_errno );
-                    return WBT_ERROR;
+                    msg_node->msg_offset += ret;
                 }
-            } else {
-                msg_node->msg_offset += ret;
             }
         }
         
         wbt_list_del(&msg_node->head);
 
-        wbt_mq_msg_refer_dec(msg_node->msg);
+        if( msg_node->msg ) {
+            wbt_mq_msg_refer_dec(msg_node->msg);
+        }
         
         wbt_free(msg_node->hed);
         wbt_free(msg_node);
@@ -576,7 +585,9 @@ wbt_status wbt_bmtp2_on_close(wbt_event_t *ev) {
 
         wbt_list_del(&msg_node->head);
 
-        wbt_mq_msg_refer_dec(msg_node->msg);
+        if( msg_node->msg ) {
+            wbt_mq_msg_refer_dec(msg_node->msg);
+        }
 
         wbt_free( msg_node->hed );
         wbt_free( msg_node );
@@ -661,6 +672,7 @@ wbt_status wbt_bmtp2_send(wbt_event_t *ev, wbt_bmtp2_msg_list_t *node) {
 wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_code, unsigned char op_type, unsigned long long int l) {
     if( node->hed == NULL ) {
         node->hed_length = 20;
+        node->hed_offset = 0;
         node->hed = wbt_malloc( node->hed_length );
         if( node->hed == NULL ) {
             return WBT_ERROR;
@@ -668,13 +680,14 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
     }
     
     int len = 0;
+    int op = op_code;
 
-    node->hed[len++] = ( ( ( op_code & 0xF ) | 0x10 ) << 3 ) + op_type;
-    op_code >>= 4;
+    node->hed[len++] = ( ( ( op & 0xF ) | 0x10 ) << 3 ) + op_type;
+    op >>= 4;
 
-    while(op_code) {
-        node->hed[len++] = ( op_code & 0x7F ) | 0x80;
-        op_code >>= 7;
+    while(op) {
+        node->hed[len++] = ( op & 0x7F ) | 0x80;
+        op >>= 7;
     };
     
     node->hed[len-1] &= 0x7F;
@@ -700,7 +713,7 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
             len += 8;
             break;
         case TYPE_STRING:
-            assert(node->hed_offset >= 20);
+            assert(node->hed_offset > 20);
             
             l = node->hed_offset - 20;
             do {
@@ -710,6 +723,10 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
             break;
         default:
             return WBT_ERROR;
+    }
+    
+    if( node->hed_offset > 20 ) {
+        node->hed_length = node->hed_offset;
     }
     
     node->hed_offset = 20 - len;

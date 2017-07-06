@@ -1,7 +1,7 @@
 #include "wbt_bmtp2.h"
 
 enum {
-    PARAM_CHANNEL_ID = 0,
+    PARAM_CHANNEL_ID = 1,
     PARAM_STATUS
 };
 

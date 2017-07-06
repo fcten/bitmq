@@ -1,7 +1,7 @@
 #include "wbt_bmtp2.h"
 
 enum {
-    PARAM_AUTH = 0
+    PARAM_AUTH = 1
 };
 
 enum {

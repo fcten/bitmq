@@ -1,7 +1,7 @@
 #include "wbt_bmtp2.h"
 
 enum {
-    PARAM_STREAM_ID = 0,
+    PARAM_STREAM_ID = 1,
     PARAM_MSG_ID,
     PARAM_TYPE,
     PARAM_PRODUCER_ID,
@@ -142,15 +142,23 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     wbt_memset(&wbt_mq_parsed_msg, 0, sizeof(wbt_mq_parsed_msg));
     
     if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_pub_parser) != WBT_OK ) {
-        return wbt_bmtp_send_puback(ev, RET_INVALID_MESSAGE);
+        if( stream_id ) {
+            return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);
+        } else {
+            return WBT_OK;
+        }
     }
     
     if( !wbt_mq_parsed_msg.consumer_id || !bmtp->payload_length ) {
-        return wbt_bmtp_send_puback(ev, RET_INVALID_MESSAGE);
+        if( stream_id ) {
+            return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);
+        } else {
+            return WBT_OK;
+        }
     }
     
     wbt_mq_parsed_msg.data_len = bmtp->payload_length;
-    wbt_mq_parsed_msg.data = bmtp->payload;
+    wbt_mq_parsed_msg.data = wbt_strdup(bmtp->payload, bmtp->payload_length);
     
     if( stream_id == 0 ) {
         wbt_mq_push(ev, &wbt_mq_parsed_msg);
@@ -158,9 +166,9 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     } else {
         if( wbt_mq_push(ev, &wbt_mq_parsed_msg) != WBT_OK ) {
             // TODO 需要返回更详细的错误原因
-            return wbt_bmtp_send_puback(ev, RET_PERMISSION_DENIED);
+            return wbt_bmtp2_send_puback(ev, stream_id, RET_PERMISSION_DENIED);
         } else {
-            return wbt_bmtp_send_puback(ev, RET_OK);
+            return wbt_bmtp2_send_puback(ev, stream_id, RET_OK);
         }
     }
     
@@ -173,14 +181,7 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
-    wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
-    if( msg->producer_id ) {
-        wbt_bmtp2_append_param(node, PARAM_PRODUCER_ID, TYPE_VARINT, msg->producer_id, NULL);
-    }
-    wbt_bmtp2_append_param(node, PARAM_CONSUMER_ID, TYPE_VARINT, msg->consumer_id, NULL);
-    wbt_bmtp2_append_param(node, PARAM_CREATE, TYPE_VARINT, msg->create, NULL);
-
-    wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_STRING, 0);
+    wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);
     
     /* 为了避免拷贝消息产生性能损耗，这里使用指针来直接读取消息内容。
      * 由此产生的问题是，消息可能会在发送的过程中过期。

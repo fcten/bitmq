@@ -25,6 +25,7 @@ extern wbt_module_t wbt_module_websocket;
 extern wbt_module_t wbt_module_http1_mq;
 extern wbt_module_t wbt_module_http1_generater;
 extern wbt_module_t wbt_module_bmtp;
+extern wbt_module_t wbt_module_bmtp2;
 
 wbt_module_t * wbt_modules[] = {
     &wbt_module_time,
@@ -43,7 +44,7 @@ wbt_module_t * wbt_modules[] = {
 #endif
     &wbt_module_http1_mq,
     &wbt_module_http1_generater,
-    &wbt_module_bmtp,
+    &wbt_module_bmtp2,
     NULL
 };
 

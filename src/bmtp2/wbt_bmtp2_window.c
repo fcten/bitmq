@@ -1,7 +1,7 @@
 #include "wbt_bmtp2.h"
 
 enum {
-    PARAM_WINDOW_SIZE = 0
+    PARAM_WINDOW_SIZE = 1
 };
 
 wbt_status wbt_bmtp2_on_window_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
