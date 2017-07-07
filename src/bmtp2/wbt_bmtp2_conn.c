@@ -1,4 +1,7 @@
 #include "wbt_bmtp2.h"
+#ifdef WITH_WEBSOCKET
+#include "../websocket/wbt_websocket.h"
+#endif
 
 enum {
     PARAM_AUTH = 1

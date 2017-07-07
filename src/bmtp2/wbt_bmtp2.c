@@ -86,6 +86,7 @@ wbt_status wbt_bmtp2_on_conn(wbt_event_t *ev) {
     wbt_bmtp2_t *bmtp = ev->data;
     
     bmtp->state = STATE_START;
+    bmtp->window = 64 * 1024;
     
     wbt_list_init(&bmtp->send_list.head);
     
@@ -199,9 +200,13 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     return WBT_OK;
                 }
                 
-                bmtp->op_value.l = (unsigned long long int)( ev->buff + bmtp->recv_offset );
-                
-                bmtp->recv_offset += 8;
+                // 由于不同硬件环境下存在字节序的区别，这里 BitMQ 固定使用大端字节序
+                int i;
+                bmtp->op_value.l = 0;
+                for(i=0 ; i<8 ; i++) {
+                    bmtp->op_value.l <<= 8;
+                    bmtp->op_value.l = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
+                }
 
                 bmtp->state = STATE_PAYLOAD_LENGTH;
                 break;
@@ -729,6 +734,7 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
         node->hed_length = node->hed_offset;
     }
     
+    node->hed_start  = 20 - len;
     node->hed_offset = 20 - len;
     wbt_memmove(node->hed + node->hed_offset, node->hed, len);
     
@@ -803,5 +809,48 @@ wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key,
     
     node->hed_offset = len;
 
+    return WBT_OK;
+}
+
+wbt_status wbt_bmtp2_append_payload(wbt_bmtp2_msg_list_t *node, wbt_msg_t *msg) {
+    if( node->hed == NULL ) {
+        node->hed_length = 64;
+        node->hed_offset = 20;
+        node->hed = wbt_malloc( node->hed_length );
+        if( node->hed == NULL ) {
+            return WBT_ERROR;
+        }
+    }
+    
+    int space = 1;
+    
+    while( node->hed_length - node->hed_offset < space ) {
+        node->hed_length *= 2;
+    }
+    
+    unsigned char *p = wbt_realloc(node->hed, node->hed_length);
+    if( p == NULL ) {
+        return WBT_ERROR;
+    }
+    node->hed = p;
+    
+    int len = node->hed_offset;
+    
+    int l = msg->data_len;
+    do {
+        node->hed[len++] = ( l & 0x7F ) | 0x80;
+    } while( l >>= 7 );
+    node->hed[len-1] &= 0x7F;
+    
+    node->hed_offset = len;
+
+    /* 为了避免拷贝消息产生性能损耗，这里使用指针来直接读取消息内容。
+     * 由此产生的问题是，消息可能会在发送的过程中过期。
+     * 
+     * 通过引用计数来避免消息过期
+     */
+    node->msg = msg;
+    wbt_mq_msg_refer_inc(msg);
+    
     return WBT_OK;
 }

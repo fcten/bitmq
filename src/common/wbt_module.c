@@ -24,7 +24,6 @@ extern wbt_module_t wbt_module_websocket;
 #endif
 extern wbt_module_t wbt_module_http1_mq;
 extern wbt_module_t wbt_module_http1_generater;
-extern wbt_module_t wbt_module_bmtp;
 extern wbt_module_t wbt_module_bmtp2;
 
 wbt_module_t * wbt_modules[] = {

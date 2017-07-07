@@ -12,6 +12,6 @@ wbt_status wbt_bmtp2_send_connack(wbt_event_t *ev, unsigned char status) {
     }
 
     wbt_bmtp2_append_opcode(node, OP_CONNACK, TYPE_VARINT, status);
-    
+
     return wbt_bmtp2_send(ev, node);
 }

@@ -149,7 +149,7 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
         }
     }
     
-    if( !wbt_mq_parsed_msg.consumer_id || !bmtp->payload_length ) {
+    if( !wbt_mq_parsed_msg.consumer_id || !wbt_mq_parsed_msg.type || !bmtp->payload_length ) {
         if( stream_id ) {
             return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);
         } else {
@@ -181,15 +181,9 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
+    wbt_bmtp2_append_payload(node, msg);
+
     wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);
-    
-    /* 为了避免拷贝消息产生性能损耗，这里使用指针来直接读取消息内容。
-     * 由此产生的问题是，消息可能会在发送的过程中过期。
-     * 
-     * 通过引用计数来避免消息过期
-     */
-    node->msg = msg;
-    wbt_mq_msg_refer_inc(msg);
     
     return wbt_bmtp2_send(ev, node);
 }

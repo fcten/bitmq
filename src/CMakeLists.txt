@@ -3,10 +3,6 @@ include_directories(${PROJECT_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
 set (WBT_SRCS
 	webit.c
 	webit.h
-	bmtp/wbt_bmtp.c
-	bmtp/wbt_bmtp.h
-	bmtp/wbt_bmtp_sid.c
-	bmtp/wbt_bmtp_sid.h
 	common/wbt_config.c
 	common/wbt_config.h
 	common/wbt_connection.c

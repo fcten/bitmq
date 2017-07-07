@@ -17,7 +17,7 @@ extern "C" {
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
 #include "../event/wbt_event.h"
-#include "../bmtp/wbt_bmtp.h"
+#include "../bmtp2/wbt_bmtp2.h"
 
 /*
   0                   1                   2                   3
@@ -56,7 +56,7 @@ typedef struct wbt_websocket_s {
     unsigned int recv_offset;
     unsigned int msg_offset;
 
-    wbt_bmtp_t bmtp;
+    wbt_bmtp2_t bmtp;
 } wbt_websocket_t;
     
 wbt_status wbt_websocket_init();

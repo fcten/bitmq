@@ -13,6 +13,8 @@ wbt_status wbt_bmtp2_send_disconn(wbt_event_t *ev) {
     if( node == NULL ) {
         return WBT_ERROR;
     }
+    
+    ev->is_exit = 1;
 
     wbt_bmtp2_append_opcode(node, OP_DISCONN, TYPE_BOOL, 0);
     

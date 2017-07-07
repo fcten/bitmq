@@ -27,9 +27,6 @@ extern "C" {
 #include "../mq/wbt_mq.h"
 #include "../mq/wbt_mq_msg.h"
 #include "../mq/wbt_mq_auth.h"
-#ifdef WITH_WEBSOCKET
-#include "../websocket/wbt_websocket.h"
-#endif
 
 enum {
     TYPE_BOOL = 0,
@@ -81,6 +78,7 @@ typedef struct wbt_bmtp2_msg_list_s {
 
     unsigned char *hed;
     unsigned int   hed_length;
+    unsigned int   hed_start;
     unsigned int   hed_offset;
     
     wbt_msg_t     *msg;
@@ -156,6 +154,8 @@ wbt_status wbt_bmtp2_send(wbt_event_t *ev, wbt_bmtp2_msg_list_t *node);
 
 wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_code, unsigned char op_type, unsigned long long int l);
 wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key, unsigned char key_type, unsigned long long int l, unsigned char *s);
+wbt_status wbt_bmtp2_append_payload(wbt_bmtp2_msg_list_t *node, wbt_msg_t *msg);
+
 
 #ifdef __cplusplus
 }

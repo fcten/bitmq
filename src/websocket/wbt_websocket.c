@@ -17,7 +17,7 @@
 #include "../common/wbt_gzip.h"
 #include "../common/wbt_base64.h"
 #include "../http/wbt_http.h"
-#include "../bmtp/wbt_bmtp.h"
+#include "../bmtp2/wbt_bmtp2.h"
 #include "wbt_websocket.h"
 
 #ifdef WITH_WEBSOCKET
@@ -77,11 +77,13 @@ wbt_status wbt_websocket_on_conn( wbt_event_t *ev ) {
         return WBT_ERROR;
     }
 
+    wbt_status ret;
+    
     BEGIN_BMTP_CTX;
-    wbt_bmtp_on_conn(ev);
+    ret = wbt_bmtp2_on_conn(ev);
     ENDOF_BMTP_CTX;
     
-    return WBT_OK;
+    return ret;
 }
 
 wbt_status wbt_websocket_on_send( wbt_event_t *ev ) {
@@ -89,75 +91,85 @@ wbt_status wbt_websocket_on_send( wbt_event_t *ev ) {
         return WBT_OK;
     }
 
+    wbt_status ret;
+
     BEGIN_BMTP_CTX;
     /* 在消息前添加 webscoket 帧头部
      * 唯一的例外是握手响应不需要添加
      * 
      * TODO 每次 on_send 调用都需要执行该过程，需要优化
      */
-    wbt_bmtp_t *bmtp = ev->data;
-    wbt_bmtp_msg_t *msg_node, *prev_node;
+    wbt_bmtp2_t *bmtp = ev->data;
+    wbt_bmtp2_msg_list_t *msg_node;
+    int len;
     
-    wbt_list_for_each_entry(msg_node, wbt_bmtp_msg_t, &bmtp->send_queue.head, head) {
-        prev_node = wbt_list_prev_entry(msg_node, wbt_bmtp_msg_t, head);
-        switch( msg_node->msg[0] ) {
-            case 'H':
+    wbt_list_for_each_entry(msg_node, wbt_bmtp2_msg_list_t, &bmtp->send_list.head, head) {
+        if( msg_node->hed_start == 0 ) {
+            continue;
+        }
+        switch( msg_node->hed[msg_node->hed_start] ) {
             case 0x82:
-            // do nothing
+                // 目前 0x82 不会在 BMTP 消息中出现，
+                // 所以可以用于判断是否为 websocket 帧头部
+                // do nothing
                 break;
             default:
-                if( prev_node->msg && prev_node->msg[0] == 0x82 ) {
-                    // 目前 0x82 不会出现在 BMTP 消息中出现，
-                    // 所以可以用于判断是否为 websocket 帧头部
-                    // do nothing
-                } else {
-                    wbt_bmtp_msg_t *new_node = (wbt_bmtp_msg_t *)wbt_calloc(sizeof(wbt_bmtp_msg_t));
-                    if (!new_node) {
-                        return WBT_ERROR;
-                    }
-
-                    if( msg_node->len <= 125 ) {
-                        unsigned char buf[] = {0x82, msg_node->len};
-                        new_node->len = sizeof(buf);
-                        new_node->msg = wbt_strdup(buf, new_node->len);
-                    } else {
-                        unsigned char buf[] = {0x82, 126, msg_node->len >> 8, msg_node->len};
-                        new_node->len = sizeof(buf);
-                        new_node->msg = wbt_strdup(buf, new_node->len);
-                    }
-
-                    __wbt_list_add(&new_node->head, &prev_node->head, &msg_node->head);
+                len = msg_node->hed_length - msg_node->hed_offset;
+                if( msg_node->msg ) {
+                    len += msg_node->msg->data_len;
                 }
+                
+                if( ( len <= 125 && msg_node->hed_start < 2 ) ||
+                    msg_node->hed_start < 4 ) {
+                    // 消息头部至少会存在 5 个字节的空余空间
+                    return  WBT_ERROR;
+                }
+
+                if( len <= 125 ) {
+                    msg_node->hed_start -= 2;
+                    msg_node->hed[msg_node->hed_start] = 0x82;
+                    msg_node->hed[msg_node->hed_start+1] = len;
+                } else {
+                    msg_node->hed_start -= 4;
+                    msg_node->hed[msg_node->hed_start] = 0x82;
+                    msg_node->hed[msg_node->hed_start+1] = 126;
+                    msg_node->hed[msg_node->hed_start+2] = len >> 8;
+                    msg_node->hed[msg_node->hed_start+3] = len;
+                }
+                
+                msg_node->hed_offset = msg_node->hed_start;
                 break;
         }
     }
-    
-    wbt_bmtp_on_send(ev);
+
+    ret = wbt_bmtp2_on_send(ev);
     ENDOF_BMTP_CTX;
 
-    return WBT_OK;
+    return ret;
 }
 
 wbt_status wbt_websocket_on_close( wbt_event_t *ev ) {
     if( ev->protocol != WBT_PROTOCOL_WEBSOCKET ) {
         return WBT_OK;
     }
+    
+    wbt_status ret;
 
     BEGIN_BMTP_CTX;
-    wbt_bmtp_on_close(ev);
+    ret = wbt_bmtp2_on_close(ev);
     ENDOF_BMTP_CTX;
     
-    return WBT_OK;
+    return ret;
 }
 
 wbt_status wbt_websocket_notify(wbt_event_t *ev) {
     if( ev->protocol == WBT_PROTOCOL_BMTP ) {
-        return wbt_bmtp_notify(ev);
+        return wbt_bmtp2_notify(ev);
     } else { // ev->protocol == WBT_PROTOCOL_WEBSOCKET
         wbt_status ret;
 
         BEGIN_BMTP_CTX;
-        ret = wbt_bmtp_notify(ev);
+        ret = wbt_bmtp2_notify(ev);
         ENDOF_BMTP_CTX;
 
         return ret;
@@ -251,6 +263,15 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
         dst.str = buf.str + buf.len - 32; // 28 + 4
         wbt_base64_encode(&dst, &src);
 
+        wbt_bmtp2_msg_list_t *node = wbt_calloc(sizeof(wbt_bmtp2_msg_list_t));
+        if(node == NULL) {
+            http->status = STATUS_400;
+            return WBT_OK;
+        } else {
+            node->hed = (unsigned char *)buf.str;
+            node->hed_length = buf.len;
+        }
+        
         // 切换为 websocket
         wbt_http_on_close(ev);
         ev->protocol = WBT_PROTOCOL_WEBSOCKET;
@@ -260,7 +281,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
          * 目前 PUBACK 不经任何处理直接发送，所以暂时不会产生问题。
          */
         BEGIN_BMTP_CTX;
-        wbt_bmtp_send(ev, buf.str, buf.len);
+        wbt_bmtp2_send(ev, node);
         ENDOF_BMTP_CTX;
     } else if( ev->protocol == WBT_PROTOCOL_WEBSOCKET ) {
         //wbt_log_debug("ws: recv data\n");
@@ -383,14 +404,14 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                             case 0x2: // 二进制帧
                                 //wbt_websocket_send_msg(ev, ws->payload, (unsigned int)ws->payload_length);
                                 BEGIN_BMTP_CTX;
-                                wbt_bmtp_t *bmtp = ev->data;;
+                                wbt_bmtp2_t *bmtp = ev->data;;
                                 void *tmp_buff = ev->buff;
                                 unsigned int tmp_buff_len = ev->buff_len;
                                 ev->buff = ws->payload;
                                 ev->buff_len = ws->payload_length;
-                                if( wbt_bmtp_on_recv(ev) != WBT_OK || bmtp->msg_offset != ev->buff_len ) {
+                                if( wbt_bmtp2_on_recv(ev) != WBT_OK || bmtp->msg_offset != ev->buff_len ) {
                                     // error
-                                    wbt_bmtp_send_disconn(ev);
+                                    wbt_bmtp2_send_disconn(ev);
                                 }
                                 ev->buff = tmp_buff;
                                 ev->buff_len = tmp_buff_len;
@@ -398,7 +419,7 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                                 break;
                             case 0x8: // 关闭帧
                                 BEGIN_BMTP_CTX;
-                                wbt_bmtp_send_disconn(ev);
+                                wbt_bmtp2_send_disconn(ev);
                                 ENDOF_BMTP_CTX;
                                 break;
                             case 0x9: // ping

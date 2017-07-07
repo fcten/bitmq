@@ -48,9 +48,33 @@ wbt_status wbt_bmtp2_on_sub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
 }
 
 wbt_status wbt_bmtp2_on_sub(wbt_event_t *ev) {
-    if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_sub_parser) != WBT_OK ) {
-        ev->is_exit = 1;
-        return WBT_OK;
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    switch( bmtp->op_type ) {
+        case TYPE_STRING:
+            if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_sub_parser) != WBT_OK ) {
+                ev->is_exit = 1;
+                return WBT_OK;
+            }
+            break;
+        case TYPE_64BIT:
+        case TYPE_VARINT:
+            if( wbt_mq_auth_sub_permission(ev, bmtp->op_value.l) != WBT_OK ) {
+                // permission denied
+                wbt_bmtp2_send_suback(ev, bmtp->op_value.l, RET_PERMISSION_DENIED);
+                break;
+            }
+
+            // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
+            if( wbt_mq_subscribe(ev, bmtp->op_value.l) != WBT_OK ) {
+                wbt_bmtp2_send_suback(ev, bmtp->op_value.l, RET_SERVICE_UNAVAILABLE);
+                break;
+            }
+
+            wbt_bmtp2_send_suback(ev, bmtp->op_value.l, RET_OK);
+            break;
+        default:
+            return WBT_ERROR;
     }
 
     return wbt_bmtp2_notify(ev);
