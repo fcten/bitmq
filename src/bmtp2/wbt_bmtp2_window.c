@@ -30,11 +30,23 @@ wbt_status wbt_bmtp2_on_window_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param)
 }
 
 wbt_status wbt_bmtp2_on_window(wbt_event_t *ev) {
-    if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_window_parser) != WBT_OK ) {
-        ev->is_exit = 1;
-        return WBT_OK;
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    switch( bmtp->op_type ) {
+        case TYPE_STRING:
+            if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_window_parser) != WBT_OK ) {
+                ev->is_exit = 1;
+                return WBT_OK;
+            }
+            break;
+        case TYPE_64BIT:
+        case TYPE_VARINT:
+            bmtp->window = bmtp->op_value.l;
+            break;
+        default:
+            return WBT_ERROR;
     }
-
+    
     return wbt_bmtp2_notify(ev);
 }
 
