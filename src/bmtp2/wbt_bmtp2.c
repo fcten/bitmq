@@ -205,7 +205,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                 bmtp->op_value.l = 0;
                 for(i=0 ; i<8 ; i++) {
                     bmtp->op_value.l <<= 8;
-                    bmtp->op_value.l = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
+                    bmtp->op_value.l += ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
                 }
 
                 bmtp->state = STATE_PAYLOAD_LENGTH;
@@ -486,10 +486,14 @@ wbt_status wbt_bmtp2_param_parser(wbt_event_t *ev, wbt_status (*callback)(wbt_ev
                 if( offset + 8 > bmtp->op_value.l ) {
                     goto end;
                 }
-                
-                param.value.l = (unsigned long long int)( buf + offset );
-                
-                offset += 8;
+
+                // 由于不同硬件环境下存在字节序的区别，这里 BitMQ 固定使用大端字节序
+                int i;
+                param.value.l = 0;
+                for(i=0 ; i<8 ; i++) {
+                    param.value.l <<= 8;
+                    param.value.l += buf[offset++];
+                }
 
                 state = STATE_END;
                 break;
@@ -704,6 +708,8 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
         node->hed[len++] = 'P';
     }
     
+    int t;
+    
     switch( op_type ) {
         case TYPE_BOOL:
             break;
@@ -721,6 +727,12 @@ wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_c
             assert(node->hed_offset > 20);
             
             l = node->hed_offset - 20;
+            if( node->msg ) {
+                t = node->msg->data_len;
+                do {
+                    l --;
+                } while(t >>= 7);
+            }
             do {
                 node->hed[len++] = ( l & 0x7F ) | 0x80;
             } while( l >>= 7 );

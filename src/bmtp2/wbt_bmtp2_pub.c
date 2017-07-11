@@ -149,7 +149,7 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
         }
     }
     
-    if( !wbt_mq_parsed_msg.consumer_id || !wbt_mq_parsed_msg.type || !bmtp->payload_length ) {
+    if( !wbt_mq_parsed_msg.consumer_id || !wbt_mq_parsed_msg.type || ( wbt_mq_parsed_msg.type != MSG_ACK  && !bmtp->payload_length ) ) {
         if( stream_id ) {
             return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);
         } else {
@@ -181,9 +181,17 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
+    if( msg->type == MSG_LOAD_BALANCE ) {
+        wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
+    }
+    
     wbt_bmtp2_append_payload(node, msg);
 
-    wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);
+    if( msg->type == MSG_LOAD_BALANCE ) {
+        wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_STRING, 0);
+    } else {
+        wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);
+    }
     
     return wbt_bmtp2_send(ev, node);
 }

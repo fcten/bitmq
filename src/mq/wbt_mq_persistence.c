@@ -83,6 +83,12 @@ wbt_status wbt_mq_persist_recovery(wbt_timer_t *timer) {
             }
         }
         
+        /* 注意，这里可能出现 malloc(0) 的情况
+         * 目前看来，已知的 malloc 实现都会在 mallc(0) 时返回一个可用指针而不是 NULL
+         * 但是，C 标准规定 malloc(0) 可以返回 NULL。如果发生这种情况，可以考虑故意多
+         * 申请一个字节的空间。
+         */
+        // data = wbt_malloc(block->data_len+1);
         data = wbt_malloc(block->data_len);
         if(!data) {
             goto error;
