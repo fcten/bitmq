@@ -8,7 +8,8 @@ enum {
     PARAM_CONSUMER_ID,
     PARAM_CREATE,
     PARAM_EFFECT,
-    PARAM_EXPIRE
+    PARAM_EXPIRE,
+    PARAM_COMPRESS // 如果 payload 经过压缩，这里需要指明解压算法
 };
 
 enum {
@@ -127,6 +128,9 @@ wbt_status wbt_bmtp2_on_pub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
                     return WBT_ERROR;
             }
             break;
+        case PARAM_COMPRESS:
+            wbt_mq_parsed_msg.is_compress = 1;
+            break;
         default:
             // 忽略无法识别的参数
             return WBT_OK;
@@ -181,13 +185,21 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
+    int has_param = 0;
+    
     if( msg->type == MSG_LOAD_BALANCE ) {
         wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
+        has_param = 1;
     }
     
+    if( msg->is_compress ) {
+        wbt_bmtp2_append_param(node, PARAM_COMPRESS, TYPE_BOOL, 1, NULL);
+        has_param = 1;
+    }
+
     wbt_bmtp2_append_payload(node, msg);
 
-    if( msg->type == MSG_LOAD_BALANCE ) {
+    if( has_param ) {
         wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_STRING, 0);
     } else {
         wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);

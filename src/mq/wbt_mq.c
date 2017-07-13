@@ -12,6 +12,7 @@
 #include "wbt_mq_persistence.h"
 #include "wbt_mq_auth.h"
 #include "../json/wbt_json.h"
+#include "../common/wbt_gzip.h"
 
 wbt_str_t wbt_mq_str_message       = wbt_string("message");
 wbt_str_t wbt_mq_str_channel       = wbt_string("channel");
@@ -258,6 +259,11 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
         return WBT_ERROR;
     }
     
+    if( !wbt_conf.aof && wbt_is_oom() ) {
+        // 如果没有开启持久化，则在内存不足时删除一些旧的消息
+        wbt_mq_msg_cleanup();
+    }
+    
     // 创建消息并初始化
     wbt_msg_t * msg = wbt_mq_msg_create(0);
     if( msg == NULL ) {
@@ -270,8 +276,49 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
     msg->expire      = msg->effect + message->expire * 1000;
     msg->type        = message->type;
     msg->qos         = message->qos;
-    msg->data_len    = message->data_len;
-    msg->data        = message->data;
+    
+    /* BitMQ 在接收消息的时候即会尝试对符合条件的消息进行压缩。在后续的持久化
+     * 和投递过程中，消息不会再次尝试执行压缩或解压操作。
+     * 
+     * 如果想要全局地关闭该功能，可以在配置文件中将 gizp 选项设置为 off。
+     */
+    if( message->is_compress == 0 &&
+        message->data_len > 1024 &&
+        wbt_conf.gzip == 1 ) {
+        // 压缩消息内容
+        wbt_str_t gzip;
+        gzip.len = message->data_len;
+        gzip.str = wbt_malloc( gzip.len );
+        if( gzip.str == NULL ) {
+            msg->is_compress = 0;
+            msg->data_len    = message->data_len;
+            msg->data        = message->data;
+        } else {
+            int ret = wbt_gzip_compress((Bytef *)msg->data,
+                (uLong)msg->data_len,
+                (Bytef *)gzip.str,
+                (uLong *)&gzip.len );
+
+            if( ret == Z_OK ) {
+                msg->is_compress = 1;
+                msg->data_len    = gzip.len;
+                msg->data        = wbt_realloc( gzip.str, gzip.len );
+
+                wbt_free(message->data);
+                message->data = NULL;
+                message->data_len = 0;
+            } else {
+                // 放弃压缩
+                msg->is_compress = 0;
+                msg->data_len    = message->data_len;
+                msg->data        = message->data;
+            }
+        }
+    } else {
+        msg->is_compress = 0;
+        msg->data_len    = message->data_len;
+        msg->data        = message->data;
+    }
 
     wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, msg->data_len<200 ? msg->data_len : 200, msg->data);
     
@@ -297,9 +344,6 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
             
             return WBT_ERROR;
         }
-    } else {
-        // 如果没有开启持久化，则在内存不足时删除一些旧的消息
-        wbt_mq_msg_cleanup();
     }
     
     // TODO 消息持久化之后，第二步是主从复制
