@@ -276,7 +276,12 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
     msg->expire      = msg->effect + message->expire * 1000;
     msg->type        = message->type;
     msg->qos         = message->qos;
-    
+
+    if( 1 /* TODO 如果开启消息日志记录 */ ) {
+        // 如果服务器的磁盘较差，关闭消息日志记录可以较为显著地提高性能
+        wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, message->data_len<200 ? message->data_len : 200, message->data);
+    }
+
     /* BitMQ 在接收消息的时候即会尝试对符合条件的消息进行压缩。在后续的持久化
      * 和投递过程中，消息不会再次尝试执行压缩或解压操作。
      * 
@@ -319,8 +324,6 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
         msg->data_len    = message->data_len;
         msg->data        = message->data;
     }
-
-    wbt_log_add("Message %lld received: %.*s\n", msg->msg_id, msg->data_len<200 ? msg->data_len : 200, msg->data);
     
     // 接收到消息之后，第一步是将消息持久化
     if( wbt_conf.aof ) {
