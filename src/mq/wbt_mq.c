@@ -299,10 +299,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
         }
     } else {
         // 如果没有开启持久化，则在内存不足时删除一些旧的消息
-        while( wbt_is_oom() && wbt_mq_msg_status_active() > 0 ) {
-            // TODO 从超时队列中找到超时时间最小的消息，并删除
-            break;
-        }
+        wbt_mq_msg_cleanup();
     }
     
     // TODO 消息持久化之后，第二步是主从复制

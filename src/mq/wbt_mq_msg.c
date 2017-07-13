@@ -71,6 +71,31 @@ wbt_msg_t * wbt_mq_msg_get(wbt_mq_id msg_id) {
     return (wbt_msg_t *)msg_node->value.str;
 }
 
+// 清理一条消息以释放内存空间
+// TODO 这里可以采取多种算法，目前只是简单地删除 msg_id 最小的消息
+wbt_status wbt_mq_msg_cleanup() {
+    wbt_rb_node_t * msg_node = wbt_rb_get_min(&wbt_mq_messages);
+    if( msg_node == NULL ) {
+        return WBT_OK;
+    }
+    wbt_msg_t *msg = (wbt_msg_t *)msg_node->value.str;
+    
+    wbt_str_t msg_key;
+    
+    while( wbt_is_oom() ) {
+        wbt_mq_msg_event_expire(&msg->timer);
+        
+        wbt_variable_to_str(msg->msg_id, msg_key);
+        msg_node = wbt_rb_get_greater(&wbt_mq_messages, &msg_key);
+        if( msg_node == NULL ) {
+            break;
+        }
+        msg = (wbt_msg_t *)msg_node->value.str;
+    }
+    
+    return WBT_OK;
+}
+
 void wbt_mq_msg_destory(wbt_msg_t *msg) {
     if( msg == NULL ) {
         return;

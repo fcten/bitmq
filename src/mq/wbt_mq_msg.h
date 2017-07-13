@@ -46,6 +46,8 @@ wbt_status wbt_mq_msg_refer_dec(wbt_msg_t *msg);
 wbt_status wbt_mq_msg_event_effect(wbt_timer_t *timer);
 wbt_status wbt_mq_msg_event_expire(wbt_timer_t *timer);
 
+wbt_status wbt_mq_msg_cleanup();
+
 #ifdef	__cplusplus
 }
 #endif

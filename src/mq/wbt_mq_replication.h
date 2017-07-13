@@ -12,8 +12,28 @@
 extern "C" {
 #endif
 
+#include "wbt_mq.h"
 
+typedef struct wbt_repl_cli_s {
+    wbt_list_t head;
+    
+    // 客户端对象
+    wbt_subscriber_t * subscriber;
+    // 消息复制进度
+    wbt_mq_id msg_id;
+    // 
+    
+} wbt_repl_cli_t;
 
+typedef struct wbt_repl_s {
+    // 从服务端列表
+    wbt_repl_cli_t client_list;
+    // 从服务端数量
+    unsigned int client_count;
+    
+} wbt_repl_t;
+
+wbt_status wbt_mq_repl_notify(wbt_event_t *ev);
 
 #ifdef __cplusplus
 }

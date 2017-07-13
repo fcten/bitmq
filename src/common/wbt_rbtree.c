@@ -41,9 +41,9 @@ static int wbt_rbtree_compare(wbt_rb_t *rbt, wbt_rb_key_t *key1, wbt_rb_key_t *k
             }
         case WBT_RB_KEY_LONGLONG:
             if( *key1->str.l > *key2->str.l ) {
-				return (int)(*key1->str.l - *key2->str.l);
+                return (int)(*key1->str.l - *key2->str.l);
             } else {
-				return -(int)(*key2->str.l - *key1->str.l);
+                return -(int)(*key2->str.l - *key1->str.l);
             }
         default:
             return wbt_strcmp((wbt_str_t *)key1, (wbt_str_t *)key2);

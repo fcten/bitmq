@@ -6,3 +6,4 @@
  */
 
 #include "wbt_mq_replication.h"
+
