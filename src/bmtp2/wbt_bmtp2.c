@@ -6,6 +6,7 @@
  */
 
 #include "wbt_bmtp2.h"
+#include "../mq/wbt_mq_replication.h"
 
 wbt_module_t wbt_module_bmtp2 = {
     wbt_string("bmtp2"),
@@ -85,8 +86,9 @@ wbt_status wbt_bmtp2_on_conn(wbt_event_t *ev) {
 
     wbt_bmtp2_t *bmtp = ev->data;
     
-    bmtp->state = STATE_START;
+    bmtp->state  = STATE_START;
     bmtp->window = 64 * 1024;
+    bmtp->role   = BMTP_SERVER;
     
     wbt_list_init(&bmtp->send_list.head);
     
@@ -335,7 +337,10 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     return WBT_ERROR;
                 }
                 
-                if( !bmtp->is_conn && bmtp->op_code != OP_CONN ) {
+                if( bmtp->role == BMTP_SERVER && !bmtp->is_conn && bmtp->op_code != OP_CONN ) {
+                    // 连接建立后的第一条指令必须为 OP_CONN
+                    return WBT_ERROR;
+                } else if( bmtp->role == BMTP_CLIENT && !bmtp->is_conn && bmtp->op_code != OP_CONNACK ) {
                     // 连接建立后的第一条指令必须为 OP_CONN
                     return WBT_ERROR;
                 }
@@ -586,6 +591,10 @@ wbt_status wbt_bmtp2_on_close(wbt_event_t *ev) {
     }
 
     wbt_bmtp2_t *bmtp = ev->data;
+    
+    if( bmtp->role == BMTP_CLIENT ) {
+        wbt_mq_repl_on_close(ev);
+    }
     
     // 释放 send_list
     wbt_bmtp2_msg_list_t *msg_node;

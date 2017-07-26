@@ -46,6 +46,8 @@ typedef struct wbt_conf_s {
     int max_open_files;
     // 最大的 core dump 文件大小
     int max_core_file_size;
+    // 主服务器端口
+    int master_port;
     // 最大内存使用
     long long int max_memory_usage;
     // 低权限用户
@@ -70,6 +72,8 @@ typedef struct wbt_conf_s {
     wbt_str_t data;
     // 日志文件保存目录
     wbt_str_t logs;
+    // 主服务器 IP
+    wbt_str_t master_host;
 } wbt_conf_t;
 
 #define AOF_FSYNC_NO       0

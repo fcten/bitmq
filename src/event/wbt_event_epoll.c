@@ -70,6 +70,14 @@ wbt_status wbt_event_init() {
     }
     wbt_free(lock_file.str);
 
+    /* 初始化 EPOLL */
+    epoll_fd = epoll_create(WBT_MAX_EVENTS);
+    if(epoll_fd <= 0) {
+        wbt_log_add("create epoll failed\n");
+
+        return WBT_ERROR;
+    }
+    
     return WBT_OK;
 }
 
@@ -246,14 +254,6 @@ wbt_status wbt_event_dispatch() {;
     wbt_atomic_t is_accept_lock = 0, is_accept_add = 0;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
-
-    /* 初始化 EPOLL */
-    epoll_fd = epoll_create(WBT_MAX_EVENTS);
-    if(epoll_fd <= 0) {
-        wbt_log_add("create epoll failed\n");
-
-        return WBT_ERROR;
-    }
 
     wbt_event_t listen_ev;
     wbt_memset(&listen_ev, 0, sizeof(wbt_event_t));

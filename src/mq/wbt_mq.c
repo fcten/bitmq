@@ -11,6 +11,7 @@
 #include "wbt_mq_subscriber.h"
 #include "wbt_mq_persistence.h"
 #include "wbt_mq_auth.h"
+#include "wbt_mq_replication.h"
 #include "../json/wbt_json.h"
 #include "../common/wbt_gzip.h"
 
@@ -73,7 +74,11 @@ wbt_status wbt_mq_init() {
     if( wbt_mq_persist_init() != WBT_OK ) {
         return WBT_ERROR;
     }
-    
+
+    if( wbt_mq_repl_init() != WBT_OK ) {
+        return WBT_ERROR;
+    }
+
     wbt_mq_uptime();
 
     return WBT_OK;

@@ -59,6 +59,10 @@ set (WBT_SRCS
 	mq/wbt_mq_persistence.h
 	mq/wbt_mq_subscriber.c
 	mq/wbt_mq_subscriber.h
+	mq/wbt_mq_replication.c
+	mq/wbt_mq_replication.h
+	mq/wbt_mq_cluster.c
+	mq/wbt_mq_cluster.h
 	websocket/wbt_websocket.c
 	websocket/wbt_websocket.h
 	bmtp2/wbt_bmtp2.c

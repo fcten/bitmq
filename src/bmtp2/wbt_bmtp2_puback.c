@@ -7,12 +7,16 @@ enum {
 };
 
 wbt_status wbt_bmtp2_on_puback(wbt_event_t *ev) {
-    // BitMQ 不接受任何 PUBACK 消息
+    wbt_bmtp2_t *bmtp = ev->data;
     
-    // 说明：BitMQ 不依赖 BMTP 协议提供消息投递的质量保证。
-    // BitMQ 向客户端投递的消息均不包含 stream_id。客户端亦
-    // 无需向 BitMQ 发送 PUBACK 响应。
-    return WBT_ERROR;
+    if( bmtp->role != BMTP_CLIENT ) {
+        // 说明：BitMQ 不依赖 BMTP 协议提供消息投递的质量保证。
+        // BitMQ 向客户端投递的消息均不包含 stream_id。客户端亦
+        // 无需向 BitMQ 发送 PUBACK 响应。
+        return WBT_ERROR;
+    }
+
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_send_puback(wbt_event_t *ev, unsigned long long int stream_id, unsigned char status) {

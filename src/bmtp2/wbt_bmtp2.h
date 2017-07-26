@@ -85,7 +85,15 @@ typedef struct wbt_bmtp2_msg_list_s {
     unsigned int   msg_offset;
 } wbt_bmtp2_msg_list_t;
 
+enum {
+    BMTP_SERVER = 1,
+    BMTP_CLIENT
+};
+
 typedef struct {
+    // 客户端或者服务端
+    int role;
+
     // 接收报文状态
     unsigned int state;
     // 当前处理进度

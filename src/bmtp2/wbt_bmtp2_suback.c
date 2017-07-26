@@ -6,8 +6,13 @@ enum {
 };
 
 wbt_status wbt_bmtp2_on_suback(wbt_event_t *ev) {
-    // BitMQ 不接受任何 SUBACK 消息
-    return WBT_ERROR;
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    if( bmtp->role != BMTP_CLIENT ) {
+        return WBT_ERROR;
+    }
+    
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_send_suback(wbt_event_t *ev, wbt_mq_id channel_id, unsigned char status) {

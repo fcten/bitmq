@@ -90,6 +90,10 @@ wbt_status wbt_bmtp2_on_connect(wbt_event_t *ev) {
     wbt_log_debug("new conn\n");
 
     wbt_bmtp2_t *bmtp = ev->data;
+    
+    if( bmtp->role != BMTP_SERVER ) {
+        return WBT_ERROR;
+    }
 
     if( wbt_mq_login(ev) != WBT_OK ) {
         ev->is_exit = 1;

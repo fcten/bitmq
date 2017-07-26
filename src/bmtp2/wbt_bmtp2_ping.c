@@ -3,9 +3,7 @@
 wbt_status wbt_bmtp2_on_ping(wbt_event_t *ev) {
     wbt_log_debug("new ping\n");
     
-    // 除非在参数中指定，否则默认不返回 PINGACK 响应
-    
-    return WBT_OK;
+    return wbt_bmtp2_send_pingack(ev);
 }
 
 wbt_status wbt_bmtp2_send_ping(wbt_event_t *ev) {

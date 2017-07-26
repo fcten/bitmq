@@ -39,7 +39,7 @@ enum {
 };
 
 typedef struct wbt_event_s {
-    int fd;                                         /* 事件句柄 */
+    wbt_socket_t fd;                                /* 事件句柄 */
     unsigned int events;                            /* 事件类型 */
     wbt_status (*on_recv)(struct wbt_event_s *);    /* 触发回调函数 */
     wbt_status (*on_send)(struct wbt_event_s *);    /* 触发回调函数 */

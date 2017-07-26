@@ -25,6 +25,14 @@ typedef struct wbt_repl_cli_s {
     
 } wbt_repl_cli_t;
 
+typedef struct wbt_repl_srv_s {
+    wbt_event_t * ev;
+    
+    struct sockaddr_in addr;
+    
+    wbt_timer_t reconnect_timer;
+} wbt_repl_srv_t;
+
 typedef struct wbt_repl_s {
     // 从服务端列表
     wbt_repl_cli_t client_list;
@@ -32,6 +40,11 @@ typedef struct wbt_repl_s {
     unsigned int client_count;
     
 } wbt_repl_t;
+
+wbt_status wbt_mq_repl_init();
+
+wbt_status wbt_mq_repl_on_open(wbt_event_t *ev);
+wbt_status wbt_mq_repl_on_close(wbt_event_t *ev);
 
 wbt_status wbt_mq_repl_notify(wbt_event_t *ev);
 

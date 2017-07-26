@@ -1,8 +1,18 @@
 #include "wbt_bmtp2.h"
+#include "../mq/wbt_mq_replication.h"
 
 wbt_status wbt_bmtp2_on_connack(wbt_event_t *ev) {
-    // BitMQ 不接受任何 CONNACK 消息
-    return WBT_ERROR;
+    wbt_bmtp2_t *bmtp = ev->data;
+    
+    if( bmtp->role != BMTP_CLIENT ) {
+        return WBT_ERROR;
+    }
+    
+    bmtp->is_conn = 1;
+    
+    wbt_mq_repl_on_open(ev);
+
+    return WBT_OK;
 }
 
 wbt_status wbt_bmtp2_send_connack(wbt_event_t *ev, unsigned char status) {

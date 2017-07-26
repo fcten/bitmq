@@ -216,6 +216,11 @@ wbt_status wbt_conf_init() {
         wbt_conf.max_memory_usage = 1024*1024*atoll(value);
     }
 
+    wbt_conf.master_port = 1039;
+    if( ( value = wbt_conf_get("master_port") ) != NULL ) {
+        wbt_conf.master_port = atoi(value);
+    }
+    
     wbt_str_set_null(wbt_conf.root); 
     if( ( m_value = wbt_conf_get_v("root") ) != NULL ) {
         wbt_conf.root = *m_value;
@@ -254,6 +259,11 @@ wbt_status wbt_conf_init() {
     } else {
         wbt_log_print("option logs is required\n");
         return WBT_ERROR;
+    }
+
+    wbt_str_set_null(wbt_conf.master_host);
+    if( ( m_value = wbt_conf_get_v("master_host") ) != NULL ) {
+        wbt_conf.master_host = *m_value;
     }
     
     return WBT_OK;

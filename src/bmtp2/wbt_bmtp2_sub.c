@@ -50,6 +50,10 @@ wbt_status wbt_bmtp2_on_sub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
 wbt_status wbt_bmtp2_on_sub(wbt_event_t *ev) {
     wbt_bmtp2_t *bmtp = ev->data;
     
+    if( bmtp->role != BMTP_SERVER ) {
+        return WBT_ERROR;
+    }
+    
     switch( bmtp->op_type ) {
         case TYPE_STRING:
             if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_sub_parser) != WBT_OK ) {
