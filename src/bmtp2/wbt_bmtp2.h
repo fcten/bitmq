@@ -47,6 +47,7 @@ enum {
     OP_PINGACK,
     OP_DISCONN,
     OP_WINDOW,
+    OP_SYNC = 16,
     OP_MAX
 };
 
@@ -145,6 +146,7 @@ wbt_status wbt_bmtp2_on_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp2_on_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp2_on_disconn(wbt_event_t *ev);
 wbt_status wbt_bmtp2_on_window(wbt_event_t *ev);
+wbt_status wbt_bmtp2_on_sync(wbt_event_t *ev);
 
 wbt_status wbt_bmtp2_notify(wbt_event_t *ev);
 
@@ -158,6 +160,8 @@ wbt_status wbt_bmtp2_send_ping(wbt_event_t *ev);
 wbt_status wbt_bmtp2_send_pingack(wbt_event_t *ev);
 wbt_status wbt_bmtp2_send_disconn(wbt_event_t *ev);
 wbt_status wbt_bmtp2_send_window(wbt_event_t *ev, unsigned int size);
+wbt_status wbt_bmtp2_send_sync(wbt_event_t *ev, wbt_mq_id msg_id);
+
 wbt_status wbt_bmtp2_send(wbt_event_t *ev, wbt_bmtp2_msg_list_t *node);
 
 wbt_status wbt_bmtp2_append_opcode(wbt_bmtp2_msg_list_t *node, unsigned int op_code, unsigned char op_type, unsigned long long int l);

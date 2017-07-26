@@ -76,7 +76,8 @@ set (WBT_SRCS
 	bmtp2/wbt_bmtp2_ping.c
 	bmtp2/wbt_bmtp2_pingack.c
 	bmtp2/wbt_bmtp2_disconn.c
-	bmtp2/wbt_bmtp2_window.c)
+	bmtp2/wbt_bmtp2_window.c
+	bmtp2/wbt_bmtp2_sync.c)
 
 if (UNIX)
 	set (WBT_SRCS ${WBT_SRCS}

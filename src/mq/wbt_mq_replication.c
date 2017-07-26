@@ -16,8 +16,10 @@ wbt_status wbt_repl_on_recv(wbt_event_t *ev);
 wbt_status wbt_repl_on_send(wbt_event_t *ev);
 
 wbt_status wbt_mq_repl_init() {
-    // TODO 初始化作为 master 的相关数据结构
+    // 初始化本实例作为 master 的相关数据结构
+    wbt_list_init(&wbt_replication.client_list.head);
 
+    // 如果存在 maseter
     if(wbt_conf.master_host.len == 0) {
         return WBT_OK;
     }
@@ -169,6 +171,52 @@ wbt_status wbt_mq_repl_on_close(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_repl_notify(wbt_event_t *ev) {
+wbt_status wbt_mq_repl_notify_all() {
+    wbt_repl_cli_t *node;
+    wbt_list_for_each_entry(node, wbt_repl_cli_t, &wbt_replication.client_list.head, head) {
+        wbt_mq_repl_notify(node);
+    }
+    
     return WBT_OK;
+}
+
+wbt_status wbt_mq_repl_notify(wbt_repl_cli_t *cli) {
+    wbt_bmtp2_t *bmtp = cli->subscriber->ev->data;
+    
+    if( bmtp->window == 0 ) {
+        return WBT_OK;
+    }
+    
+    // TODO 根据 cli->msg_id 发送同步数据
+    
+    return WBT_OK;
+}
+
+wbt_repl_cli_t * wbt_mq_repl_client_new(wbt_event_t *ev) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    if( subscriber == NULL ) {
+        return NULL;
+    }
+    
+    wbt_repl_cli_t *cli = wbt_calloc(sizeof(wbt_repl_cli_t));
+    if( cli ) {
+        cli->subscriber = subscriber;
+        wbt_list_add_tail(&cli->head, &wbt_replication.client_list.head);
+    }
+    
+    return cli;
+}
+
+wbt_repl_cli_t * wbt_mq_repl_client_get(wbt_event_t *ev) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    
+    wbt_repl_cli_t *node, *cli = NULL;
+    wbt_list_for_each_entry(node, wbt_repl_cli_t, &wbt_replication.client_list.head, head) {
+        if( node->subscriber == subscriber ) {
+            cli = node;
+            break;
+        }
+    }
+    
+    return cli;
 }

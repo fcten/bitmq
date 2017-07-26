@@ -46,7 +46,11 @@ wbt_status wbt_mq_repl_init();
 wbt_status wbt_mq_repl_on_open(wbt_event_t *ev);
 wbt_status wbt_mq_repl_on_close(wbt_event_t *ev);
 
-wbt_status wbt_mq_repl_notify(wbt_event_t *ev);
+wbt_status wbt_mq_repl_notify_all();
+wbt_status wbt_mq_repl_notify(wbt_repl_cli_t *cli);
+
+wbt_repl_cli_t * wbt_mq_repl_client_new(wbt_event_t *ev);
+wbt_repl_cli_t * wbt_mq_repl_client_get(wbt_event_t *ev);
 
 #ifdef __cplusplus
 }

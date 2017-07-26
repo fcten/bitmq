@@ -32,7 +32,12 @@ wbt_bmtp2_cmd_t wbt_bmtp2_cmd_table[] = {
     { 8, wbt_string("PINGACK"), wbt_bmtp2_on_pingack },
     { 9, wbt_string("DISCONN"), wbt_bmtp2_on_disconn },
     {10, wbt_string("WINDOW"),  wbt_bmtp2_on_window  },
-    {11, wbt_string("RSV"),     NULL                 }
+    {11, wbt_string("RSV"),     NULL                 },
+    {12, wbt_string("RSV"),     NULL                 },
+    {13, wbt_string("RSV"),     NULL                 },
+    {14, wbt_string("RSV"),     NULL                 },
+    {15, wbt_string("RSV"),     NULL                 },
+    {16, wbt_string("SYNC"),    wbt_bmtp2_on_sync    }
 };
 
 enum {
