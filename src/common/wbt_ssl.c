@@ -15,7 +15,7 @@ wbt_module_t wbt_module_ssl = {
     wbt_string("ssl"),
     wbt_ssl_init,
     wbt_ssl_exit,
-    wbt_ssl_on_conn,
+    NULL,
     NULL,
     NULL,
     wbt_ssl_on_close
@@ -23,13 +23,15 @@ wbt_module_t wbt_module_ssl = {
 
 SSL_CTX* ctx;
 
+wbt_socket_t wbt_secure_fd = -1;
+
 int wbt_ssl_ecdh_curve();
 
 wbt_status wbt_ssl_init() {
     if( !wbt_conf.secure ) {
         return WBT_OK;
     }
-    
+
     SSL_load_error_strings();     /*为打印调试信息作准备*/
     OpenSSL_add_ssl_algorithms(); /*初始化*/
     
@@ -73,6 +75,49 @@ wbt_status wbt_ssl_init() {
     SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
     /* TODO 根据情况决定是否 quiet shutdown。对已关闭的连接调用 SSL_shutdown 会导致 broken pipe */
     SSL_CTX_set_quiet_shutdown(ctx, 1);
+    
+    /* 初始化用于监听消息的 Socket 句柄 */
+    wbt_secure_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(wbt_secure_fd <= 0) {
+        wbt_log_add("create socket failed\n");
+
+        return WBT_ERROR;
+    }
+    /* 把监听socket设置为非阻塞方式 */
+    if( wbt_nonblocking(wbt_secure_fd) == -1 ) {
+        wbt_log_add("set nonblocking failed\n");
+
+        return WBT_ERROR;
+    }
+
+    /* 在重启程序以及进行热更新时，避免 TIME_WAIT 和 CLOSE_WAIT 状态的连接导致 bind 失败 */
+    int on = 1; 
+    if(setsockopt(wbt_secure_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) != 0) {  
+        wbt_log_add("set SO_REUSEADDR failed\n");  
+
+        return WBT_ERROR;
+    }
+
+    /* bind & listen */    
+    struct sockaddr_in sin;
+    wbt_memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(wbt_conf.secure_port);
+
+    if(bind(wbt_secure_fd, (const struct sockaddr*)&sin, sizeof(sin)) != 0) {
+        wbt_log_add("bind failed\n");
+
+        return WBT_ERROR;
+    }
+
+    if(listen(wbt_secure_fd, WBT_CONN_BACKLOG) != 0) {
+        wbt_log_add("listen failed\n");
+
+        return WBT_ERROR;
+    }
+    
+    wbt_log_add("listen fd: %d\n", wbt_secure_fd);
     
     return WBT_OK;
 }
@@ -204,8 +249,12 @@ wbt_status wbt_ssl_on_close( wbt_event_t * ev ) {
         return WBT_OK;
     }
 
-    SSL_shutdown(ev->ssl);
-    SSL_free (ev->ssl);
+    if( ev->ssl ) {
+        SSL_shutdown(ev->ssl);
+        SSL_free (ev->ssl);
+        
+        ev->ssl = NULL;
+    }
     
     return WBT_OK;
 }

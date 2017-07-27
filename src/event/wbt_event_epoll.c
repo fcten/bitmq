@@ -22,7 +22,8 @@ wbt_module_t wbt_module_event = {
 };
 
 int epoll_fd;
-extern int wbt_listen_fd;
+extern wbt_socket_t wbt_listen_fd;
+extern wbt_socket_t wbt_secure_fd;
 
 extern wbt_atomic_t wbt_wating_to_exit, wbt_connection_count;
 
@@ -255,17 +256,26 @@ wbt_status wbt_event_dispatch() {;
     struct epoll_event events[WBT_MAX_EVENTS];
     wbt_event_t *ev;
 
-    wbt_event_t listen_ev;
+    wbt_event_t listen_ev, secure_ev;
     wbt_memset(&listen_ev, 0, sizeof(wbt_event_t));
+    wbt_memset(&secure_ev, 0, sizeof(wbt_event_t));
 
     listen_ev.on_recv = wbt_on_accept;
     listen_ev.on_send = NULL;
     listen_ev.events = WBT_EV_READ | WBT_EV_ET;
     listen_ev.fd = wbt_listen_fd;
+
+    secure_ev.on_recv = wbt_on_accept;
+    secure_ev.on_send = NULL;
+    secure_ev.events = WBT_EV_READ | WBT_EV_ET;
+    secure_ev.fd = wbt_secure_fd;
     
     if( wbt_conf.process == 1 ) {
         //wbt_log_debug("add listen event\n");
         if(wbt_event_add(&listen_ev) == NULL) {
+            return WBT_ERROR;
+        }
+        if(wbt_event_add(&secure_ev) == NULL) {
             return WBT_ERROR;
         }
         is_accept_add = 1;
@@ -291,6 +301,9 @@ wbt_status wbt_event_dispatch() {;
             if( is_accept_lock ) {
                 //wbt_log_debug("add listen event\n");
                 if(wbt_event_add(&listen_ev) == NULL) {
+                    return WBT_ERROR;
+                }
+                if(wbt_event_add(&secure_ev) == NULL) {
                     return WBT_ERROR;
                 }
                 is_accept_add = 1;

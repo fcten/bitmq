@@ -24,6 +24,8 @@ typedef struct wbt_conf_s {
     int daemon;
     // 是否启用 TLS
     int secure;
+    // TLS 监听端口
+    int secure_port;
     // 是否使用 sendfile
     int sendfile;
     // 是否使用 gzip

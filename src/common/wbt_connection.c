@@ -30,6 +30,7 @@ wbt_module_t wbt_module_conn = {
 };
 
 wbt_socket_t wbt_listen_fd = -1;
+extern wbt_socket_t wbt_secure_fd;
 
 wbt_status wbt_conn_init() {
     // TODO linux 3.9 以上内核支持 REUSE_PORT，可以优化多核性能
@@ -124,9 +125,9 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
     int addrlen = sizeof(remote);
     wbt_socket_t conn_sock;
 #ifdef WBT_USE_ACCEPT4
-    while((int)(conn_sock = accept4(wbt_listen_fd,(struct sockaddr *) &remote, (socklen_t *)&addrlen, SOCK_NONBLOCK)) >= 0) {
+    while((int)(conn_sock = accept4(ev->fd,(struct sockaddr *) &remote, (socklen_t *)&addrlen, SOCK_NONBLOCK)) >= 0) {
 #else
-    while((int)(conn_sock = accept(wbt_listen_fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
+    while((int)(conn_sock = accept(ev->fd,(struct sockaddr *) &remote, (int *)&addrlen)) >= 0) {
         wbt_nonblocking(conn_sock); 
 #endif
         /* inet_ntoa 在 linux 下使用静态缓存实现，无需释放 */
@@ -146,8 +147,7 @@ wbt_status wbt_on_accept(wbt_event_t *ev) {
         
         wbt_connection_count ++;
 
-        // TODO 待优化，事实上目前这里只用于调用 SSL 模块
-        if( wbt_module_on_conn(p_ev) != WBT_OK ) {
+        if( ev->fd == wbt_secure_fd && wbt_ssl_on_conn(p_ev) != WBT_OK ) {
             wbt_on_close(p_ev);
             continue;
         }

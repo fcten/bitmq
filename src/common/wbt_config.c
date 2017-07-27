@@ -85,6 +85,15 @@ wbt_status wbt_conf_init() {
         }
     }
     
+    wbt_conf.secure_port = 443;
+    if( ( value = wbt_conf_get("secure_port") ) != NULL ) {
+        wbt_conf.secure_port = atoi(value);
+        if( wbt_conf.secure_port < 0 || wbt_conf.secure_port > 65535  ) {
+            wbt_log_print("secure port out of range ( expect 0 - 65535 )\n");
+            return WBT_ERROR;
+        }
+    }
+
     wbt_str_set_null(wbt_conf.secure_key);
     wbt_str_set_null(wbt_conf.secure_crt);
     if( wbt_conf.secure ) {

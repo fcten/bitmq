@@ -12,6 +12,9 @@ wbt_status wbt_bmtp2_on_sync(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
+    // TODO 判断是否有权限
+    // TODO 退订所有频道
+    
     bmtp->role = BMTP_SERVER_REPL;
     
     wbt_repl_cli_t *cli = NULL;
