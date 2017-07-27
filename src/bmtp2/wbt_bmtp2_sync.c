@@ -26,7 +26,7 @@ wbt_status wbt_bmtp2_on_sync(wbt_event_t *ev) {
             }
             cli->msg_id = bmtp->op_value.l;
             
-            wbt_mq_repl_notify(cli);
+            //wbt_mq_repl_send(cli);
             break;
         default:
             return WBT_ERROR;
@@ -41,9 +41,9 @@ wbt_status wbt_bmtp2_send_sync(wbt_event_t *ev, wbt_mq_id msg_id) {
         return WBT_ERROR;
     }
 
-    wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg_id, NULL);
+    //wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg_id, NULL);
 
-    wbt_bmtp2_append_opcode(node, OP_SYNC, TYPE_STRING, 0);
+    wbt_bmtp2_append_opcode(node, OP_SYNC, TYPE_VARINT, msg_id);
     
     return wbt_bmtp2_send(ev, node);
 }

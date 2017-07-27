@@ -46,11 +46,12 @@ wbt_status wbt_mq_repl_init();
 wbt_status wbt_mq_repl_on_open(wbt_event_t *ev);
 wbt_status wbt_mq_repl_on_close(wbt_event_t *ev);
 
-wbt_status wbt_mq_repl_notify_all();
-wbt_status wbt_mq_repl_notify(wbt_repl_cli_t *cli);
+wbt_status wbt_mq_repl_send_all(wbt_msg_t *msg);
+wbt_status wbt_mq_repl_send(wbt_repl_cli_t *cli, wbt_msg_t *msg);
 
 wbt_repl_cli_t * wbt_mq_repl_client_new(wbt_event_t *ev);
 wbt_repl_cli_t * wbt_mq_repl_client_get(wbt_event_t *ev);
+void wbt_mq_repl_client_delete(wbt_event_t *ev);
 
 #ifdef __cplusplus
 }

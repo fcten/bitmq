@@ -12,6 +12,8 @@ wbt_repl_t wbt_replication;
 
 wbt_repl_srv_t wbt_repl_server;
 
+extern wbt_atomic_t wbt_wating_to_exit;
+
 wbt_status wbt_repl_on_recv(wbt_event_t *ev);
 wbt_status wbt_repl_on_send(wbt_event_t *ev);
 
@@ -86,6 +88,10 @@ wbt_status wbt_mq_repl_heartbeat(wbt_timer_t *timer) {
 }
 
 wbt_status wbt_mq_repl_reset_timer() {
+    if( wbt_wating_to_exit ) {
+        return WBT_OK;
+    }
+
     static wbt_timer_t *timer = NULL;
     
     if( timer == NULL ) {
@@ -102,6 +108,10 @@ wbt_status wbt_mq_repl_reset_timer() {
 }
 
 wbt_status wbt_mq_repl_reconnect(wbt_timer_t *timer) {
+    if( wbt_wating_to_exit ) {
+        return WBT_OK;
+    }
+
     wbt_log_debug("replication: try to reconnect\n");
     
     wbt_event_t tmp_ev;
@@ -153,13 +163,13 @@ again:
 }
     
 wbt_status wbt_mq_repl_on_open(wbt_event_t *ev) {
-    
+    wbt_bmtp2_send_sync(wbt_repl_server.ev, 0);
     
     return wbt_mq_repl_reset_timer();
 }
 
 wbt_status wbt_mq_repl_on_close(wbt_event_t *ev) {
-    wbt_log_debug("replication: lost connection\n");
+    wbt_log_debug("replication: master has gone away\n");
     
     wbt_repl_server.ev = NULL;
     
@@ -171,23 +181,27 @@ wbt_status wbt_mq_repl_on_close(wbt_event_t *ev) {
     return WBT_OK;
 }
 
-wbt_status wbt_mq_repl_notify_all() {
+wbt_status wbt_mq_repl_send_all(wbt_msg_t *msg) {
     wbt_repl_cli_t *node;
     wbt_list_for_each_entry(node, wbt_repl_cli_t, &wbt_replication.client_list.head, head) {
-        wbt_mq_repl_notify(node);
+        wbt_mq_repl_send(node, msg);
     }
     
     return WBT_OK;
 }
 
-wbt_status wbt_mq_repl_notify(wbt_repl_cli_t *cli) {
-    wbt_bmtp2_t *bmtp = cli->subscriber->ev->data;
-    
-    if( bmtp->window == 0 ) {
-        return WBT_OK;
-    }
+wbt_status wbt_mq_repl_send(wbt_repl_cli_t *cli, wbt_msg_t *msg) {
+    //wbt_bmtp2_t *bmtp = cli->subscriber->ev->data;
+
+    // 主从同步的算法如下：
+    // 1、建立连接时，slave 发送最后一次同步时收到的 msg_id
+    // 2、master 根据收到的 msg_id 决定同步消息的起始位置
+    // 3、master 从当前同步位置开始不断发送消息，直至最新一条消息
+    // 4、当 master 收到新消息时，重复步骤 3
+
     
     // TODO 根据 cli->msg_id 发送同步数据
+    wbt_bmtp2_send_pub(cli->subscriber->ev, msg);
     
     return WBT_OK;
 }
@@ -219,4 +233,19 @@ wbt_repl_cli_t * wbt_mq_repl_client_get(wbt_event_t *ev) {
     }
     
     return cli;
+}
+
+void wbt_mq_repl_client_delete(wbt_event_t *ev) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    
+    wbt_repl_cli_t *node;
+    wbt_list_for_each_entry(node, wbt_repl_cli_t, &wbt_replication.client_list.head, head) {
+        if( node->subscriber == subscriber ) {
+            wbt_list_del(&node->head);
+            wbt_free(node);
+            
+            wbt_log_debug("replication: slave disconnected\n");
+            break;
+        }
+    }
 }

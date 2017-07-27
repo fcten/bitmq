@@ -373,7 +373,8 @@ wbt_status wbt_mq_auth_conn_limit(wbt_event_t *ev) {
 wbt_status wbt_mq_auth_pub_limit(wbt_event_t *ev) {
     wbt_subscriber_t *subscriber = ev->ctx;
     if( subscriber == NULL ) {
-        return WBT_ERROR;
+        // 当作为 slave 运行时，subscriber 可能为 NULL
+        return WBT_OK;
     }
     
     wbt_auth_t *auth = subscriber->auth;
@@ -450,7 +451,8 @@ wbt_status wbt_mq_auth_sub_permission(wbt_event_t *ev, wbt_mq_id channel_id) {
 wbt_status wbt_mq_auth_pub_permission(wbt_event_t *ev, wbt_msg_t *msg) {
     wbt_subscriber_t *subscriber = ev->ctx;
     if( subscriber == NULL ) {
-        return WBT_ERROR;
+        // 当作为 slave 运行时，subscriber 可能为 NULL
+        return WBT_OK;
     }
     
     if( msg->type == MSG_ACK ) {

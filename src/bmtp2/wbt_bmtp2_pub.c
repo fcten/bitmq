@@ -161,6 +161,19 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
         }
     }
     
+    if( bmtp->role == BMTP_SERVER ) {
+        wbt_mq_parsed_msg.msg_id = 0;
+    } else {
+        if( wbt_mq_parsed_msg.msg_id == 0 ) {
+            if( stream_id ) {
+                return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);
+            } else {
+                return WBT_OK;
+            }
+        }
+        wbt_mq_parsed_msg.create = 0;
+    }
+    
     wbt_mq_parsed_msg.data_len = bmtp->payload_length;
     wbt_mq_parsed_msg.data = wbt_strdup(bmtp->payload, bmtp->payload_length);
     
@@ -185,25 +198,24 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
-    int has_param = 0;
+    wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
+    wbt_bmtp2_append_param(node, PARAM_TYPE, TYPE_VARINT, msg->type, NULL);
+    wbt_bmtp2_append_param(node, PARAM_CONSUMER_ID, TYPE_VARINT, msg->consumer_id, NULL);
+    wbt_bmtp2_append_param(node, PARAM_CREATE, TYPE_VARINT, msg->create, NULL);
+    wbt_bmtp2_append_param(node, PARAM_EFFECT, TYPE_VARINT, (msg->effect - msg->create)/1000, NULL);
+    wbt_bmtp2_append_param(node, PARAM_EXPIRE, TYPE_VARINT, (msg->expire - msg->create)/1000, NULL);
     
-    if( msg->type == MSG_LOAD_BALANCE ) {
-        wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
-        has_param = 1;
+    if( msg->producer_id ) {
+        wbt_bmtp2_append_param(node, PARAM_PRODUCER_ID, TYPE_VARINT, msg->producer_id, NULL);
     }
     
     if( msg->is_compress ) {
         wbt_bmtp2_append_param(node, PARAM_COMPRESS, TYPE_BOOL, 1, NULL);
-        has_param = 1;
     }
 
     wbt_bmtp2_append_payload(node, msg);
 
-    if( has_param ) {
-        wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_STRING, 0);
-    } else {
-        wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_BOOL, 0);
-    }
+    wbt_bmtp2_append_opcode(node, OP_PUB, TYPE_STRING, 0);
     
     return wbt_bmtp2_send(ev, node);
 }

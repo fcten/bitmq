@@ -270,11 +270,15 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
     }
     
     // 创建消息并初始化
-    wbt_msg_t * msg = wbt_mq_msg_create(0);
+    wbt_msg_t * msg = wbt_mq_msg_create(message->msg_id);
     if( msg == NULL ) {
         return WBT_ERROR;
     }
     
+    if( message->create ) {
+        msg->create = message->create;
+    }
+
     msg->producer_id = message->producer_id;
     msg->consumer_id = message->consumer_id;
     msg->effect      = msg->create + message->effect * 1000;
@@ -354,17 +358,10 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
         }
     }
     
-    // TODO 消息持久化之后，第二步是主从复制
-    // 主从复制算法根据是否开启持久化而有所区别
-    if( 0 /* TODO 如果存在 slave */ ) {
-        // TODO 主从同步的算法如下：
-        // 1、建立连接时，slave 发送最后一次同步时收到的 msg_id
-        // 2、master 根据收到的 msg_id 决定同步消息的起始位置
-        // 3、master 从当前同步位置开始不断发送消息，直至最新一条消息
-        // 4、当 master 收到新消息时，重复步骤 3
-        
-        // 如果开启了持久化，步骤 3 从 aof 文件中读取消息。
-        // 如果没有开启持久化，步骤 3 从内存中读取消息
+    // 消息持久化之后，第二步是主从复制
+    // 主从复制依赖于持久化功能
+    if( wbt_conf.aof ) {
+        wbt_mq_repl_send_all(msg);
     }
     
     // 最后，进行消息投递

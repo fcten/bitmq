@@ -465,7 +465,7 @@ wbt_status wbt_bmtp2_param_parser(wbt_event_t *ev, wbt_status (*callback)(wbt_ev
 
                 c = buf[offset++];
                 
-                param.value.l += ( c & 0x7F ) << ( ( state - STATE_VALUE_VARINT ) * 7 );
+                param.value.l += ( (wbt_mq_id)(c & 0x7F) ) << ( ( state - STATE_VALUE_VARINT ) * 7 );
                 
                 if( c & 0x80 ) {
                     if( state == STATE_VALUE_VARINT_EXT9 ) {
@@ -599,6 +599,8 @@ wbt_status wbt_bmtp2_on_close(wbt_event_t *ev) {
     
     if( bmtp->role == BMTP_CLIENT ) {
         wbt_mq_repl_on_close(ev);
+    } else {
+        wbt_mq_repl_client_delete(ev);
     }
     
     // 释放 send_list
