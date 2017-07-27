@@ -16,7 +16,8 @@ enum {
     RET_OK = 0,
     RET_SERVICE_UNAVAILABLE,
     RET_PERMISSION_DENIED,
-    RET_INVALID_MESSAGE
+    RET_INVALID_MESSAGE,
+    RET_READ_ONLY_SLAVE
 };
 
 // TODO 使用全局变量不是多线程安全的，如果未来 BitMQ 引入了多线程，这里可能带来问题
@@ -161,9 +162,17 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
         }
     }
     
-    if( bmtp->role == BMTP_SERVER ) {
+    if( bmtp->role == BMTP_SERVER || bmtp->role == BMTP_SERVER_REPL ) {
+        if( wbt_conf.master_host.len > 0 ) {
+            // slave 模式下不可写消息
+            if( stream_id ) {
+                return wbt_bmtp2_send_puback(ev, stream_id, RET_READ_ONLY_SLAVE);
+            } else {
+                return WBT_OK;
+            }
+        }
         wbt_mq_parsed_msg.msg_id = 0;
-    } else {
+    } else if( bmtp->role == BMTP_CLIENT ) {
         if( wbt_mq_parsed_msg.msg_id == 0 ) {
             if( stream_id ) {
                 return wbt_bmtp2_send_puback(ev, stream_id, RET_INVALID_MESSAGE);

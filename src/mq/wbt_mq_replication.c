@@ -216,6 +216,8 @@ wbt_repl_cli_t * wbt_mq_repl_client_new(wbt_event_t *ev) {
     if( cli ) {
         cli->subscriber = subscriber;
         wbt_list_add_tail(&cli->head, &wbt_replication.client_list.head);
+        
+        wbt_log_debug("replication: slave connected\n");
     }
     
     return cli;

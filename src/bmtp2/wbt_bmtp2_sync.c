@@ -12,6 +12,8 @@ wbt_status wbt_bmtp2_on_sync(wbt_event_t *ev) {
         return WBT_ERROR;
     }
     
+    bmtp->role = BMTP_SERVER_REPL;
+    
     wbt_repl_cli_t *cli = NULL;
 
     switch( bmtp->op_type ) {

@@ -88,6 +88,7 @@ typedef struct wbt_bmtp2_msg_list_s {
 
 enum {
     BMTP_SERVER = 1,
+    BMTP_SERVER_REPL,
     BMTP_CLIENT
 };
 

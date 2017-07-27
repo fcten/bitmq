@@ -599,7 +599,7 @@ wbt_status wbt_bmtp2_on_close(wbt_event_t *ev) {
     
     if( bmtp->role == BMTP_CLIENT ) {
         wbt_mq_repl_on_close(ev);
-    } else {
+    } else if( bmtp->role == BMTP_SERVER_REPL ) {
         wbt_mq_repl_client_delete(ev);
     }
     
