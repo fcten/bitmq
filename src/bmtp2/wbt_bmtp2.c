@@ -251,7 +251,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                 
                 c = ((unsigned char *)ev->buff)[bmtp->recv_offset ++];
                 
-                bmtp->op_value.l += ( c & 0x7F ) << ( ( bmtp->state - STATE_VALUE_VARINT ) * 7 );
+                bmtp->op_value.l += ( (wbt_mq_id)(c & 0x7F) ) << ( ( bmtp->state - STATE_VALUE_VARINT ) * 7 );
                 
                 if( c & 0x80 ) {
                     if( bmtp->state == STATE_VALUE_VARINT_EXT9 ) {
