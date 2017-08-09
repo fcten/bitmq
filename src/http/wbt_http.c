@@ -481,6 +481,10 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
         return WBT_ERROR;
     }
     
+    if( wbt_conf.auth == 0 ) {
+        http->is_auth = 1;
+    }
+    
     /* 解析 request header */
     wbt_str_t http_header_value;
     header = http->headers;
@@ -511,6 +515,60 @@ wbt_status wbt_http_parse_request_header( wbt_event_t *ev ) {
                     http->bit_flag |= WBT_HTTP_GZIP;
                 } else {
                     http->bit_flag &= ~WBT_HTTP_GZIP;
+                }
+                break;
+            case HEADER_AUTHORIZATION:
+                wbt_offset_to_str(header->value.o, http_header_value, ev->buff);
+            
+                if( wbt_conf.auth == 1 ) {
+                    // TODO basic 验证
+                    
+                    http->is_auth = 1;
+                } else if ( wbt_conf.auth == 2 ) {
+                    // standard 验证
+                    wbt_str_t token, sign, split = wbt_string(".");
+                    token.str = http_header_value.str;
+                    token.len = http_header_value.len;
+
+                    int pos = wbt_strpos(&token, &split);
+                    if(pos == -1) {
+                        break;
+                    }
+                    sign.str = token.str+pos+1;
+                    sign.len = token.len-pos-1;
+
+                    token.len = pos;
+
+                    if(wbt_auth_verify(&token, &sign) != WBT_OK) {
+                        break;
+                    }
+
+                    wbt_str_t token_decode;
+                    token_decode.len = token.len;
+                    token_decode.str = (char *) wbt_malloc(token.len);
+                    if( token_decode.str == NULL ) {
+                        http->status = STATUS_503;
+                        return WBT_ERROR;
+                    }
+
+                    if( wbt_base64_decode(&token_decode, &token) != WBT_OK ) {
+                        wbt_free(token_decode.str);
+
+                        break;
+                    }
+
+                    // 读取授权信息
+                    wbt_auth_t *auth = wbt_mq_auth_create(&token_decode);
+                    if( auth == NULL ) {
+                        wbt_free(token_decode.str);
+
+                        break;
+                    }
+
+                    wbt_free(token_decode.str);
+
+                    http->is_auth = 1;
+                    http->auth = auth;
                 }
                 break;
             default:
@@ -933,7 +991,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
         wbt_http_set_header( http, HEADER_EXPIRES, &header_expires_no_cache );
     }
-
+    
     if( wbt_http_generate_response_header( http ) != WBT_OK ) {
         /* 内存不足，生成响应消息头失败 */
         return WBT_ERROR;

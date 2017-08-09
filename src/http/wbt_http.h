@@ -17,6 +17,12 @@ extern "C" {
 #include "../common/wbt_memory.h"
 #include "../common/wbt_string.h"
 #include "../common/wbt_file.h"
+#include "../common/wbt_auth.h"
+#include "../common/wbt_base64.h"
+#include "../json/wbt_json.h"
+#include "../mq/wbt_mq.h"
+#include "../mq/wbt_mq_msg.h"
+#include "../mq/wbt_mq_auth.h"
 #include "../event/wbt_event.h"
 
 typedef enum { 
@@ -193,6 +199,9 @@ typedef struct wbt_http_s {
     unsigned int bit_flag;
     /* 以下变量用于保存请求处理状态 */
     wbt_http_state_t state;
+    
+    int is_auth;
+    wbt_auth_t *auth;
 } wbt_http_t;
 
 #define WBT_HTTP_KEEP_ALIVE         1

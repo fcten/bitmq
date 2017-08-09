@@ -180,7 +180,16 @@ wbt_str_t wbt_http_error_page[] = {
     "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
-    ),wbt_string("401 Unauthorized"),
+    ),
+    wbt_string(  /* STATUS 401 */
+    "<html>" CRLF
+    "<head><title>401 Unauthorized</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>401 Unauthorized</h1></center>" CRLF
+    "<!-- BitMQ -->" CRLF
+    "</body>" CRLF
+    "</html>"
+    ),
     wbt_string("402 Payment Required"),
     wbt_string(  /* STATUS 403 */
     "<html>" CRLF
@@ -190,7 +199,8 @@ wbt_str_t wbt_http_error_page[] = {
     "<!-- BitMQ -->" CRLF
     "</body>" CRLF
     "</html>"
-    ),wbt_string(  /* STATUS 404 */
+    ),
+    wbt_string(  /* STATUS 404 */
     "<html>" CRLF
     "<head><title>404 Not Found</title></head>" CRLF
     "<body bgcolor=\"white\">" CRLF
@@ -199,7 +209,15 @@ wbt_str_t wbt_http_error_page[] = {
     "</body>" CRLF
     "</html>"
     ),
-    wbt_string("405 Method Not Allowed"),
+    wbt_string(  /* STATUS 405 */
+    "<html>" CRLF
+    "<head><title>405 Method Not Allowed</title></head>" CRLF
+    "<body bgcolor=\"white\">" CRLF
+    "<center><h1>405 Method Not Allowed</h1></center>" CRLF
+    "<!-- BitMQ -->" CRLF
+    "</body>" CRLF
+    "</html>"
+    ),
     wbt_string("406 Not Acceptable"),
     wbt_string("407 Proxy Authentication Required"),
     wbt_string("408 Request Time-out"),

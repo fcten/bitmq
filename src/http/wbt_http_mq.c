@@ -64,33 +64,34 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    wbt_str_t login  = wbt_string("/mq/login/");
+    //wbt_str_t login  = wbt_string("/mq/login/");
     wbt_str_t pull   = wbt_string("/mq/pull/");
     wbt_str_t push   = wbt_string("/mq/push/");
     //wbt_str_t sign   = wbt_string("/mq/auth/sign/");
-    wbt_str_t verify = wbt_string("/mq/auth/verify/");
+    //wbt_str_t verify = wbt_string("/mq/auth/verify/");
     wbt_str_t status = wbt_string("/mq/status/");
     
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
-    if( wbt_strcmp( &http_uri, &login ) == 0 ) {
-        return wbt_http_mq_login(ev);
-    } else if( wbt_strcmp( &http_uri, &pull ) == 0 ) {
+    //if( wbt_strcmp( &http_uri, &login ) == 0 ) {
+    //    return wbt_http_mq_login(ev);
+    //} else
+    if( wbt_strcmp( &http_uri, &pull ) == 0 ) {
         return wbt_http_mq_pull(ev);
     } else if( wbt_strcmp( &http_uri, &push ) == 0 ) {
         return wbt_http_mq_push(ev);
     //} else if( wbt_strcmp( &http_uri, &sign ) == 0 ) {
     //    return wbt_http_mq_sign(ev);
-    } else if( wbt_strcmp( &http_uri, &verify ) == 0 ) {
-        return wbt_http_mq_verify(ev);
+    //} else if( wbt_strcmp( &http_uri, &verify ) == 0 ) {
+    //    return wbt_http_mq_verify(ev);
     } else if( wbt_strncmp( &http_uri, &status, status.len ) == 0 ) {
         return wbt_http_mq_status(ev);
     }
 
     return WBT_OK;
 }
-
+/*
 wbt_status wbt_http_mq_login(wbt_event_t *ev) {
     // 解析请求
     wbt_http_t * http = ev->data;
@@ -126,7 +127,7 @@ wbt_status wbt_http_mq_login(wbt_event_t *ev) {
 
     http->status = STATUS_200;  
     return WBT_OK;
-}
+}*/
 
 wbt_status wbt_http_mq_push(wbt_event_t *ev) {
     // 解析请求
@@ -135,6 +136,11 @@ wbt_status wbt_http_mq_push(wbt_event_t *ev) {
     // 必须是 POST 请求
     if( http->method != METHOD_POST ) {
         http->status = STATUS_405;
+        return WBT_OK;
+    }
+
+    if( !http->is_auth ) {
+        http->status = STATUS_401;
         return WBT_OK;
     }
     
@@ -192,6 +198,11 @@ wbt_status wbt_http_mq_notify(wbt_event_t *ev) {
 
 wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
     wbt_http_t * http = ev->data;
+
+    if( !http->is_auth ) {
+        http->status = STATUS_401;
+        return WBT_OK;
+    }
 
     wbt_msg_t *msg;
     if( wbt_mq_pull(ev, &msg) != WBT_OK ) {
@@ -294,14 +305,14 @@ wbt_status wbt_http_mq_status(wbt_event_t *ev) {
     // 分发请求
     wbt_http_t * http = ev->data;
 
-    // 只过滤 404 响应
-    if( http->status != STATUS_404 ) {
-        return WBT_OK;
-    }
-
     // 必须是 GET 请求
     if( http->method != METHOD_GET ) {
         http->status = STATUS_405;
+        return WBT_OK;
+    }
+
+    if( !http->is_auth ) {
+        http->status = STATUS_401;
         return WBT_OK;
     }
     
@@ -664,7 +675,7 @@ wbt_status wbt_http_mq_sign(wbt_event_t *ev) {
 
     return WBT_OK;
 }
-*/
+
 wbt_status wbt_http_mq_verify(wbt_event_t *ev) {
     // 解析请求
     wbt_http_t * http = ev->data;
@@ -701,4 +712,4 @@ wbt_status wbt_http_mq_verify(wbt_event_t *ev) {
     }
 
     return WBT_OK;
-}
+}*/
