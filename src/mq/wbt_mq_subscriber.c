@@ -77,6 +77,9 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         
         if(msg) {
             msg->state = MSG_CREATED;
+            // 延迟 1 秒，而不是立即重新投递
+            // 这么做是为了给 ACK 消息预留一个缓冲时间
+            msg->effect = wbt_cur_mtime + 1000;
             wbt_mq_msg_delivery(msg);
             
             wbt_log_debug("msg_id %lld: %ld\n", msg->msg_id, msg->effect);

@@ -64,7 +64,6 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    //wbt_str_t login  = wbt_string("/mq/login/");
     wbt_str_t pull   = wbt_string("/mq/pull/");
     wbt_str_t push   = wbt_string("/mq/push/");
     //wbt_str_t sign   = wbt_string("/mq/auth/sign/");
@@ -74,10 +73,7 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
     wbt_str_t http_uri;
     wbt_offset_to_str(http->uri, http_uri, ev->buff);
     
-    //if( wbt_strcmp( &http_uri, &login ) == 0 ) {
-    //    return wbt_http_mq_login(ev);
-    //} else
-    if( wbt_strcmp( &http_uri, &pull ) == 0 ) {
+    if( wbt_strncmp( &http_uri, &pull, pull.len ) == 0 ) {
         return wbt_http_mq_pull(ev);
     } else if( wbt_strcmp( &http_uri, &push ) == 0 ) {
         return wbt_http_mq_push(ev);
@@ -91,43 +87,6 @@ wbt_status wbt_http_mq_on_recv(wbt_event_t *ev) {
 
     return WBT_OK;
 }
-/*
-wbt_status wbt_http_mq_login(wbt_event_t *ev) {
-    // 解析请求
-    wbt_http_t * http = ev->data;
-
-    // 必须是 POST 请求
-    if( http->method != METHOD_POST ) {
-        http->status = STATUS_405;
-        return WBT_OK;
-    }
-    
-    // 处理 body
-    if( http->body.len <= 0 ) {
-        http->status = STATUS_403;
-        return WBT_OK;
-    }
-    
-    if( wbt_mq_login(ev) != WBT_OK ) {
-        http->status = STATUS_403;
-        return WBT_OK;
-    }
-    
-    wbt_mq_set_notify(ev, wbt_http_mq_notify);
-
-    // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
-    wbt_str_t channel_ids;
-    wbt_offset_to_str(http->body, channel_ids, ev->buff);
-    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 10);
-
-    if( wbt_mq_subscribe(ev, channel_id) != WBT_OK ) {
-        http->status = STATUS_503;
-        return WBT_OK;
-    }
-
-    http->status = STATUS_200;  
-    return WBT_OK;
-}*/
 
 wbt_status wbt_http_mq_push(wbt_event_t *ev) {
     // 解析请求
@@ -204,6 +163,37 @@ wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
         return WBT_OK;
     }
 
+    if( wbt_mq_login(ev) != WBT_OK ) {
+        http->status = STATUS_403;
+        return WBT_OK;
+    }
+    
+    wbt_mq_set_notify(ev, wbt_http_mq_notify);
+
+    // 在所有想要订阅的频道的 subscriber_list 中添加该订阅者
+    wbt_str_t http_uri;
+    wbt_offset_to_str(http->uri, http_uri, ev->buff);
+
+    wbt_str_t channel_ids;
+    channel_ids.str = http_uri.str + 9;
+    channel_ids.len = http_uri.len - 9;
+
+    wbt_str_t split = wbt_string("/");
+    int pos = wbt_strpos(&channel_ids, &split);
+    if(pos == -1) {
+        return WBT_OK;
+    }
+    channel_ids.len = pos;
+
+    wbt_mq_id channel_id = wbt_str_to_ull(&channel_ids, 10);
+    
+    // TODO 允许指定消息的消费进度
+    
+    if( wbt_mq_subscribe(ev, channel_id) != WBT_OK ) {
+        http->status = STATUS_503;
+        return WBT_OK;
+    }
+    
     wbt_msg_t *msg;
     if( wbt_mq_pull(ev, &msg) != WBT_OK ) {
         http->status = STATUS_403;
@@ -343,7 +333,7 @@ wbt_status wbt_http_mq_status(wbt_event_t *ev) {
         return wbt_http_mq_status_message(ev);
     } else if( wbt_strncmp( &http_uri, &status_channel, status_channel.len ) == 0 ) {
         return wbt_http_mq_status_channel(ev);
-    } else if( wbt_strncmp( &http_uri, &status_channel, status_channel.len ) == 0 ) {
+    } else if( wbt_strncmp( &http_uri, &status_system, status_system.len ) == 0 ) {
         return wbt_http_mq_status_system(ev);
     } else if( wbt_strncmp( &http_uri, &status_subscriber, status_subscriber.len ) == 0 ) {
         return wbt_http_mq_status_subscriber(ev);

@@ -185,6 +185,7 @@ send_complete:
     /* 如果是 keep-alive 连接，继续等待数据到来 */
     if( http->bit_flag & WBT_HTTP_KEEP_ALIVE && !wbt_wating_to_exit ) {
         wbt_http_on_close( ev );
+        wbt_mq_on_close(ev);
         /* 为下一个连接初始化相关结构 */
         ev->data = wbt_calloc(sizeof(wbt_http_t));
         if( ev->data == NULL ) {
