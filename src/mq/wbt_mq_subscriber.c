@@ -79,6 +79,8 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
             msg->state = MSG_CREATED;
             // 延迟 1 秒，而不是立即重新投递
             // 这么做是为了给 ACK 消息预留一个缓冲时间
+            // TODO 从消费消息开始计时，而不是从重新投递开始计时
+            // TODO 使用同一份授权的订阅者即可确认该消息
             msg->effect = wbt_cur_mtime + 1000;
             wbt_mq_msg_delivery(msg);
             

@@ -203,6 +203,8 @@ wbt_status wbt_http_mq_pull(wbt_event_t *ev) {
     if( msg == NULL ) {
         if(1) {
             // 如果没有可发送的消息，挂起请求
+            wbt_realloc(ev->buff, ev->buff_len);
+            
             http->state = STATE_BLOCKING;
 
             ev->timer.timeout = wbt_cur_mtime + 30000;
