@@ -67,6 +67,17 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         wbt_list_del(&channel_node->head);
         wbt_free(channel_node);
     }
+    
+    // 投递遗嘱消息
+    if( subscriber->last_will ) {
+        // 注意，这里使用的是 wbt_mq_push 方法，这意味着遗嘱消息也受到授权配额的限制。
+        // 当配额耗尽时，遗嘱消息会投递失败。同时，当内存不足时，遗嘱消息和普通消息一样
+        // 会被阻塞。
+        wbt_mq_push( subscriber->ev, subscriber->last_will );
+        
+        wbt_free(subscriber->last_will->data);
+        wbt_free(subscriber->last_will);
+    }
 
     // 重新投递尚未返回 ACK 响应的负载均衡消息
     wbt_msg_list_t * msg_node;

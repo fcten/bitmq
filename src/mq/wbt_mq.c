@@ -319,8 +319,6 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
                 msg->data        = wbt_realloc( gzip.str, gzip.len );
 
                 wbt_free(message->data);
-                message->data = NULL;
-                message->data_len = 0;
             } else {
                 // 放弃压缩
                 msg->is_compress = 0;
@@ -333,6 +331,9 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
         msg->data_len    = message->data_len;
         msg->data        = message->data;
     }
+
+    message->data = NULL;
+    message->data_len = 0;
     
     // 接收到消息之后，第一步是将消息持久化
     if( wbt_conf.aof ) {
@@ -366,7 +367,7 @@ wbt_status wbt_mq_push(wbt_event_t *ev, wbt_msg_t *message) {
     
     // 最后，进行消息投递
     if( msg->type == MSG_ACK ) {
-        wbt_msg_t *msg_ack = wbt_mq_msg_get(msg->consumer_id);
+        wbt_msg_t *msg_ack = wbt_mq_msg_get( msg->consumer_id );
         if( msg_ack ) {
             wbt_mq_msg_event_expire( &msg_ack->timer );
         }
@@ -464,4 +465,29 @@ wbt_auth_t * wbt_mq_get_auth(wbt_event_t *ev) {
     }
     
     return subscriber->auth;
+}
+
+wbt_status wbt_mq_set_last_will(wbt_event_t *ev, wbt_msg_t *msg) {
+    wbt_subscriber_t *subscriber = ev->ctx;
+    if( subscriber == NULL ) {
+        return WBT_ERROR;
+    }
+    
+    wbt_msg_t *last_will = wbt_malloc(sizeof(wbt_msg_t));
+    if( last_will == NULL ) {
+        return WBT_ERROR;
+    }
+    
+    wbt_memcpy(last_will, msg, sizeof(wbt_msg_t));
+    msg->data = NULL;
+    msg->data_len = 0;
+    
+    if( subscriber->last_will ) {
+        wbt_free(subscriber->last_will->data);
+        wbt_free(subscriber->last_will);
+    }
+    
+    subscriber->last_will = last_will;
+    
+    return WBT_OK;
 }

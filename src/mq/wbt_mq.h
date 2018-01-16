@@ -204,6 +204,8 @@ typedef struct wbt_subscriber_s {
     struct wbt_msg_list_s delivered_list;
     // 权限信息
     struct wbt_auth_s * auth;
+    // 遗嘱消息
+    struct wbt_msg_s * last_will;
     // 消息投递回调函数，用于通知该订阅者有消息可投递
     // 设置该方法是为了同时支持多种协议
     wbt_status (*notify)(wbt_event_t *);
@@ -235,6 +237,7 @@ wbt_status wbt_mq_ack(wbt_event_t *ev);
 
 wbt_status wbt_mq_set_notify(wbt_event_t *ev, wbt_status (*notify)(wbt_event_t *));
 wbt_status wbt_mq_set_auth(wbt_event_t *ev, wbt_auth_t *auth);
+wbt_status wbt_mq_set_last_will(wbt_event_t *ev, wbt_msg_t *msg);
 
 wbt_auth_t * wbt_mq_get_auth(wbt_event_t *ev);
 

@@ -109,14 +109,19 @@ wbt_status wbt_http_mq_push(wbt_event_t *ev) {
     
     wbt_msg_t *msg = wbt_mq_json_parser( data.str, data.len );
 
-    if( wbt_mq_push(ev, msg) != WBT_OK ) {
+    wbt_status ret = wbt_mq_push(ev, msg);
+
+    wbt_free(msg->data);
+    msg->data = NULL;
+
+    if( ret != WBT_OK ) {
         // TODO 需要返回更详细的错误原因
         http->status = STATUS_403;
-        return WBT_OK;
+    } else {
+        // TODO 返回 msg_id
+        http->status = STATUS_200;
     }
-
-    // TODO 返回 msg_id
-    http->status = STATUS_200;
+    
     return WBT_OK;
 }
 

@@ -9,7 +9,8 @@ enum {
     PARAM_CREATE,
     PARAM_EFFECT,
     PARAM_EXPIRE,
-    PARAM_COMPRESS // 如果 payload 经过压缩，这里需要指明解压算法
+    PARAM_COMPRESS, // 如果 payload 经过压缩，这里需要指明解压算法
+    PARAM_LAST_WILL // 只要存在该字段，则认为该消息为遗嘱消息
 };
 
 enum {
@@ -23,6 +24,7 @@ enum {
 // TODO 使用全局变量不是多线程安全的，如果未来 BitMQ 引入了多线程，这里可能带来问题
 wbt_msg_t wbt_mq_parsed_msg;
 wbt_mq_id stream_id;
+int is_last_will;
 
 wbt_status wbt_bmtp2_on_pub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
     switch( param->key ) {
@@ -132,6 +134,9 @@ wbt_status wbt_bmtp2_on_pub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
         case PARAM_COMPRESS:
             wbt_mq_parsed_msg.is_compress = 1;
             break;
+        case PARAM_LAST_WILL:
+            is_last_will = 1;
+            break;
         default:
             // 忽略无法识别的参数
             return WBT_OK;
@@ -144,6 +149,7 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     wbt_bmtp2_t *bmtp = ev->data;
     
     stream_id = 0;
+    is_last_will = 0;
     wbt_memset(&wbt_mq_parsed_msg, 0, sizeof(wbt_mq_parsed_msg));
     
     if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_pub_parser) != WBT_OK ) {
@@ -186,11 +192,21 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     wbt_mq_parsed_msg.data_len = bmtp->payload_length;
     wbt_mq_parsed_msg.data = wbt_strdup(bmtp->payload, bmtp->payload_length);
     
-    if( stream_id == 0 ) {
-        wbt_mq_push(ev, &wbt_mq_parsed_msg);
-        return WBT_OK;
+    wbt_status ret;
+    if( is_last_will ) {
+        ret = wbt_mq_set_last_will(ev, &wbt_mq_parsed_msg);
     } else {
-        if( wbt_mq_push(ev, &wbt_mq_parsed_msg) != WBT_OK ) {
+        ret = wbt_mq_push(ev, &wbt_mq_parsed_msg);
+    }
+    
+    // wbt_mq_push 以及 wbt_mq_set_last_will 操作可能会失败，所以在这里释放一次
+    // 以免内存泄漏。
+    // 如果 data 被使用了，上述方法会将 data 置为 NULL 以防止数据被释放
+    wbt_free(wbt_mq_parsed_msg.data);
+    wbt_mq_parsed_msg.data = NULL;
+    
+    if( stream_id != 0 ) {
+        if( ret != WBT_OK ) {
             // TODO 需要返回更详细的错误原因
             return wbt_bmtp2_send_puback(ev, stream_id, RET_PERMISSION_DENIED);
         } else {
