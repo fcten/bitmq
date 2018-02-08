@@ -220,7 +220,6 @@ extern wbt_str_t header_server;
 extern wbt_str_t header_connection_keep_alive;
 extern wbt_str_t header_connection_close;
 extern wbt_str_t header_cache_control;
-extern wbt_str_t header_content_type_text_html;
 extern wbt_str_t header_cache_control_no_cache;
 extern wbt_str_t header_pragma_no_cache;
 extern wbt_str_t header_expires_no_cache;

@@ -16,6 +16,25 @@ extern "C" {
 #include <sys/stat.h>
 #include "../webit.h"
 
+typedef enum {
+    MIME_UNKNOWN,
+    MIME_HTML,
+    MIME_CSS,
+    MIME_JS,
+    MIME_PNG,
+    MIME_JPG,
+    MIME_GIF,
+    MIME_JSON,
+    MIME_XML,
+    MIME_TEXT,
+    MIME_JPEG,
+    MIME_SVG,
+    MIME_ICO,
+    MIME_LENGTH
+} wbt_mime_t;
+
+extern wbt_str_t MIME_TYPE[][2];
+
 /* 在读取文件内容时，每一次请求都进行一次打开和关闭是不必要的开销。
  * 打开文件之后将句柄缓存起来，下一次打开相同文件时可以直接返回句柄。
  * 这样对于每个请求的系统调用次数就可以减少到 1 次 (sendfile)。
@@ -44,6 +63,8 @@ typedef struct wbt_file_s {
     time_t last_modified;
     /* 文件最后被访问时间 */
     time_t last_use_mtime;
+    /* 文件的 mime type */
+    wbt_mime_t mime_type;
 } wbt_file_t;
 
 wbt_status wbt_file_init();

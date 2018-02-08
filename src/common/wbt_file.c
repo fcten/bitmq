@@ -28,6 +28,43 @@ wbt_rb_t wbt_file_rbtree;
 
 extern wbt_atomic_t wbt_wating_to_exit;
 
+wbt_str_t MIME_TYPE[][2] = {
+    { wbt_string("bmq"),  wbt_string("text/plain") },
+    { wbt_string("html"), wbt_string("text/html")  },
+    { wbt_string("css"),  wbt_string("text/css")   },
+    { wbt_string("js"),   wbt_string("application/javascript") },
+    { wbt_string("png"),  wbt_string("image/png")  },
+    { wbt_string("jpg"),  wbt_string("image/jpeg") },
+    { wbt_string("gif"),  wbt_string("image/gif")  },
+    { wbt_string("json"), wbt_string("application/json") },
+    { wbt_string("xml"),  wbt_string("text/xml")   },
+    { wbt_string("txt"),  wbt_string("text/plain") },
+    { wbt_string("jpeg"), wbt_string("image/jpeg") },
+    { wbt_string("svg"),  wbt_string("image/svg+xml") },
+    { wbt_string("ico"),  wbt_string("image/x-icon") }
+};
+
+wbt_mime_t wbt_file_mime_type(wbt_str_t * file_path) {
+    wbt_mime_t i;
+    wbt_str_t ext;
+
+    for( i = MIME_TEXT ; i < MIME_LENGTH ; i++ ) {
+        if( file_path->len <= MIME_TYPE[i][0].len + 1 ) {
+            continue;
+        }
+        if( file_path->str[file_path->len - MIME_TYPE[i][0].len - 1] != '.' ) {
+            continue;
+        }
+        ext.str = file_path->str + file_path->len - MIME_TYPE[i][0].len;
+        ext.len = MIME_TYPE[i][0].len;
+        if( wbt_strnicmp(&ext, &MIME_TYPE[i][0], MIME_TYPE[i][0].len ) == 0 ) {
+            return i;
+        }
+    }
+    
+    return MIME_UNKNOWN;
+}
+
 void wbt_file_cleanup_recursive(wbt_rb_node_t *node) {
     /* 从叶节点递归处理至根节点 */
     if(node) {
@@ -108,7 +145,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
     wbt_rb_node_t *file =  wbt_rb_get(&wbt_file_rbtree, file_path);
     if( file == NULL ) {
 #ifndef WIN32
-		struct stat statbuff;  
+        struct stat statbuff;  
         if(stat(file_path->str, &statbuff) < 0){  
             /* 文件访问失败 */
             tmp.size = 0;
@@ -143,6 +180,7 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
                         tmp_file->refer = 1;
                         tmp_file->size = tmp.size;
                         tmp_file->last_modified = tmp.last_modified;
+                        tmp_file->mime_type = wbt_file_mime_type(file_path);
 
                         wbt_log_debug("open file: %d " JL_SIZE_T_SPECIFIER "\n", tmp_file->fd, tmp_file->size);
                         return tmp_file;
@@ -158,32 +196,33 @@ wbt_file_t * wbt_file_open( wbt_str_t * file_path ) {
             }
         }
 #else
-		tmp.fd = wbt_open_file(file_path->str);
-		if (tmp.fd == INVALID_HANDLE_VALUE) {
-			tmp.fd = (wbt_fd_t)-1;
-		}
-		else {
-			file = wbt_rb_insert(&wbt_file_rbtree, file_path);
+        tmp.fd = wbt_open_file(file_path->str);
+        if (tmp.fd == INVALID_HANDLE_VALUE) {
+            tmp.fd = (wbt_fd_t)-1;
+        }
+        else {
+            file = wbt_rb_insert(&wbt_file_rbtree, file_path);
 
-			file->value.str = wbt_calloc(sizeof(wbt_file_t));
-			if (file->value.str == NULL) {
-				// TODO 如果这里失败了，该文件将永远不会被关闭
-				wbt_rb_delete(&wbt_file_rbtree, file);
-			}
-			else {
-				wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
+            file->value.str = wbt_calloc(sizeof(wbt_file_t));
+            if (file->value.str == NULL) {
+                // TODO 如果这里失败了，该文件将永远不会被关闭
+                wbt_rb_delete(&wbt_file_rbtree, file);
+            }
+            else {
+                wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
 
-				tmp_file->fd = tmp.fd;
-				tmp_file->refer = 1;
-				tmp_file->size = wbt_get_file_size(tmp.fd);
-				tmp_file->last_modified = wbt_get_file_last_write_time(tmp.fd);
+                tmp_file->fd = tmp.fd;
+                tmp_file->refer = 1;
+                tmp_file->size = wbt_get_file_size(tmp.fd);
+                tmp_file->last_modified = wbt_get_file_last_write_time(tmp.fd);
+                tmp_file->mime_type = wbt_file_mime_type(file_path);
 
                 wbt_log_debug( "open file: %d " JL_SIZE_T_SPECIFIER "\n", tmp_file->fd, tmp_file->size );
-				return tmp_file;
-			}
-		}
+                return tmp_file;
+            }
+        }
 #endif
-	} else {
+    } else {
         wbt_file_t * tmp_file = (wbt_file_t *)file->value.str;
         tmp_file->refer ++;
 

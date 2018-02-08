@@ -871,7 +871,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
 
     if( http->status != STATUS_200 ) {
         if( !http->resp_body_memory.str ) {
-            wbt_http_set_header( http, HEADER_CONTENT_TYPE, &header_content_type_text_html );
+            wbt_http_set_header( http, HEADER_CONTENT_TYPE, &MIME_TYPE[MIME_HTML][1] );
 
             http->resp_body_memory.str = wbt_strdup(wbt_http_error_page[http->status].str, wbt_http_error_page[http->status].len);
             http->resp_body_memory.len = wbt_http_error_page[http->status].len;
@@ -987,6 +987,7 @@ wbt_status wbt_http_process(wbt_event_t *ev) {
         wbt_http_set_header( http, HEADER_EXPIRES, &wbt_time_str_expire );
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control );
         wbt_http_set_header( http, HEADER_LAST_MODIFIED, wbt_time_to_str( http->resp_body_file->last_modified ) );
+        wbt_http_set_header( http, HEADER_CONTENT_TYPE, &MIME_TYPE[http->resp_body_file->mime_type][1] );
     } else if( http->status != STATUS_304 ) {
         wbt_http_set_header( http, HEADER_CACHE_CONTROL, &header_cache_control_no_cache );
         wbt_http_set_header( http, HEADER_PRAGMA, &header_pragma_no_cache );
