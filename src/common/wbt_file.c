@@ -48,7 +48,7 @@ wbt_mime_t wbt_file_mime_type(wbt_str_t * file_path) {
     wbt_mime_t i;
     wbt_str_t ext;
 
-    for( i = MIME_TEXT ; i < MIME_LENGTH ; i++ ) {
+    for( i = MIME_HTML ; i < MIME_LENGTH ; i++ ) {
         if( file_path->len <= MIME_TYPE[i][0].len + 1 ) {
             continue;
         }
