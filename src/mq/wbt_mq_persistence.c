@@ -195,7 +195,7 @@ wbt_status wbt_mq_persist_init() {
     // 读取 mid
     if (wbt_read_file(wbt_persist_mid_fd, &wbt_mq_persist_count, sizeof(wbt_mq_persist_count), 0) == sizeof(wbt_mq_persist_count)) {
         wbt_log_add("msg_id %lld recovered\n", wbt_mq_persist_count);
-        wbt_mq_msg_update_create_count(wbt_mq_persist_count);
+        wbt_mq_msg_init_snowflake(wbt_mq_persist_count);
     } else {
         wbt_mq_persist_count = 0;
     }

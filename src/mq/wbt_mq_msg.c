@@ -7,26 +7,29 @@
 
 #include "wbt_mq_msg.h"
 #include "wbt_mq_channel.h"
+#include "wbt_mq_snowflake.h"
 
 extern wbt_atomic_t wbt_wating_to_exit;
 
 // 存储所有已接收到的消息
 static wbt_rb_t wbt_mq_messages;
 
-wbt_status wbt_mq_msg_init() {
-    wbt_rb_init(&wbt_mq_messages, WBT_RB_KEY_LONGLONG);
-
-    return WBT_OK;
-}
-
 static wbt_mq_id wbt_msg_create_count = 0;
 static wbt_mq_id wbt_msg_effect_count = 0;
 static wbt_mq_id wbt_msg_delete_count = 0;
+static wbt_sf_t  wbt_msg_snowflake;
 
-void wbt_mq_msg_update_create_count(wbt_mq_id msg_id) {
-    if( wbt_msg_create_count < msg_id ) {
-        wbt_msg_create_count = msg_id;
-    }
+wbt_status wbt_mq_msg_init() {
+    wbt_rb_init(&wbt_mq_messages, WBT_RB_KEY_LONGLONG);
+
+    // todo 使用配置文件初始化
+    wbt_mq_init_id(&wbt_msg_snowflake, 0);
+    
+    return WBT_OK;
+}
+
+void wbt_mq_msg_init_snowflake(wbt_mq_id msg_id) {
+    wbt_mq_update_id(&wbt_msg_snowflake, msg_id);
 }
 
 wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id) {
@@ -34,12 +37,12 @@ wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id) {
     
     if( msg ) {
         if( msg_id ) {
+            // 只有在从磁盘或者从 master 同步数据时才会出现这种情况
             msg->msg_id = msg_id;
-            if( wbt_msg_create_count < msg_id ) {
-                wbt_msg_create_count = msg_id;
-            }
+            wbt_mq_update_id(&wbt_msg_snowflake, msg_id);
         } else {
-            msg->msg_id = ++wbt_msg_create_count;
+            msg->msg_id = wbt_mq_next_id(&wbt_msg_snowflake);
+            wbt_msg_create_count ++;
         }
         msg->seq_id = 0;
         msg->create = wbt_cur_mtime;

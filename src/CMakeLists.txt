@@ -63,6 +63,8 @@ set (WBT_SRCS
 	mq/wbt_mq_replication.h
 	mq/wbt_mq_cluster.c
 	mq/wbt_mq_cluster.h
+	mq/wbt_mq_snowflake.c
+	mq/wbt_mq_snowflake.h
 	websocket/wbt_websocket.c
 	websocket/wbt_websocket.h
 	bmtp2/wbt_bmtp2.c

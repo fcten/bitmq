@@ -430,9 +430,9 @@ int wbt_main( int argc, char** argv ) {
     // TODO 在 Windows 下 BitMQ 暂时没有捕获程序退出的信号，也就是说每一次退出都相
     // 当于异常退出
     
-	wbt_log_print("\n\nbitmq is now running.\n\n");
+    wbt_log_print("\n\nbitmq is now running.\n\n");
 
-	wbt_event_dispatch();
+    wbt_event_dispatch();
 
     wbt_exit(0);
 
