@@ -42,6 +42,11 @@ wbt_msg_t * wbt_mq_msg_create(wbt_mq_id msg_id) {
             wbt_mq_update_id(&wbt_msg_snowflake, msg_id);
         } else {
             msg->msg_id = wbt_mq_next_id(&wbt_msg_snowflake);
+            if( msg->msg_id == 0 ) {
+                wbt_log_debug("get next msg_id faild\n");
+                wbt_free(msg);
+                return NULL;
+            }
             wbt_msg_create_count ++;
         }
         msg->seq_id = 0;

@@ -23,8 +23,11 @@ extern "C" {
 
 // 时间戳起始时间 2018-1-1 0:0:0
 #define SF_EPOCH          1514736000000UL
+// 最大序列号
 #define SF_MAX_SEQ_ID     ((1 << 12) - 1)
-#define SF_MAX_ERR_RANGE  10
+// 由于在单次 epoll 循环中 wbt_cur_mtime 不会被更新，所以必须允许 ID 分配器借用
+// 未来的时间用于分配 ID。
+#define SF_MAX_ERR_RANGE  100
 
 typedef struct wbt_sf_id_s {
     uint64_t timestamp:42;
