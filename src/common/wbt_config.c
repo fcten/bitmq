@@ -12,6 +12,7 @@
 #include "wbt_rbtree.h"
 #include "../os/linux/wbt_os_util.h"
 #include "../os/linux/wbt_setproctitle.h"
+#include "../mq/wbt_mq_snowflake.h"
 
 wbt_module_t wbt_module_conf = {
     wbt_string("config"),
@@ -273,6 +274,15 @@ wbt_status wbt_conf_init() {
     wbt_str_set_null(wbt_conf.master_host);
     if( ( m_value = wbt_conf_get_v("master_host") ) != NULL ) {
         wbt_conf.master_host = *m_value;
+    }
+
+    wbt_conf.worker_id = 0;
+    if( ( value = wbt_conf_get("worker_id") ) != NULL ) {
+        wbt_conf.worker_id = atoi(value);
+        if( wbt_conf.worker_id < 0 || wbt_conf.worker_id > SF_MAX_WORKER_ID ) {
+            wbt_log_print("worker_id out of range ( expect 0 - %d )\n", SF_MAX_WORKER_ID);
+            return WBT_ERROR;
+        }
     }
     
     return WBT_OK;

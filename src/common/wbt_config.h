@@ -76,6 +76,8 @@ typedef struct wbt_conf_s {
     wbt_str_t logs;
     // 主服务器 IP
     wbt_str_t master_host;
+    // snowflake worker id
+    int worker_id;
 } wbt_conf_t;
 
 #define AOF_FSYNC_NO       0

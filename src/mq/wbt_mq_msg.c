@@ -22,8 +22,8 @@ static wbt_sf_t  wbt_msg_snowflake;
 wbt_status wbt_mq_msg_init() {
     wbt_rb_init(&wbt_mq_messages, WBT_RB_KEY_LONGLONG);
 
-    // todo 使用配置文件初始化
-    wbt_mq_init_id(&wbt_msg_snowflake, 0);
+    // 初始化 snowflake
+    wbt_mq_init_id(&wbt_msg_snowflake, wbt_conf.worker_id);
     
     return WBT_OK;
 }
