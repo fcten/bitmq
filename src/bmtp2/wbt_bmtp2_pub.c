@@ -223,7 +223,7 @@ wbt_status wbt_bmtp2_send_pub(wbt_event_t *ev, wbt_msg_t *msg) {
         return WBT_ERROR;
     }
     
-    wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_VARINT, msg->msg_id, NULL);
+    wbt_bmtp2_append_param(node, PARAM_MSG_ID, TYPE_64BIT, msg->msg_id, NULL);
     wbt_bmtp2_append_param(node, PARAM_TYPE, TYPE_VARINT, msg->type, NULL);
     wbt_bmtp2_append_param(node, PARAM_CONSUMER_ID, TYPE_VARINT, msg->consumer_id, NULL);
     wbt_bmtp2_append_param(node, PARAM_CREATE, TYPE_VARINT, msg->create, NULL);

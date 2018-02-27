@@ -27,7 +27,7 @@ extern "C" {
 #define SF_MAX_SEQ_ID     ((1 << 12) - 1)
 // 最大 worker id
 #define SF_MAX_WORKER_ID  ((1 << 10) - 1)
-    // * 由于在单次 epoll 循环中 wbt_cur_mtime 不会被更新，所以必须允许 ID 分配器借用
+// * 由于在单次 epoll 循环中 wbt_cur_mtime 不会被更新，所以必须允许 ID 分配器借用
 // 未来的时间用于分配 ID。不建议将该值设定得太小。
 // * 如果开启了 ntp 时间同步，可能会导致服务器时间回退。合理设定该值可以避免服务出现异
 // 常。
