@@ -409,6 +409,8 @@ wbt_status wbt_websocket_on_recv( wbt_event_t *ev ) {
                                 unsigned int tmp_buff_len = ev->buff_len;
                                 ev->buff = ws->payload;
                                 ev->buff_len = ws->payload_length;
+                                // Bugfix: 修复 websocket 粘包时错误关闭连接的 BUG
+                                bmtp->recv_offset = 0;
                                 if( wbt_bmtp2_on_recv(ev) != WBT_OK || bmtp->msg_offset != ev->buff_len ) {
                                     // error
                                     wbt_bmtp2_send_disconn(ev);
