@@ -73,6 +73,178 @@ BitMQ 使用 CMake (>=2.8) 进行构建。您可以在源码目录下使用以�
 注意：为了在不关闭程序的情况下更新二进制文件，您总是应当使用符号链接来启动 BitMQ。
 注意：如果启用了数据持久化功能，请不要使用该方式重启程序，否则可能会造成数据丢失。
 
+## 性能测试
+
+以下测试结果在虚拟机环境下取得。
+
+HTTP 短连接 (ab -n 500000 -c 10 http://127.0.0.1/)：
+
+    Server Software:        BitMQ
+    Server Hostname:        127.0.0.1
+    Server Port:            1039
+
+    Document Path:          /
+    Document Length:        2308 bytes
+
+    Concurrency Level:      10
+    Time taken for tests:   17.853 seconds
+    Complete requests:      500000
+    Failed requests:        0
+    Total transferred:      1280000000 bytes
+    HTML transferred:       1154000000 bytes
+    Requests per second:    28007.07 [#/sec] (mean)
+    Time per request:       0.357 [ms] (mean)
+    Time per request:       0.036 [ms] (mean, across all concurrent requests)
+    Transfer rate:          70017.68 [Kbytes/sec] received
+
+    Connection Times (ms)
+                  min  mean[+/-sd] median   max
+    Connect:        0    0   0.0      0       7
+    Processing:     0    0   0.2      0      11
+    Waiting:        0    0   0.2      0      11
+    Total:          0    0   0.2      0      11
+
+    Percentage of the requests served within a certain time (ms)
+      50%      0
+      66%      0
+      75%      0
+      80%      0
+      90%      0
+      95%      0
+      98%      1
+      99%      1
+     100%     11 (longest request)
+
+
+    Server Software:        nginx/1.10.3
+    Server Hostname:        127.0.0.1
+    Server Port:            80
+
+    Document Path:          /
+    Document Length:        2308 bytes
+
+    Concurrency Level:      10
+    Time taken for tests:   17.813 seconds
+    Complete requests:      500000
+    Failed requests:        0
+    Total transferred:      1275500000 bytes
+    HTML transferred:       1154000000 bytes
+    Requests per second:    28069.69 [#/sec] (mean)
+    Time per request:       0.356 [ms] (mean)
+    Time per request:       0.036 [ms] (mean, across all concurrent requests)
+    Transfer rate:          69927.52 [Kbytes/sec] received
+
+    Connection Times (ms)
+                  min  mean[+/-sd] median   max
+    Connect:        0    0   0.1      0       8
+    Processing:     0    0   0.1      0       9
+    Waiting:        0    0   0.1      0       9
+    Total:          0    0   0.1      0       9
+
+    Percentage of the requests served within a certain time (ms)
+      50%      0
+      66%      0
+      75%      0
+      80%      0
+      90%      0
+      95%      0
+      98%      1
+      99%      1
+     100%      9 (longest request)
+
+HTTP 长连接 (ab -k -n 500000 -c 10 http://127.0.0.1/)：
+
+    Server Software:        BitMQ
+    Server Hostname:        127.0.0.1
+    Server Port:            1039
+
+    Document Path:          /
+    Document Length:        2308 bytes
+
+    Concurrency Level:      10
+    Time taken for tests:   10.062 seconds
+    Complete requests:      500000
+    Failed requests:        0
+    Keep-Alive requests:    500000
+    Total transferred:      1282500000 bytes
+    HTML transferred:       1154000000 bytes
+    Requests per second:    49692.49 [#/sec] (mean)
+    Time per request:       0.201 [ms] (mean)
+    Time per request:       0.020 [ms] (mean, across all concurrent requests)
+    Transfer rate:          124473.86 [Kbytes/sec] received
+
+    Connection Times (ms)
+                  min  mean[+/-sd] median   max
+    Connect:        0    0   0.0      0       1
+    Processing:     0    0   0.1      0      10
+    Waiting:        0    0   0.1      0      10
+    Total:          0    0   0.1      0      10
+
+    Percentage of the requests served within a certain time (ms)
+      50%      0
+      66%      0
+      75%      0
+      80%      0
+      90%      0
+      95%      0
+      98%      0
+      99%      0
+     100%     10 (longest request)
+
+
+    Server Software:        nginx/1.10.3
+    Server Hostname:        127.0.0.1
+    Server Port:            80
+
+    Document Path:          /
+    Document Length:        2308 bytes
+
+    Concurrency Level:      10
+    Time taken for tests:   19.471 seconds
+    Complete requests:      500000
+    Failed requests:        0
+    Keep-Alive requests:    495003
+    Total transferred:      1277975015 bytes
+    HTML transferred:       1154000000 bytes
+    Requests per second:    25679.27 [#/sec] (mean)
+    Time per request:       0.389 [ms] (mean)
+    Time per request:       0.039 [ms] (mean, across all concurrent requests)
+    Transfer rate:          64096.61 [Kbytes/sec] received
+
+    Connection Times (ms)
+                  min  mean[+/-sd] median   max
+    Connect:        0    0   0.0      0       0
+    Processing:     0    0   1.3      0      28
+    Waiting:        0    0   1.3      0      28
+    Total:          0    0   1.3      0      28
+
+    Percentage of the requests served within a certain time (ms)
+      50%      0
+      66%      0
+      75%      0
+      80%      0
+      90%      0
+      95%      0
+      98%      1
+      99%      7
+     100%     28 (longest request)
+
+注意：在以上测试中提供 nginx 的数据只是为硬件性能提供一个参考。BitMQ 并不是一个完善的 HTTP 服务端。
+
+消息发送 (关闭持久化与日志)：
+
+    Time taken for tests:   3.21 seconds
+    Complete publish:       1000000
+    Failed publish:         0
+    Total transferred:      89.65 Mbytes
+    Message transferred:    86.78 Mbytes
+    Publish per second:     311817.91 [#/sec]
+    Time per publish:       0.00 [ms]
+    Transfer rate:          27.95 [Mbytes/sec]
+
+以上测试使用 JSON 格式发送消息，如果使用二进制格式，性能可进一步提升。
+当开启日志或持久化功能时，消息吞吐量将主要受限于磁盘写入性能。
+
 ## 更新日志
 
 ### V0.6.0
