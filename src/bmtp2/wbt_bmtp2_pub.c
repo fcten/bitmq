@@ -24,7 +24,6 @@ enum {
 // TODO 使用全局变量不是多线程安全的，如果未来 BitMQ 引入了多线程，这里可能带来问题
 wbt_msg_t wbt_mq_parsed_msg;
 wbt_mq_id stream_id;
-int is_last_will;
 
 wbt_status wbt_bmtp2_on_pub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
     switch( param->key ) {
@@ -135,7 +134,7 @@ wbt_status wbt_bmtp2_on_pub_parser(wbt_event_t *ev, wbt_bmtp2_param_t *param) {
             wbt_mq_parsed_msg.is_compress = 1;
             break;
         case PARAM_LAST_WILL:
-            is_last_will = 1;
+            wbt_mq_parsed_msg.is_lastwill = 1;
             break;
         default:
             // 忽略无法识别的参数
@@ -149,7 +148,6 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     wbt_bmtp2_t *bmtp = ev->data;
     
     stream_id = 0;
-    is_last_will = 0;
     wbt_memset(&wbt_mq_parsed_msg, 0, sizeof(wbt_mq_parsed_msg));
     
     if( wbt_bmtp2_param_parser(ev, wbt_bmtp2_on_pub_parser) != WBT_OK ) {
@@ -193,7 +191,7 @@ wbt_status wbt_bmtp2_on_pub(wbt_event_t *ev) {
     wbt_mq_parsed_msg.data = wbt_strdup(bmtp->payload, bmtp->payload_length);
     
     wbt_status ret;
-    if( is_last_will ) {
+    if( wbt_mq_parsed_msg.is_lastwill ) {
         ret = wbt_mq_set_last_will(ev, &wbt_mq_parsed_msg);
     } else {
         ret = wbt_mq_push(ev, &wbt_mq_parsed_msg);
