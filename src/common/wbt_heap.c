@@ -97,7 +97,7 @@ wbt_status wbt_heap_remove(wbt_heap_t * p, unsigned int heap_idx) {
     }
 
     // 调整堆使其符合最小堆性质
-    int current = 1, child = 2;
+    unsigned int current = 1, child = 2;
     for( ; child <= p->size ; current = child, child *= 2 ) {
         if( child + 1 <= p->size && p->heap[child+1]->timeout <  p->heap[child]->timeout ) {
             child++;
@@ -145,7 +145,7 @@ wbt_status wbt_heap_update(wbt_heap_t * p, unsigned int heap_idx) {
     p->heap[1]->heap_idx = 1;
     
     // 调整堆使其符合最小堆性质
-    int current = 1, child = 2;
+    unsigned int current = 1, child = 2;
     for( ; child <= p->size ; current = child, child *= 2 ) {
         if( child + 1 <= p->size && p->heap[child+1]->timeout <  p->heap[child]->timeout ) {
             child++;

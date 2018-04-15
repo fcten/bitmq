@@ -779,12 +779,12 @@ wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key,
         }
     }
     
-    int space = 15;
+    unsigned int space = 15;
     if( key_type == TYPE_STRING ) {
         space += l;
     }
     
-    while( node->hed_length - node->hed_offset < space ) {
+    while( node->hed_length < node->hed_offset + space ) {
         node->hed_length *= 2;
     }
     
@@ -850,9 +850,9 @@ wbt_status wbt_bmtp2_append_payload(wbt_bmtp2_msg_list_t *node, wbt_msg_t *msg) 
         }
     }
     
-    int space = 1;
+    unsigned int space = 1;
     
-    while( node->hed_length - node->hed_offset < space ) {
+    while( node->hed_length < node->hed_offset + space ) {
         node->hed_length *= 2;
     }
     
