@@ -224,6 +224,8 @@ typedef struct wbt_channel_s {
     unsigned int subscriber_count;
     // 消息队列
     wbt_rb_t queue;
+    // 超时事件
+    wbt_timer_t timer;
 } wbt_channel_t;
 
 wbt_status wbt_mq_init();

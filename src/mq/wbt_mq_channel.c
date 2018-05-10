@@ -87,6 +87,8 @@ wbt_status wbt_mq_channel_add_subscriber(wbt_channel_t *channel, wbt_subscriber_
     wbt_list_add(&subscriber_node->head, &channel->subscriber_list.head);
     
     channel->subscriber_count ++;
+
+    // todo 删除可能存在的定时事件
     
     return WBT_OK;
 }
@@ -105,8 +107,10 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
 
             // 自动删除空闲频道
             // todo 延迟删除
-            if( channel->subscriber_count == 0 && channel->queue.size == 0 ) {
-                wbt_mq_channel_destory(channel);
+            if( channel->subscriber_count == 0 ) {
+                // todo 添加定时事件
+                //wbt_mq_channel_destory(channel);
+                // todo 定时事件需要处理频道中存在堆积消息的情况
             }
             
             return WBT_OK;
@@ -232,10 +236,4 @@ void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
     
     node->value.str = NULL;
     wbt_rb_delete(&channel->queue, node);
-
-    // 自动删除空闲频道
-    // todo 延迟删除
-    if( channel->subscriber_count == 0 && channel->queue.size == 0 ) {
-        wbt_mq_channel_destory(channel);
-    }
 }
