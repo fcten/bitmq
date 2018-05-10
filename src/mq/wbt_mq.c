@@ -100,13 +100,6 @@ wbt_status wbt_mq_on_close(wbt_event_t *ev) {
         return WBT_OK;
     }
 
-    // 遍历所有订阅的频道
-    wbt_channel_list_t *channel_node;
-    wbt_list_for_each_entry(channel_node, wbt_channel_list_t, &subscriber->channel_list.head, head) {
-        // 从该频道的 subscriber_list 中移除该订阅者
-        wbt_mq_channel_del_subscriber(channel_node->channel, subscriber);
-    }
-
     // 删除该订阅者
     wbt_mq_subscriber_destory(subscriber);
 

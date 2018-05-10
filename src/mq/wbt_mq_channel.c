@@ -102,6 +102,12 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
             wbt_free(subscriber_node);
             
             channel->subscriber_count --;
+
+            // 自动删除空闲频道
+            // todo 延迟删除
+            if( channel->subscriber_count == 0 && channel->queue.size == 0 ) {
+                wbt_mq_channel_destory(channel);
+            }
             
             return WBT_OK;
         }
@@ -226,4 +232,10 @@ void wbt_mq_channel_del_msg(wbt_channel_t *channel, wbt_msg_t *msg) {
     
     node->value.str = NULL;
     wbt_rb_delete(&channel->queue, node);
+
+    // 自动删除空闲频道
+    // todo 延迟删除
+    if( channel->subscriber_count == 0 && channel->queue.size == 0 ) {
+        wbt_mq_channel_destory(channel);
+    }
 }
