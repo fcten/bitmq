@@ -25,9 +25,6 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         channel->channel_id = channel_id;
         channel->create = wbt_cur_mtime;
         
-        wbt_rb_init(&channel->queue, WBT_RB_KEY_LONGLONG);
-        wbt_list_init(&channel->subscriber_list.head);
-        
         wbt_str_t channel_key;
         wbt_variable_to_str(channel->channel_id, channel_key);
         wbt_rb_node_t * channel_node = wbt_rb_insert(&wbt_mq_channels, &channel_key);
@@ -36,6 +33,11 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
             return NULL;
         }
         channel_node->value.str = (char *)channel;
+
+        wbt_rb_init(&channel->queue, WBT_RB_KEY_LONGLONG);
+        wbt_list_init(&channel->subscriber_list.head);
+
+        // todo 添加定时事件
     }
     
     return channel;
