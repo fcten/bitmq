@@ -9,12 +9,36 @@
 #include "wbt_mq_msg.h"
 #include "wbt_mq_subscriber.h"
 
+extern wbt_atomic_t wbt_wating_to_exit;
+
 // 存储所有可用频道
 static wbt_rb_t wbt_mq_channels;
 
 wbt_status wbt_mq_channel_init() {
     wbt_rb_init(&wbt_mq_channels, WBT_RB_KEY_LONGLONG);
 
+    return WBT_OK;
+}
+
+wbt_status wbt_mq_channel_event_expire(wbt_timer_t *timer) {
+    if( wbt_wating_to_exit ) {
+        return WBT_OK;
+    }
+
+    wbt_channel_t *channel = wbt_timer_entry(timer, wbt_channel_t, timer);
+
+    // 确保被释放的频道当前没有被使用
+    if( channel->subscriber_count == 0 && channel->queue.size == 0 ) {
+        wbt_mq_channel_destory(channel);
+    } else {
+        // 重新注册定时事件
+        timer->timeout += 15 * 1000;
+
+        if(wbt_timer_mod(timer) != WBT_OK) {
+            return WBT_ERROR;
+        }
+    }
+    
     return WBT_OK;
 }
 
@@ -37,7 +61,12 @@ wbt_channel_t * wbt_mq_channel_create(wbt_mq_id channel_id) {
         wbt_rb_init(&channel->queue, WBT_RB_KEY_LONGLONG);
         wbt_list_init(&channel->subscriber_list.head);
 
-        // todo 添加定时事件
+        // 添加超时事件
+        channel->timer.on_timeout = wbt_mq_channel_event_expire;
+        channel->timer.timeout    = wbt_cur_mtime + 15 * 1000;
+        if( wbt_timer_add(&channel->timer) != WBT_OK ) {
+            // 如果添加失败，频道可能无法被释放。但是目前不做任何处理。
+        }
     }
     
     return channel;
@@ -90,7 +119,8 @@ wbt_status wbt_mq_channel_add_subscriber(wbt_channel_t *channel, wbt_subscriber_
     
     channel->subscriber_count ++;
 
-    // todo 删除可能存在的定时事件
+    // 删除可能存在的定时事件
+    wbt_timer_del(&channel->timer);
     
     return WBT_OK;
 }
@@ -108,11 +138,12 @@ wbt_status wbt_mq_channel_del_subscriber(wbt_channel_t *channel, wbt_subscriber_
             channel->subscriber_count --;
 
             // 自动删除空闲频道
-            // todo 延迟删除
             if( channel->subscriber_count == 0 ) {
-                // todo 添加定时事件
-                //wbt_mq_channel_destory(channel);
-                // todo 定时事件需要处理频道中存在堆积消息的情况
+                channel->timer.on_timeout = wbt_mq_channel_event_expire;
+                channel->timer.timeout    = wbt_cur_mtime + 15 * 1000;
+                if( wbt_timer_add(&channel->timer) != WBT_OK ) {
+                    // 如果添加失败，频道可能无法被释放。但是目前不做任何处理。
+                }
             }
             
             return WBT_OK;

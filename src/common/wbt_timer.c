@@ -25,7 +25,9 @@ wbt_status wbt_timer_init() {
 
         return WBT_ERROR;
     }
-    
+
+    /* TODO 添加一个使用时间轮算法实现的子定时器 */
+
     return WBT_OK;
 }
 
