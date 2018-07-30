@@ -673,7 +673,7 @@ void json_print_longlong(long long l, char **buf, size_t *buf_len) {
 }
 
 void json_print_float(float f, char **buf, size_t *buf_len) {
-    size_t i = snprintf(*buf, *buf_len, "%f", f);
+    size_t i = snprintf(*buf, *buf_len, "%g", f);
     if( i > *buf_len ) {
         *buf += *buf_len;
         *buf_len = 0;
@@ -695,7 +695,7 @@ void json_print_integer(int i, char **buf, size_t *buf_len) {
 }
 
 void json_print_double(double d, char **buf, size_t *buf_len) {
-    size_t i = snprintf(*buf, *buf_len, "%lf", d);
+    size_t i = snprintf(*buf, *buf_len, "%lg", d);
     if( i > *buf_len ) {
         *buf += *buf_len;
         *buf_len = 0;
