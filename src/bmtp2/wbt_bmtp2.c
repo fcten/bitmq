@@ -272,7 +272,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     return WBT_OK;
                 }
                 
-                bmtp->op_value.s = (unsigned char *)(ev->buff + bmtp->recv_offset );
+                bmtp->op_value.s = (unsigned char *)ev->buff + bmtp->recv_offset;
                 
                 bmtp->recv_offset += bmtp->op_value.l;
 
@@ -325,7 +325,7 @@ wbt_status wbt_bmtp2_on_recv(wbt_event_t *ev) {
                     return WBT_OK;
                 }
                 
-                bmtp->payload = (unsigned char *)(ev->buff + bmtp->recv_offset );
+                bmtp->payload = (unsigned char *)ev->buff + bmtp->recv_offset;
                 
                 bmtp->recv_offset += bmtp->payload_length;
 
@@ -554,7 +554,7 @@ wbt_status wbt_bmtp2_on_send(wbt_event_t *ev) {
         
         if( msg_node->msg ) {
             while( msg_node->msg_offset < msg_node->msg->data_len ) {
-                int ret = wbt_send(ev, msg_node->msg->data + msg_node->msg_offset , msg_node->msg->data_len - msg_node->msg_offset);
+                int ret = wbt_send(ev, (unsigned char *)msg_node->msg->data + msg_node->msg_offset , msg_node->msg->data_len - msg_node->msg_offset);
                 if (ret <= 0) {
                     if( wbt_socket_errno == WBT_EAGAIN ) {
                         return WBT_OK;
@@ -779,12 +779,12 @@ wbt_status wbt_bmtp2_append_param(wbt_bmtp2_msg_list_t *node, unsigned char key,
         }
     }
     
-    int space = 15;
+    unsigned int space = 15;
     if( key_type == TYPE_STRING ) {
         space += l;
     }
     
-    while( node->hed_length - node->hed_offset < space ) {
+    while( node->hed_length < node->hed_offset + space ) {
         node->hed_length *= 2;
     }
     
@@ -850,9 +850,9 @@ wbt_status wbt_bmtp2_append_payload(wbt_bmtp2_msg_list_t *node, wbt_msg_t *msg) 
         }
     }
     
-    int space = 1;
+    unsigned int space = 1;
     
-    while( node->hed_length - node->hed_offset < space ) {
+    while( node->hed_length < node->hed_offset + space ) {
         node->hed_length *= 2;
     }
     

@@ -128,7 +128,7 @@ wbt_status wbt_mq_repl_reconnect(wbt_timer_t *timer) {
 #endif
             
         } else {
-            close(tmp_ev.fd);
+            wbt_close_socket(tmp_ev.fd);
             
             goto again;
         }
