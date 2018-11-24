@@ -107,7 +107,7 @@ wbt_fd_t wbt_open_tmpfile(const char *name) {
 }
 
 wbt_fd_t wbt_open_file(const char *name) {
-    return open(name, O_RDWR | O_CREAT | O_CLOEXEC, 0777);
+    return open(name, O_RDONLY | O_CLOEXEC);
 }
 
 int wbt_delete_file(const char *name) {

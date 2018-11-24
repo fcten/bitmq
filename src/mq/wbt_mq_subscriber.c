@@ -61,9 +61,14 @@ void wbt_mq_subscriber_destory(wbt_subscriber_t *subscriber) {
         return;
     }
 
+    // 遍历所有订阅的频道
     wbt_channel_list_t * channel_node;
     while(!wbt_list_empty(&subscriber->channel_list.head)) {
         channel_node = wbt_list_first_entry(&subscriber->channel_list.head, wbt_channel_list_t, head);
+
+        // 从该频道的 subscriber_list 中移除该订阅者
+        wbt_mq_channel_del_subscriber(channel_node->channel, subscriber);
+
         wbt_list_del(&channel_node->head);
         wbt_free(channel_node);
     }
